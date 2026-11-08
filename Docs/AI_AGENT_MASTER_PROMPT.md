@@ -20,7 +20,7 @@ Then inspect the repository and report:
 
 Do not generate production application code during the research stage. Complete the research checklist, update the documentation, and create a dedicated research commit on `development`. Present the findings, proposed MVP scope and commit hash. Then start Phase 0 unless a specific unresolved issue requires the owner to decide.
 
-After the research commit, begin Phase 0 and then build exactly one phase at a time. At the end of each phase, update docs, run and record tests, commit and report. Then stop and wait for the owner's input. Never automatically start the next phase. A “continue” response authorizes only the next phase.
+After the research documentation is committed, the Local Development Agent begins Phase 0. Follow `PHASES_AND_ACCEPTANCE.md` in order. At each phase gate, update docs, run and record feasible tests, audit permissions/security, commit and push, report, then automatically begin the next phase. Stop only for a genuine blocker requiring owner input.
 
 ## Product target
 
@@ -79,7 +79,7 @@ P10 secure screen tests.
 P11 Bluetooth optional.
 P12 audio/calls research.
 
-Do not skip ahead to production until P00–P10 have sufficient evidence and the owner approves scope.
+Do not skip ahead to production until the required prototypes have sufficient evidence and their documented gates pass. Routine phase approval is not required; stop only for a genuine blocker or owner decision described in `AGENTS.md`.
 
 ## Agent behaviour
 
@@ -93,8 +93,8 @@ Do not skip ahead to production until P00–P10 have sufficient evidence and the
 - Update progress, decisions and changelog.
 - Commit the completed research package before build approval.
 - Commit each completed build phase separately.
-- After each phase report, wait for owner input; no automatic phase progression.
-- Never force-push or merge to main without permission.
+- Automatically progress to the next documented phase after its acceptance gate passes; stop only for genuine blockers.
+- Never force-push or merge to `master` without explicit release approval.
 
 ## Final deliverable
 
@@ -111,20 +111,6 @@ Produce:
 The released product must not need USB debugging or wireless debugging.
 
 
-## Owner-approved workflow clarification (authoritative; 2026-11-08)
+## Agent role reminder
 
-This section supersedes any earlier wording in this file that conflicts with it. The active integration branch is **`development`**. The existing **`master`** branch remains the stable-release branch. Do not rename branches or assume a `main` branch. All ongoing research and implementation commits target `development`; do not merge to `master` without the owner's explicit release approval.
-
-### Two-agent responsibility split
-
-- **Cloud Research Agent:** research current official platform documentation; verify and record technical facts, feasibility, sources, risks and alternatives; maintain research, architecture, decision and permission documentation; prepare prototype instructions and review documentation. It must not implement product features, modify Android/macOS application code, run or claim physical-device tests, or mark device-specific prototypes complete. It commits and pushes its research/documentation work to `development`.
-- **Local Development Agent:** owns all implementation, Android/macOS project changes, builds, automated tests, physical-device prototypes and validation, and local progress/test evidence. It pulls the latest `development` before starting and pushes implementation and test evidence to `development`.
-- **Coordination:** agents must not work on or push competing changes to `development` simultaneously. Use sequential handoffs: the cloud agent finishes and pushes a scoped research update; the local agent pulls it before implementation. Before a later cloud research update, local work must be committed/pushed and the cloud agent must sync to the latest branch head. Never force-push or overwrite uncommitted work.
-
-### Autonomous phase progression
-
-After completing a phase, the responsible agent must verify its acceptance criteria, run all feasible tests, record unavailable tests honestly, update progress/decisions/changelog/permission records, create a focused commit and push to `development`. It must then **automatically begin the next phase** in the documented sequence without waiting for routine owner approval. Continue phase by phase; do not skip gates or combine phases. Report meaningful milestones and handoffs while continuing.
-
-Stop and request owner input only when a genuine blocker requires it: a hard constraint cannot be met; a prototype fails a feasibility gate; a new or expanded permission, sensitive capability, cost, account entitlement or security/privacy trade-off needs approval; an irreversible/destructive operation is proposed; or a product/architecture choice cannot be resolved from existing requirements and documented evidence. Do not pause merely because a phase ended. Do not silently relax any hard constraint. If blocked, document the evidence and precise decision needed, then wait.
-
-The documented phase sequence and acceptance criteria remain unchanged. Research completion does not imply that physical prototypes have passed. The current next build phase remains Phase 0; physical prototypes remain pending for their scheduled phase. The local agent must not claim device results until it has actually run them on the target phone and recorded USB/debugging state.
+Cloud agent is research/documentation/review-only; it does not edit Android/macOS app code, build, or perform device tests. Local agent owns implementation, builds, automated tests and physical-device evidence. Use sequential handoffs on `development`; `master` is stable release. The authoritative rules are in `AGENTS.md` and `Docs/DEVELOPMENT_WORKFLOW.md`.
