@@ -43,3 +43,8 @@ include(":feature:dashboard")
 include(":feature:clipboard")
 include(":feature:mirroring")
 include(":feature:settings")
+
+// Isolated experiments. These are separate installable apps with their own applicationId, never
+// depended on by :app, so an experiment can never leak a permission or a code path into the
+// production manifest (AGENTS.md: keep experimental code out of production paths).
+include(":experiments:media-projection")

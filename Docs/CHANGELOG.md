@@ -17,7 +17,14 @@ All notable project changes are recorded here.
   runner, read-only token, no secrets.
 - `Docs/prototypes/P00-environment-report.md` and `Docs/prototypes/PHASE0-repository-and-environment.md`.
 
+### Added — Phase 1, P01 (2026-11-09)
+- `android/experiments/media-projection/`: isolated MediaProjection capture experiment with a
+  surface-fed H.264 encoder, an encoder capability probe, and 8 framing tests. Separate
+  `applicationId`, never depended on by `:app`.
+
 ### Fixed
+- `shared/protocol` now targets Java 17 to match its Android consumer; the Java 21 toolchain made
+  every Android unit test fail with `UnsupportedClassVersionError` (ADR-032).
 - Release macOS builds no longer carry `com.apple.security.get-task-allow` (ADR-031).
 
 ### Changed

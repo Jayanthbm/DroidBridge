@@ -32,8 +32,14 @@ else
     # CI has no local.properties; the SDK comes from ANDROID_HOME/ANDROID_SDK_ROOT.
     ANDROID_ARGS=()
 fi
+# :app plus every experiment module. Experiments are separate apps, so a broken experiment would
+# otherwise pass CI unnoticed until someone tried to run it.
 "$REPO_ROOT/android/gradlew" -p "$REPO_ROOT/android" \
-    :app:assembleDebug :app:testDebugUnitTest :app:lintDebug "${ANDROID_ARGS[@]+"${ANDROID_ARGS[@]}"}"
+    :app:assembleDebug :app:testDebugUnitTest :app:lintDebug \
+    :experiments:media-projection:assembleDebug \
+    :experiments:media-projection:testDebugUnitTest \
+    :experiments:media-projection:lintDebug \
+    "${ANDROID_ARGS[@]+"${ANDROID_ARGS[@]}"}"
 
 if [[ "$SKIP_MACOS" -eq 1 ]]; then
     step "macOS: skipped (--skip-macos)"

@@ -4,7 +4,23 @@ Use newest entries at the top. Every change must include date, status, context, 
 
 Research pass of 2026-11-08 produced ADR-010 to ADR-028. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
 
-## ADR-029 — Android build: AGP 9 built-in Kotlin, SDK levels in one place, shared protocol as a composite build
+## ADR-032 — Shared protocol targets Java 17, not 21
+
+**Date:** 2026-11-09
+**Status:** Accepted
+**Context:** `shared/protocol` was created with `jvmToolchain(21)`. The Android build compiles and
+unit-tests against Java 17. Because the module is consumed as a composite build, Gradle does not
+reconcile the two toolchains: the module emitted class file version 65, and every Android unit test
+that touched the protocol failed with `UnsupportedClassVersionError` — an error that names the
+bytecode version and not the cause.
+**Decision:** `shared/protocol` targets Java 17, matching its only consumer. The build file carries
+a comment explaining that the two must match by hand.
+**Consequences:** Android unit tests can load the protocol. If a future consumer needs 21, this
+becomes a real decision rather than a silent mismatch. The macOS app does not consume this module
+(it is Swift and implements `NETWORK_PROTOCOL.md` directly), so there is no second consumer to
+satisfy.
+
+## ADR-031 — Android build: AGP 9 built-in Kotlin, SDK levels in one place, shared protocol as a composite build
 - Date: 2026-11-09
 - Status: Accepted
 - Context: Phase 0 needed a real Android build. Three constraints surfaced while making it work. (a) AGP 9.0+ has built-in Kotlin support and **fails the build** if `org.jetbrains.kotlin.android` is also applied. (b) `compileSdk` must be set per module; a `subprojects` convention block alone does not satisfy the application module. (c) `shared/protocol` is a standalone Kotlin/JVM build that must stay testable without an Android SDK, but the app must not carry a second copy of the framing rules.
