@@ -126,9 +126,21 @@ Never include raw clipboard text in logs.
 - `mirror.stopped`
 - `mirror.format`
 - `mirror.rotation`
+- `mirror.keyframe_request`
 - `mirror.error`
 
-Media channel should carry H.264 or another mutually supported codec with explicit framing, timestamps and keyframe recovery. Evaluate WebRTC versus a simple local stream during prototypes.
+### Media channel framing (settled by ADR-027, pending P07/P08)
+
+Codec: H.264/AVC only for the MVP. VideoToolbox and Android hardware encoders both support it, and it keeps the parameter-set path on CoreMedia's documented API.
+
+- `mirror.format` carries `width`, `height`, `rotation`, `sps`, `pps` and `nalLengthSize`. `sps`/`pps` are **bare NAL units**: no start code, no length prefix, emulation-prevention bytes exactly as encoded. `nalLengthSize` is 4.
+- A media frame payload is **one access unit** made of repeated `[4-byte big-endian NAL length][NAL bytes]`. This is the AVCC shape CoreMedia requires, not Annex-B; the conversion happens on Android so a framing bug surfaces in the code that produced it.
+- Timestamps: `ptsUs`, a 64-bit microsecond value from the producer's monotonic clock. PTS must be strictly increasing across the session — CoreMedia documents duplicate presentation timestamps as undefined. On `mirror.started` and after any reconnect the receiver **rebases** to its own clock instead of trusting a resumed producer timeline.
+- No B-frames (`KEY_MAX_B_FRAMES = 0`), so samples are in decode order and the receiver uses `decodeTimeStamp = invalid`.
+- The first frame after `mirror.started`, after every `mirror.format`, after a reconnect and after any receiver-side decoder flush **must be an IDR**.
+- The receiver may drop non-keyframes under backpressure (`isReadyForMoreMediaData == false`) but must never drop the IDR that follows a format change.
+- `mirror.keyframe_request` exists so the Mac can force an IDR after `AVSampleBufferDisplayLayer` reports `.failed` / `requiresFlushToResumeDecoding` and is flushed. Without it, recovery would resume with P-frames against a decoder that has no reference picture.
+- A rotation or capture-region resize is a **new encode**: `mirror.format` with new parameter sets, then an IDR. It is never handled by stretching the previous stream.
 
 ## 8. Input messages
 

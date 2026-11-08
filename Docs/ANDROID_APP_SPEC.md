@@ -55,8 +55,16 @@
 - Register MediaProjection.Callback and release resources on stop.
 - Show clear in-app state matching the Android system projection indicator.
 - Stop streaming on projection stop, screen lock, user stop, peer disconnect or app error.
-- Support display rotation and size changes.
 - Never attempt to capture around secure surfaces.
+- **Encode from the capture surface** (ADR-027): `configure(format, null, null, CONFIGURE_FLAG_ENCODE)` → `createInputSurface()` → `createVirtualDisplay()`. Never allocate pixel buffers, never convert YUV, never touch the frames.
+- Format: `video/avc` with `COLOR_FormatSurface`, `KEY_MAX_B_FRAMES = 0`, `KEY_REPEAT_PREVIOUS_FRAME_AFTER` set so a static screen keeps producing frames, and `KEY_I_FRAME_INTERVAL` short enough that reconnect recovery is quick.
+- Choose the encode size from `VideoCapabilities.areSizeAndRateSupported()`, not from the panel resolution. Do not pass a panel-sized format and hope it is accepted.
+- Prefer CBR when supported: the Android 12+ minimum quality floor applies to VBR and can push the bitrate above the requested average, which breaks a measured budget.
+- Set `KEY_PROFILE` explicitly (`AVCProfileBaseline` or `AVCProfileHigh`). An unset profile is device-selected and may be experimental; `KEY_LEVEL` is only a hint and cannot cap the output level.
+- **Convert to AVCC at the producer**: send SPS/PPS as bare NALs in `mirror.format`, then each access unit as 4-byte length-prefixed NALs, preserving emulation-prevention bytes. Split on start codes only (NETWORK_PROTOCOL §7).
+- Handle `onCapturedContentResize(width, height)` (API 34) by resizing the `VirtualDisplay` **and** re-creating the encoder/surface, then emitting `mirror.format` and a fresh IDR. Rotation is a re-encode, not a scale.
+- In async mode, remember that `flush()` requires a following `start()` before input resumes — even with an input surface.
+- Serve `mirror.keyframe_request` by forcing an IDR; never answer it with a P-frame.
 
 ## 6. Local network
 

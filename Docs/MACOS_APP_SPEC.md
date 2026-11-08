@@ -46,9 +46,16 @@
 ## 5. Mirroring
 
 - Receive the Android video stream.
-- Decode using VideoToolbox/AVFoundation.
+- Decode and display with `AVSampleBufferDisplayLayer` (ADR-028) — it decodes compressed H.264 itself, so no `VTDecompressionSession` and no pixel handling are needed for view-only mirroring.
+- Build the format description with `CMVideoFormatDescriptionCreateFromH264ParameterSets` from the SPS and PPS delivered in `mirror.format`: bare NALs, at least two parameter sets, `nalUnitHeaderLength = 4`.
+- Wrap each access unit in a `CMSampleBuffer` (`CMSampleBufferCreateReady`) with one timing entry, `decodeTimeStamp = .invalid`, and strictly increasing PTS in a 1/1,000,000 timescale from `ptsUs`. Rebase PTS on stream start and on reconnect.
+- Gate enqueues on `isReadyForMoreMediaData`; coalesce or drop non-keyframes under backpressure rather than growing a queue. Never drop the IDR that follows a format change.
+- On `.failed` or `requiresFlushToResumeDecoding`: `flush()`, send `mirror.keyframe_request`, and resume only on an IDR. Recovery with P-frames is not recovery.
+- Keep all of this inside one adapter type. The enqueue API is deprecated in favour of `AVSampleBufferVideoRenderer.Receiver` (macOS 27+); do not raise the deployment target to silence the warning, and record the actual warnings in P07.
+- Set `preventsCapture = true` so the mirrored phone screen cannot leak into a Mac screen recording.
+- Handle decode failures (`AVSampleBufferDisplayLayerFailedToDecode`) as a viewer state with redacted logging — never log frame content.
 - Display in a resizable window with aspect-fit.
-- Handle rotation and dynamic resolution.
+- Handle rotation and dynamic resolution, including a mid-session format change.
 - Support pause, disconnect and full-screen.
 - Display a persistent session indicator.
 - Do not save screenshots or recordings by default.

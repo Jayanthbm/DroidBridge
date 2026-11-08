@@ -2,7 +2,23 @@
 
 Use newest entries at the top. Every change must include date, status, context, decision, alternatives and consequences.
 
-Research pass of 2026-11-08 produced ADR-010 to ADR-026. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
+Research pass of 2026-11-08 produced ADR-010 to ADR-028. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
+
+## ADR-028 — The Mac decodes and displays compressed frames with `AVSampleBufferDisplayLayer` behind one adapter
+- Date: 2026-11-08
+- Status: Proposed — pending `P07`
+- Context: the Mac only has to *view* the Android stream (ADR-015 excludes remote input), so it needs a decoder and a renderer, not frame access. Research (R-31) established that `AVSampleBufferDisplayLayer` decodes compressed H.264 itself, so no `VTDecompressionSession` and no `CVPixelBuffer` handling are required. It also established that the layer's `enqueue(_:)`/`isReadyForMoreMediaData`/`flush()` API is deprecated in the current SDK in favour of `AVSampleBufferVideoRenderer.Receiver`, which is documented as macOS 27.0+ — an OS that is not shipping today.
+- Decision: build the viewer on `AVSampleBufferDisplayLayer` + `CMVideoFormatDescriptionCreateFromH264ParameterSets` + `CMSampleBufferCreateReady`, wrapped in a single narrow adapter so the enqueue path can be swapped for `Receiver` later. One encoded frame per sample buffer, one timing entry, `decodeTimeStamp = .invalid`, strictly increasing PTS in a 1/1,000,000 timescale derived from Android's `presentationTimeUs` and rebased on reconnect. Gate enqueues on `isReadyForMoreMediaData` and coalesce frames rather than queueing without bound. On `.failed`/`requiresFlushToResumeDecoding`, call `flush()` and **request a keyframe** rather than resuming P-frames. Set `preventsCapture = true` so the mirrored phone screen cannot leak into a Mac screen recording. Do not raise the deployment target to silence deprecation warnings for an API that does not exist yet.
+- Alternatives: `VTDecompressionSession` with a `CVPixelBuffer` pool and a custom `CALayer` (rejected: more code, more state, and it is only justified if frames must be inspected or transformed, which no MVP feature needs); `AVPlayer`/`AVPlayerItemVideoOutput` (rejected: it wants a file or HLS-like timeline, not a live push stream); WebRTC's macOS renderer (rejected with ADR-012: it brings the whole media stack).
+- Consequences: the adapter is the only place that touches AVFoundation, so the macOS 27 migration is contained. The keyframe-on-recovery rule becomes part of `NETWORK_PROTOCOL.md`, not an implementation detail. P07 must record which members warn as deprecated on the owner's toolchain (U20) and must measure the layer's added latency rather than assuming it is negligible.
+
+## ADR-027 — Mirroring encodes H.264 from the capture surface and puts length-prefixed AVCC on the wire
+- Date: 2026-11-08
+- Status: Proposed — pending `P01`/`P07`
+- Context: ADR-012 chose TLS/TCP and left codec framing to the prototypes. R-29 and R-30 supply the constraints: MediaCodec can be fed by a `Surface` (so no pixel access and no colour conversion in app code), it emits Annex-B with start-code-prefixed parameter sets, and CoreMedia requires parameter sets as bare NALs plus length-prefixed samples. The formats are incompatible by construction, so one conversion is unavoidable.
+- Decision: encode with `MediaCodec` in surface mode (`COLOR_FormatSurface`, `CONFIGURE_FLAG_ENCODE`, `createInputSurface()` handed to `createVirtualDisplay()`), `video/avc`, `KEY_MAX_B_FRAMES = 0`, `KEY_REPEAT_PREVIOUS_FRAME_AFTER` set so a static screen keeps producing frames, and a bitrate mode chosen from `isBitrateModeSupported()` with **CBR preferred** because the API-31 minimum quality floor applies only to VBR. Choose the encode size from `VideoCapabilities.areSizeAndRateSupported()`, never from the panel resolution. Convert on the **producer**: SPS and PPS travel as bare NALs in `mirror.format`, and every access unit is sent as 4-byte big-endian length + NAL bytes, with emulation-prevention bytes untouched.
+- Alternatives: send Annex-B and convert on the Mac (rejected: moves a framing bug away from the code that produced it); mux to MP4 with `MediaMuxer` (rejected: file-oriented, adds buffering to a live stream); let the encoder pick the profile (rejected: the documented default is device-specific and may be experimental, and a mismatched profile can make the session fail); VBR by default (rejected: the quality floor can exceed the requested bitrate).
+- Consequences: `NETWORK_PROTOCOL.md` must define the media framing precisely, including the keyframe requirement at stream start, after a format change, and after a Mac-side decoder flush. Rotation/resize is a re-encode with a new `mirror.format`, not a scale. P01 must record which resolutions the S24 Ultra encoder accepts (U18) and P08 whether parameter sets change mid-session (U19).
 
 ## ADR-026 — macOS ships outside the Mac App Store as a notarised, sandboxed Developer ID app
 - Date: 2026-11-08
@@ -122,7 +138,7 @@ Research pass of 2026-11-08 produced ADR-010 to ADR-026. Each one cites the regi
 - Context: The MVP needs one authenticated duplex channel carrying control messages and an H.264 stream. WebRTC adds a media stack, ICE/mDNS machinery that interacts with macOS local-network privacy, and a second dependency surface (`R-18`).
 - Decision: Mutually authenticated TLS 1.3 over TCP, length-prefixed binary framing for control and media frames, no STUN/TURN, no plaintext fallback. WebRTC is measured only if `P08` shows the simple transport cannot meet latency/quality targets.
 - Alternatives: WebRTC with local-only candidates (retained as a measured fallback); QUIC (rejected for MVP: extra dependency, no benefit on a reliable LAN).
-- Consequences: Congestion control, keyframe recovery and pacing are our responsibility and must be measured in `P08`. This supersedes ADR-009.
+- Consequences: Congestion control, keyframe recovery and pacing are our responsibility and must be measured in `P08`. This supersedes ADR-009. The codec-specific half of this decision — surface-fed H.264 and length-prefixed AVCC on the media channel — is settled in ADR-027, and the macOS side in ADR-028.
 
 ## ADR-011 — Identity is an app-owned pinned certificate, not a public CA
 - Date: 2026-11-08

@@ -4,7 +4,7 @@
 
 Complete the research work first, including the official-source checks and feasibility prototypes listed in `PROTOTYPE_PLAN.md`. Update the research, decisions, permissions and progress documents. Commit the research package to `development` and present the findings to the owner. Then begin Phase 0 unless a specific unresolved decision blocks progress.
 
-**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-28, ADR-010–ADR-026). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
+**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-31, ADR-010–ADR-028). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
 
 Execute the phases below one at a time. At the end of every phase, commit, report and wait for owner input. Approval to continue authorizes only the next phase.
 
@@ -46,12 +46,13 @@ Exit: text sync passes tests with documented foreground/background limits.
 ## Phase 4 — Screen capture and streaming
 - MediaProjection lifecycle.
 - foreground service.
-- H.264 encode.
+- surface-fed H.264 encode (ADR-027).
+- Annex-B→AVCC framing with SPS/PPS in `mirror.format`.
 - local stream.
-- native Mac decode/viewer.
-- rotation, stop and reconnect.
+- native Mac decode/viewer via `AVSampleBufferDisplayLayer` (ADR-028).
+- rotation, stop, keyframe recovery and reconnect.
 
-Exit: 30-minute stable same-Wi-Fi session; protected content remains protected.
+Exit: 30-minute stable same-Wi-Fi session; protected content remains protected; recovery after a decoder flush is demonstrated with a keyframe request rather than resumed P-frames.
 
 ## Phase 5 — Remote input decision
 - Bluetooth HID and supported APIs experiments.

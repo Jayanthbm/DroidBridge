@@ -90,12 +90,14 @@ The P08 comparison must still record:
 ## 6. Video pipeline candidate
 
 Android:
-MediaProjection → VirtualDisplay → encoder input Surface → MediaCodec H.264 → transport.
+MediaProjection → VirtualDisplay → encoder input Surface → MediaCodec H.264 → **Annex-B→AVCC conversion** → transport.
 
 macOS:
-Transport → VideoToolbox decode or AVSampleBufferDisplayLayer → SwiftUI/AppKit mirroring window.
+Transport → `CMVideoFormatDescription` + `CMSampleBuffer` → `AVSampleBufferDisplayLayer` → SwiftUI/AppKit mirroring window.
 
-Use hardware encoding/decoding where supported. Measure on the actual S24 Ultra and Mac. Handle resolution/rotation changes and projection stop callbacks.
+The encoder is surface-fed, so no pixel or colour-format handling exists in app code (ADR-027). The conversion step is mandatory: MediaCodec emits start-code-prefixed NALs and CoreMedia requires bare parameter sets plus length-prefixed samples (R-30). The Mac viewer uses the display layer's own decoder, wrapped in one adapter so the deprecated enqueue API can be replaced by the macOS 27 `Receiver` later (ADR-028).
+
+Use hardware encoding/decoding where supported. Measure on the actual S24 Ultra and Mac. Handle resolution/rotation changes (a re-encode with new parameter sets, not a scale), keyframe recovery after a receiver-side flush, and projection stop callbacks.
 
 ## 7. Clipboard pipeline
 

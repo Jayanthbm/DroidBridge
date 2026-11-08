@@ -55,11 +55,21 @@ Tests:
 - Rotate and confirm `onCapturedContentResize()` values; record letterboxing.
 - Compare whole-display vs selected-app capture; record what the system UI offers on One UI 9.
 
+Media-pipeline additions (2026-11-08, R-29):
+- Add a surface-fed H.264 encoder: `configure(format, null, null, CONFIGURE_FLAG_ENCODE)` → `createInputSurface()` → passed to `createVirtualDisplay()`. Never allocate pixel buffers; log `CodecCapabilities.colorFormats` and the encoder's accepted output format.
+- Record which sizes the encoder accepts via `VideoCapabilities.areSizeAndRateSupported()`: test 3120×1440, 2560×1440 and 1920×1080 at 30 fps, and record the exact rejection exception where a size fails (U18).
+- Record the profile the encoder selects when `KEY_PROFILE` is unset, then pin `AVCProfileBaseline` and `AVCProfileHigh` and record whether the session is accepted and what the output format reports.
+- Record the bitrate actually produced for a text-heavy screen (settings list, web page with small text) in VBR and in CBR at the same requested bitrate, to see the API-31 quality floor in the numbers rather than in theory.
+- Set `KEY_MAX_B_FRAMES = 0` and confirm the encoder reports no reordering; record whether `KEY_LATENCY` is honoured in the output format.
+- Leave the screen still for 30 s with and without `KEY_REPEAT_PREVIOUS_FRAME_AFTER` and record whether frames keep arriving (a still screen that produces nothing looks like a frozen viewer).
+- In async mode, call `flush()` without `start()` and confirm frame production stops — the documented trap — then fix the restart path.
+
 Acceptance:
 - Normal screen frames captured.
 - System stop is handled.
 - No secure content bypass.
 - No crash/leak after 20 start/stop cycles.
+- The accepted encode size, profile and bitrate mode are recorded as measured facts, not assumptions.
 
 ## P02 — Android 17 local networking: picker vs broad permission
 
@@ -194,15 +204,24 @@ Acceptance:
 ## P07 — Mac video receiver
 
 Goal:
-- Display a generated test H.264 stream in a native Mac window.
+- Display a generated test H.264 stream in a native Mac window, and prove the framing and timing rules before any Android code is involved (R-30, R-31).
 
 Tests:
-- VideoToolbox decode or `AVSampleBufferDisplayLayer`.
-- rotation/resolution changes, aspect-fit letterboxing.
-- dropped frames, stream stop/restart, keyframe recovery after a synthetic loss.
+- Build `CMVideoFormatDescriptionCreateFromH264ParameterSets` from SPS + PPS as bare NALs (at least 2 parameter sets), then `CMSampleBufferCreateReady` per frame with 4-byte length-prefixed NALs, and enqueue on `AVSampleBufferDisplayLayer`.
+- Byte-level conversion test: feed a known Annex-B stream, convert start codes to 4-byte lengths, and assert the resulting samples decode — including a NAL that contains `0x00 0x00 0x03` emulation-prevention bytes, to prove they are preserved.
+- Assert the two documented failure modes explicitly: passing parameter sets *with* start codes must fail or produce a broken picture, and a wrong `nalUnitHeaderLength` must fail. Recording these makes the conversion rule unambiguous for the implementer.
+- Timing: strictly increasing PTS in a 1/1,000,000 timescale from `presentationTimeUs`; assert that duplicate PTS is rejected by the code path rather than silently enqueued. Include one deliberately non-monotonic PTS to see what the layer does.
+- Backpressure: stop draining and confirm `isReadyForMoreMediaData` goes false, then confirm the viewer coalesces frames instead of growing a queue.
+- Recovery: post a corrupt sample or background the app to force `.failed` / `requiresFlushToResumeDecoding`, then `flush()`, request a keyframe, and confirm display resumes. Record the exact status transitions observed.
+- Deprecation audit (U20): build with warnings-as-notes and record every deprecated member the viewer touches, plus whether `AVSampleBufferVideoRenderer.Receiver` is available on the installed SDK. Do not change the deployment target to silence them.
+- Measure added latency: compare capture timestamp to on-screen timestamp (high-speed camera or a burned-in millisecond counter) so the layer's contribution is a number, not a guess.
+- rotation/resolution changes, aspect-fit letterboxing, dropped frames, stream stop/restart.
 
 Acceptance:
 - stable native viewer, independent of Android capture.
+- The conversion and timing rules are proven, not assumed, including both negative cases.
+- A recorded latency figure for the display path and a recorded deprecation list.
+- `preventsCapture = true` verified: a Mac screen recording does not contain the mirrored content.
 
 ## P08 — End-to-end mirroring stream
 
@@ -216,11 +235,18 @@ Compare (measurement gate retained from ADR-009):
 Measure:
 - startup time, end-to-end latency, frame rate, bitrate, CPU/GPU, battery/thermal, reconnect time.
 
+Additional media checks (R-29, R-30):
+- Rotate the device mid-session and record whether `onCapturedContentResize()` leads to a re-encode: new `mirror.format`, fresh keyframe, and whether the Mac swaps its format description without a visible stall or a stuck black frame.
+- Record whether the encoder emits new SPS/PPS after rotation or resize, and whether they are identical to the stream-start ones (U19). This decides whether `mirror.format` is a stream-start message or a recurring one.
+- Kill the Mac viewer's decoder (background it or feed a corrupt sample), then confirm recovery works over the real transport: flush, request keyframe, resume — with no stale P-frames displayed.
+- Record bitrate and frame rate for a static screen with `KEY_REPEAT_PREVIOUS_FRAME_AFTER` and without it, so "idle" cost is a measured number.
+
 Acceptance:
 - stable 30-minute session on same Wi-Fi with USB disconnected.
 - session stops when MediaProjection stops (U10: include a locked-screen and screen-off run).
 - no protected content bypass.
 - record actual numbers; do not declare targets met without data.
+- recovery after a decoder flush is demonstrated end to end, including the keyframe request.
 
 ## P09 — Remote input feasibility (expected NO-GO confirmation)
 

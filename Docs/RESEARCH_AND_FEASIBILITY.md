@@ -40,6 +40,7 @@
 | Automatic two-way background clipboard | **NO-GO** (as a default) | Android focus restriction plus macOS pasteboard access prompt; manual/foreground baseline only |
 | macOS pasteboard monitoring | **CONDITIONAL** | macOS 15.4+ `NSPasteboard.accessBehavior` can prompt or deny programmatic reads (§2 R-13) |
 | Local screen streaming to a native Mac window | **GO** | MediaProjection → MediaCodec → local transport → VideoToolbox/AVSampleBufferDisplayLayer |
+| H.264 pipeline in practice (encode → AVCC → display) | **GO**, prototypes required | Surface encoding removes colour conversion from our code entirely; MediaCodec emits Annex-B so one start-code→length-prefix conversion is mandatory for CoreMedia; the display layer decodes without a VT session, but its enqueue API is deprecated in favour of a macOS 27 replacement (§2 R-29–R-31) |
 | Protected content stays protected (`FLAG_SECURE`, DRM) | **GO** (as a guarantee of *non*-capture) | Capture returns blank/unavailable; Android 15+ screenshare protections also redact notifications and password fields (§2 R-08) |
 | Arbitrary remote touch/keyboard into other Android apps | **NO-GO** under current constraints | No public injection API; Knox requires signature permission plus device-owner/profile-owner or authorized scope; Bluetooth HID API direction is reversed (§2 R-14..R-16) |
 | Mac acting as a Bluetooth HID peripheral for Android | **NO-GO** (pending contrary prototype evidence) | CoreBluetooth refuses to publish the HID-over-GATT service on macOS; classic HID transport is owned by `bluetoothd` (§2 R-14) |
@@ -514,6 +515,73 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 
 ---
 
+### R-29 — Encoding is surface-fed, profile-sensitive, and governed by a hidden quality floor
+
+- **Checked:** 2026-11-08
+- **Target:** Android 14+ (API 34+) through Android 17 / API 37; AVC via `MediaCodec`
+- **Sources (official):**
+  - https://developer.android.com/reference/android/media/MediaCodec
+  - https://developer.android.com/reference/android/media/MediaFormat
+  - https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities
+  - https://developer.android.com/reference/android/media/MediaCodecInfo.VideoCapabilities
+  - https://developer.android.com/reference/android/media/projection/MediaProjection.Callback
+  - https://developer.android.com/media/grow/media-projection
+- **Finding (surface mode removes the colour-format problem from our code):** the documented pipeline is `configure(format, null, null, CONFIGURE_FLAG_ENCODE)` → `createInputSurface()` → hand that surface to `createVirtualDisplay()`. MediaCodec states that "when using an input Surface, there are no accessible input buffers, as buffers are automatically passed from the input surface to the codec". DroidBridge therefore never allocates pixel buffers and never converts YUV: the colour format is the opaque hardware format behind the surface. `COLOR_FormatSurface` is the value Google's own surface-encoding sample sets in `KEY_COLOR_FORMAT`, and the chosen codec must advertise it in `CodecCapabilities.colorFormats` — a query, not a guess.
+- **Finding (rate control):** `KEY_BIT_RATE`, `KEY_FRAME_RATE` and `KEY_I_FRAME_INTERVAL` (seconds between key frames) are the primary knobs; `KEY_BITRATE_MODE` selects VBR/CBR/CQ where `EncoderCapabilities.isBitrateModeSupported()` says so.
+- **Finding (undocumented-looking but real constraint):** from API 31 "Android's Video MediaCodecs enforce a minimum quality floor… applied when the codec is in Variable Bitrate (VBR) mode; it is not applied when the codec is in Constant Bitrate (CBR) mode." For text-heavy screen content this makes CBR the predictable choice: VBR can be pushed *above* the requested average by the floor, which would silently blow a bitrate budget measured during prototyping.
+- **Finding (profile and level, both easy to get wrong):** setting `KEY_PROFILE` is recommended, and if it is omitted "the encoder will choose a profile… device specific and may not be deterministic (could be ad hoc or even experimental)", and "the encoder may reject the encoding session" if the profile does not suit the input. Conversely `KEY_LEVEL` "cannot be used to constrain the encoder's output to a maximum encoding level" — encoders may target a different level if the parameters demand it. So level is a hint, never a cap, and the honest way to choose a resolution is `VideoCapabilities.areSizeAndRateSupported()` against the actual encoder.
+- **Finding (latency and B-frames):** `KEY_LATENCY` requests encoder latency in frames; `KEY_MAX_B_FRAMES` (API 29) defaults to 0, meaning no B-frames, which is what keeps the stream in decode order and makes the Mac's timestamp handling trivial (R-31). `KEY_REPEAT_PREVIOUS_FRAME_AFTER` (microseconds, surface mode only) re-submits the last frame when nothing new arrives — without it a still screen can stop producing frames, and the Mac viewer looks frozen while the session is healthy.
+- **Finding (async-mode trap):** with `setCallback()` set before `configure()`, `flush()` requires a following `start()` to resume receiving input, "even if an input surface was created". A naive restart path that flushes without restarting simply stops producing frames.
+- **Finding (rotation and resize are a re-encode, not a scale):** `MediaProjection.Callback.onCapturedContentResize(width, height)` (API 34) fires on rotation or when the captured region changes; the documented response is to `virtualDisplay.resize(...)` **and** resize the output surface. With a surface-fed encoder that means recreating the encoder/surface and therefore a new format plus a fresh keyframe on the wire — it cannot be handled by stretching the old stream.
+- **Decision:** **GO**.
+- **Prototype:** P01 (encoder acceptance at panel resolution), P07/P08 (bitrate and quality measurement).
+
+---
+
+### R-30 — MediaCodec emits Annex-B; CoreMedia needs AVCC, so one conversion is mandatory
+
+- **Checked:** 2026-11-08
+- **Target:** Android AVC encoder output → CoreMedia on macOS 10.9+
+- **Sources (official):**
+  - https://developer.android.com/reference/android/media/MediaCodec
+  - https://developer.apple.com/documentation/coremedia/cmvideoformatdescriptioncreatefromh264parametersets(allocator:parametersetcount:parametersetpointers:parametersetsizes:nalunitheaderlength:formatdescriptionout:)
+  - https://developer.apple.com/videos/play/wwdc2014/513/
+- **Finding (Android side):** Android documents the H.264 codec-specific data as `csd-0` = SPS and `csd-1` = PPS, and states that "each parameter set and the codec-specific-data sections… must start with a start code of `\x00\x00\x00\x01`". Encoders "create and return the codec specific data before any valid output buffer in output buffers marked with the `BUFFER_FLAG_CODEC_CONFIG`" flag, and for H.264 the buffers "can also concatenate all codec-specific data and submit it as a single codec-config buffer". So the encoder's native output is **Annex-B**: start-code-prefixed NAL units.
+- **Finding (Apple side, the mismatch):** `CMVideoFormatDescriptionCreateFromH264ParameterSets` takes `parameterSetCount` that "must be at least 2", pointers to parameter sets that "can come from raw NAL units and must have any emulation prevention bytes needed", accepts only NAL types 7 (SPS), 8 (PPS) and 13 (SPS extension), and requires at least one SPS and one PPS. `nalUnitHeaderLength` is "size, in bytes, of the NALUnitLength field in an AVC video sample", and must be 1, 2 or 4. In other words the parameter sets are **bare NALs with no start code and no length prefix**, while every subsequent sample must be **length-prefixed** with the declared field size.
+- **Consequence:** the formats are incompatible by construction, so exactly one conversion step is required. It belongs on the **producer** (Android), so the wire format has a single definition and a framing error is caught at its source:
+  - At stream start (and after any format change), send SPS and PPS as raw NALs in a control message (`mirror.format`), not in-band.
+  - For every access unit, emit each NAL as a 4-byte big-endian length followed by the NAL bytes, replacing the Annex-B start code. Four bytes is the conventional choice and is a value Apple accepts.
+  - Leave emulation-prevention bytes (`0x00 0x00 0x03`) exactly as the encoder produced them. The conversion replaces a start code with a length; it is not a byte-level rewrite.
+  - Split on start codes (`00 00 01` / `00 00 00 01`), never on a scan for zero bytes inside slice data.
+- **Finding (timestamps):** the only timestamp available is `MediaCodec.BufferInfo.presentationTimeUs` (microseconds). CoreMedia wants `CMTime`; a `timescale` of 1,000,000 carries microseconds exactly. `CMSampleBufferCreate` documents that for in-order samples a single timing entry with `decodeTimeStamp = kCMTimeInvalid` is correct, and that "behavior is undefined if samples… have the same `presentationTimeStamp`" — so PTS must be strictly increasing, and a reconnect must rebase timestamps rather than resume a stale producer timeline (R-31).
+- **Alternatives rejected:** sending Annex-B and building the format description on the Mac (the same work happens later, away from the code that produced the framing, and every framing bug becomes a Mac-side mystery); using a container (`MediaMuxer`/MP4) as the wire format (adds muxing, buffering and a file-oriented format to a live stream).
+- **Decision:** **GO** — AVCC with a 4-byte length prefix on the media channel, SPS/PPS in a control message.
+- **Prototype:** P07 (byte-level conversion test with a known stream), P08 (end-to-end).
+
+---
+
+### R-31 — The Mac renders with `AVSampleBufferDisplayLayer`, whose API is mid-transition
+
+- **Checked:** 2026-11-08
+- **Target:** macOS 10.8+ (layer), macOS 14+ (`sampleBufferRenderer`), macOS 27+ (`Receiver`)
+- **Sources (official):**
+  - https://developer.apple.com/documentation/avfoundation/avsamplebufferdisplaylayer
+  - https://developer.apple.com/documentation/avfoundation/avsamplebuffervideorenderer
+  - https://developer.apple.com/documentation/avfoundation/avsamplebuffervideorenderer/receiver
+  - https://developer.apple.com/documentation/avfoundation/avsamplebufferdisplaylayer/requiresflushtoresumedecoding
+  - https://developer.apple.com/documentation/coremedia/cmsamplebuffercreate(allocator:databuffer:dataready:makedatareadycallback:refcon:formatdescription:samplecount:sampletimingentrycount:sampletimingarray:samplesizeentrycount:samplesizearray:samplebufferout:)
+- **Finding (no decoder session needed):** `AVSampleBufferDisplayLayer` "displays compressed or uncompressed video frames", so it performs H.264 decoding itself. View-only mirroring needs no `VTDecompressionSession`, no `CVPixelBuffer` handling and no colour-space work on the Mac: format description → sample buffer → enqueue.
+- **Finding (the API is being replaced, and the replacement is not shipping):** in the current SDK the layer's `enqueue(_:)`, `isReadyForMoreMediaData`, `requestMediaDataWhenReady(on:using:)`, `requiresFlushToResumeDecoding`, `status`, `error` and `flush()` — and the whole `AVQueuedSampleBufferRendering` protocol — are marked deprecated, and the replacement is `AVSampleBufferVideoRenderer.Receiver`, documented as **macOS 27.0+**. On macOS 26 and earlier the deprecated members are the only available path. The rule for this project: use the available API, isolate it in one small adapter, and do **not** raise the deployment target to silence a deprecation warning. Which warnings actually appear must be recorded on the owner's Xcode (U20).
+- **Finding (backpressure):** `isReadyForMoreMediaData` reports queue occupancy. Apple notes it "is safe to call `enqueue(_:)` when `isReadyForMoreMediaData` is false, but enqueuing more sample buffers than are required for timely rendering… is highly discouraged". So the receiver gates on readiness and drops or coalesces frames instead of unbounded queueing — relevant when the Mac is resizing a window or busy.
+- **Finding (documented recovery path):** when the decoder may not run (backgrounding, GPU reset), `status` becomes `.failed` and `requiresFlushToResumeDecoding` becomes `true`; recovery requires calling `flush()` to return the status to `.unknown` before enqueuing again. Because the decoder has discarded state, the Mac must **request a keyframe** from Android rather than resuming with P-frames — this is a protocol requirement, not an implementation detail.
+- **Finding (useful security lever):** the layer exposes `preventsCapture`, which keeps the mirror window out of screen capture. Setting it true means the mirrored phone screen cannot leak into a screen recording made on the Mac.
+- **Finding (failure signal):** decode failures surface as the `AVSampleBufferDisplayLayerFailedToDecode` notification with an error payload (and `didFailToDecodeNotification` on the renderer). These must be logged without frame content and mapped to a viewer state.
+- **Finding (timing):** one encoded frame per `CMSampleBuffer`, one timing entry, a duration of `1/fps` (or invalid), `decodeTimeStamp = .invalid`, and strictly increasing PTS in a 1/1,000,000 timescale taken from Android's `presentationTimeUs`. Duplicate or non-monotonic PTS is documented as undefined behaviour, so on reconnect the Mac rebases to its own clock.
+- **Decision:** **GO**, **CONDITIONAL** on the deprecation churn: one adapter over the layer, a keyframe-on-recovery rule, and P07 asserting the behaviour on the owner's actual Xcode/macOS.
+- **Prototype:** P07.
+
+---
+
 ## 3. Uncertain areas that require prototypes
 
 Nothing below has been tested. Every one is a gate before the corresponding build phase.
@@ -537,6 +605,9 @@ Nothing below has been tested. Every one is a gate before the corresponding buil
 | U15 | Will a `connectedDevice` declaration pass review when the peer is chosen through the Android 17 system NSD picker rather than an in-app device list? | Decides whether the picker-first design costs a policy round-trip at submission | Play submission (Phase 9) |
 | U16 | Does the picker-first path require declaring `ACCESS_LOCAL_NETWORK` in the manifest at all, given Play ties its declaration to *using* the permission? | Confirms that the chosen design avoids the 2027 declaration | P02 |
 | U17 | After a Developer ID certificate renewal (or a team change), does the app still read its data-protection-keychain identity, or must the identity be regenerated and the pair re-created? | A keychain that fails closed after re-signing would silently force re-pairing for every user | P15 |
+| U18 | Which encode size does the S24 Ultra's hardware encoder actually accept at 30 fps for screen content — 3120×1440, 2560×1440 or 1920×1080 — and which bitrate keeps text legible? | Decides the default quality profile and whether the panel resolution is usable at all | P01, P07 |
+| U19 | Does the encoder keep one SPS/PPS pair for a whole session, or emit new parameter sets after rotation/resize, forcing a mid-stream format-description change? | Determines whether `mirror.format` is a stream-start message or a recurring one | P08 |
+| U20 | Which sample-buffer display members compile without deprecation warnings on the owner's Xcode, is `Receiver` (macOS 27+) available, and what end-to-end latency does the layer add? | The API path is being replaced; building on the wrong one either fails to compile or bakes in a soon-dead call | P07 |
 
 Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 
@@ -556,6 +627,9 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - Added: the four-part Play Console FGS declaration, including the mandatory demo video, and the use cases that `connectedDevice` and `mediaProjection` map to — plus the review risk the system NSD picker creates for the `connectedDevice` video (R-26).
 - Added: the macOS release chain — Developer ID, hardened runtime, secure timestamp, inside-out signing, `notarytool`/`stapler`, the `get-task-allow` rejection, and the fact that only the Account Holder can issue a Developer ID certificate (R-27).
 - Added: the App Sandbox entitlement set for a listening Mac app, the unrestricted-versus-restricted entitlement rule, the keychain fork between the legacy and data-protection keychains, and TN3179's finding that accepting inbound TCP does not itself require local network access (R-28, refining R-10).
+- Added: encoder configuration constraints — surface input, the API-31 minimum quality floor that applies in VBR but not CBR, profile rejection, `KEY_LEVEL` being a hint rather than a cap, B-frames defaulting to zero, and the async-mode `flush()`/`start()` trap (R-29).
+- Added: the Annex-B→AVCC mismatch between MediaCodec's codec-specific data and `CMVideoFormatDescriptionCreateFromH264ParameterSets`, and the exact conversion rule that follows from it (R-30).
+- Added: the macOS display path including the documented deprecation of the layer's enqueue API in favour of a macOS 27 replacement, the flush-to-recover rule and the keyframe consequence, and `preventsCapture` (R-31).
 - Confirmed unchanged: MediaProjection consent/FGS rules (R-04, R-05), `FLAG_SECURE` (R-08), clipboard focus gate (R-09), macOS local-network privacy (R-10).
 
 ## 5. Negative findings worth repeating
@@ -603,6 +677,8 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Telecom framework (`TelecomManager`, `ConnectionService`) — https://developer.android.com/reference/android/telecom/package-summary
 - `RoleManager` — https://developer.android.com/reference/android/app/role/RoleManager
 - `WindowManager.LayoutParams` (`FLAG_SECURE`) — https://developer.android.com/reference/android/view/WindowManager.LayoutParams
+- `MediaProjection.Callback` (`onCapturedContentResize`, `onCapturedContentVisibilityChanged`) — https://developer.android.com/reference/android/media/projection/MediaProjection.Callback
+- `MediaCodecInfo.VideoCapabilities` — https://developer.android.com/reference/android/media/MediaCodecInfo.VideoCapabilities
 - Play target API level requirements (Play Console Help) — https://support.google.com/googleplay/android-developer/answer/11926878
 - Meet Google Play's target API level requirement — https://developer.android.com/google/play/requirements/target-sdk
 - Google Play policy timeline — https://developer.android.com/distribute/play-policies
@@ -639,6 +715,12 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - `kSecUseDataProtectionKeychain` — https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain
 - Distribute outside the Mac App Store — https://help.apple.com/xcode/mac/current/en.lproj/dev033e997ca.html
 - Safely open apps on your Mac (Gatekeeper "Open Anyway") — https://support.apple.com/en-us/102445
+- `AVSampleBufferDisplayLayer` — https://developer.apple.com/documentation/avfoundation/avsamplebufferdisplaylayer
+- `AVSampleBufferVideoRenderer` — https://developer.apple.com/documentation/avfoundation/avsamplebuffervideorenderer
+- `AVSampleBufferVideoRenderer.Receiver` (macOS 27+) — https://developer.apple.com/documentation/avfoundation/avsamplebuffervideorenderer/receiver
+- `CMSampleBufferCreate` (timing and sample-size rules) — https://developer.apple.com/documentation/coremedia/cmsamplebuffercreate(allocator:databuffer:dataready:makedatareadycallback:refcon:formatdescription:samplecount:sampletimingentrycount:sampletimingarray:samplesizeentrycount:samplesizearray:samplebufferout:)
+- `CMSampleTimingInfo` — https://developer.apple.com/documentation/coremedia/cmsampletiminginfo
+- WWDC14 session 513, Direct Access to Video Encoding and Decoding (Annex-B → AVCC conversion) — https://developer.apple.com/videos/play/wwdc2014/513/
 
 **Samsung**
 
