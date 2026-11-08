@@ -22,7 +22,13 @@ All notable project changes are recorded here.
   surface-fed H.264 encoder, an encoder capability probe, and 8 framing tests. Separate
   `applicationId`, never depended on by `:app`.
 
+### Added — Phase 1, P02 (2026-11-09)
+- macOS Bonjour advertiser: `NWListener` publishing `_droidbridge-dev._tcp` with a versioned TXT
+  record, an echo handler, and a live event view. The Mac half of the ADR-010 direction.
+
 ### Fixed
+- The advertiser model is owned by the app rather than a tab view; SwiftUI builds `TabView`
+  content lazily, so it was never constructed and `--advertise-on-launch` did nothing.
 - `shared/protocol` now targets Java 17 to match its Android consumer; the Java 21 toolchain made
   every Android unit test fail with `UnsupportedClassVersionError` (ADR-032).
 - Release macOS builds no longer carry `com.apple.security.get-task-allow` (ADR-031).

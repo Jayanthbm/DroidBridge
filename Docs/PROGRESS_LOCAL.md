@@ -165,3 +165,29 @@ Local Phase 0 is complete and pushed. The cloud agent may now review the Phase 0
 the build configuration, the manifest/entitlement audit in `PERMISSIONS_MATRIX.md` §6, and the two
 Phase 0 reports — before local work continues into P01. Cloud must not modify app code or claim
 prototype/device results.
+
+### P02 — Android 17 local networking (blocked, 2026-11-09)
+
+Built the Mac half of Path A step 1: `NWListener` advertising `_droidbridge-dev._tcp` with a
+`v`/`sid` TXT record, an echo handler, and a UI showing live connection events.
+
+**Verified:** 10 macOS tests pass; TCP duplex echo over loopback is byte-exact; the listener accepts
+an inbound connection from the phone (192.168.31.64) and binds all interfaces; the phone reaches
+the Mac (0% ping loss).
+
+**Blocked, two independent reasons:**
+1. The picker path needs `android.net.nsd.DiscoveryRequest`, which exists only in the API 37
+   platform (confirmed against the installed SDK, not documentation). The OnePlus is API 31, so
+   the prototype cannot run on it at all. U1, U2 and U16 are unanswered.
+2. Bonjour does not publish from this host. The listener reports `.ready` but `dns-sd -B` never
+   lists it, and an inbound connection from the phone times out before completing. A minimal
+   non-sandboxed control binary fails the same way, so it is not the app's code or the sandbox.
+   The macOS Local Network permission was never requested (no `kTCCServiceLocalNetwork` in `tccd`)
+   and no prompt appeared. Little Snitch 6.2.3 and an Urban VPN configuration are present and may
+   also interfere. Both are owner decisions.
+
+**Defect found:** SwiftUI builds `TabView` content lazily, so a `@StateObject` inside a tab's view
+is not created until the tab is selected — `--advertise-on-launch` silently did nothing. The model
+is now owned by the `App`.
+
+Report: `Docs/prototypes/P02-local-networking.md`.
