@@ -48,6 +48,9 @@
 | Call audio / cellular call capture | **NO-GO** | Playback capture cannot capture `USAGE_VOICE_COMMUNICATION`; Telecom roles are out of scope |
 | Call notifications / answer-reject | **NO-GO** for MVP | Requires Telecom integration/role or a notification listener, both outside the approved permission set |
 | Bluetooth as optional supplement | **CONDITIONAL**, non-core | Must never gate Wi-Fi features; HID direction problem unresolved |
+| Android release on Google Play | **GO** with defined release work | API 36 is the floor since 2026-08-31, so `targetSdk 37` is above it, not below; two FGS types each need a description, impact statement, use-case choice and a demo video; `ACCESS_LOCAL_NETWORK` would additionally need a Play declaration from 2027-08-25 (§2 R-25, R-26) |
+| macOS distribution to the owner | **CONDITIONAL** | Direct distribution requires a paid Apple Developer Program membership, a Developer ID certificate, hardened runtime, secure timestamp and notarisation; unnotarised apps are blocked by Gatekeeper with only an "Open Anyway" override (§2 R-27) |
+| macOS App Sandbox with a network listener | **GO** | `app-sandbox` + `network.client` + `network.server`; both network entitlements are needed because Bonjour advertising is UDP multicast, and none of them requires a provisioning profile (§2 R-28) |
 
 **Recommended MVP scope after this research:** pairing + LAN transport, Mac→Android clipboard, Android→Mac manual clipboard, view-only screen mirroring with honest protected-content and notification-redaction messaging. Remote input, audio, calls and Bluetooth HID stay research tracks.
 
@@ -203,6 +206,7 @@ Each entry follows the required evidence format. "Checked" is the date the cited
   - https://developer.apple.com/documentation/bundleresources/information-property-list/nsbonjourservices
 - **Finding:** the first local-network operation from an app triggers a system alert; the decision is recorded per user account and can be changed later in System Settings → Privacy & Security → Local Network. Registering, browsing and resolving Bonjour services all require local network access. `NSLocalNetworkUsageDescription` is required (direct unicast/multicast included) and `NSBonjourServices` must list the browsed/advertised service types. The state can be *undetermined* (operation denied until the user answers), so the app must handle denials and offer a path back.
 - **Implication for the R-02 direction inversion:** the Mac is now the advertiser, so the Mac app must declare `NSBonjourServices` for its own service type and handle the local-network prompt before it can be discovered.
+- **Refinement (2026-11-08, distribution pass):** TN3179's operation table distinguishes the two operations this design mixes. "Listening for and accepting incoming TCP connections" requires **no** local-network access; "All Bonjour operations require local network access" (register, browse, resolve). So the Mac's prompt is triggered by **advertising**, and the accepted Android connection does not depend on the privilege state. This also means a user who revokes the privilege breaks discovery while an already-established session may keep running — the app must re-check, not infer (R-28).
 - **Decision:** **GO** with explicit denied-state UX.
 - **Prototype:** P02, P03, P11.
 
@@ -424,6 +428,92 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 
 ---
 
+### R-25 — Play's target-API floor is API 36, so API 37 is a choice; the local-network permission is itself now a declared permission
+
+- **Checked:** 2026-11-08
+- **Target:** Google Play submission rules as they stand on 2026-11-08; ADR-021 (`targetSdk = 37`)
+- **Sources (official):**
+  - https://support.google.com/googleplay/android-developer/answer/11926878
+  - https://developer.android.com/google/play/requirements/target-sdk
+  - https://developer.android.com/distribute/play-policies
+  - https://support.google.com/googleplay/android-developer/answer/16558241
+  - https://developer.android.com/guide/app-bundle
+- **Finding (target API):** from **31 August 2026**, new apps and app updates must target Android 16 (**API 36**) or higher to be submitted; existing apps must target API 35+ to stay available to new users on devices running an OS above the app's target level. A one-off extension to 2026-11-01 existed and has passed, so the floor is in force today. The published table stops at API 36: **no date has been announced for API 37**, so by the annual pattern 37 would become the floor in 2027, but that is an expectation, not a published fact.
+- **Consequence for ADR-021:** targeting 37 is *allowed* (it is above the minimum) but is **not required by Play today**. The cost of 37 is Android 17's enforced local-network model (R-01, R-02). That is still the right call — it avoids retrofitting a mandatory migration — but the register must not claim Play forced it.
+- **Finding (new policy risk):** `ACCESS_LOCAL_NETWORK` is now a **restricted** permission. From **25 August 2027**, apps targeting API 37+ "must submit a Play Console declaration to use this permission", and it is "restricted to apps that need it for core functionality when device pickers are insufficient"; the core functionality must also be documented in the store description. The picker-first design in ADR-010 therefore avoids a **policy deliverable** as well as a runtime prompt. If P02 forces the runtime permission, the declaration becomes a release gate alongside the FGS declarations in R-26.
+- **Finding (packaging):** new apps must be published as **Android App Bundles** (since August 2021), and **Play App Signing** is required for new apps — the developer holds an upload key and Google signs the generated APKs. Release signing work in Phase 9 must be planned around that split, not around a single self-managed APK key.
+- **Related, for context only:** Android developer verification took effect 2026-09-30 for participating stores in Brazil, Indonesia, Singapore and Thailand; India is not listed in that entry yet, and Play-registered apps were verified automatically. It affects sideloading rather than a Play listing, so it changes nothing here.
+- **Decision:** **CONDITIONAL** — target 37 stands (ADR-021); picker-first is preferred so that no permission declaration is needed; accepting the runtime permission would add a Play declaration, store-description justification and review risk.
+- **Prototype:** P02 decides whether the declaration is needed at all (U16).
+
+---
+
+### R-26 — Each foreground-service type is a Play Console deliverable with its own demo video
+
+- **Checked:** 2026-11-08
+- **Target:** Android 14+ FGS types; Play Console App content declaration
+- **Sources (official):**
+  - https://support.google.com/googleplay/android-developer/answer/13392821
+  - https://developer.android.com/develop/background-work/services/fgs/service-types
+  - https://developer.android.com/about/versions/14/changes/fgs-types-required
+  - https://support.google.com/googleplay/android-developer/answer/13315670
+  - https://developer.android.com/distribute/play-policies
+- **Finding:** for **each** declared type Play requires (1) a description of the app functionality, (2) the user impact if the task is deferred or interrupted, (3) **a link to a video demonstrating the feature**, and (4) a use case chosen from a preset list. The declaration lives on the App content page, and the manifest declaration must match it: Play enforces the FGS policy through the Device and Network Abuse rules, so a used-but-undeclared type and a declared-but-unused type are both policy risks.
+- **Finding (`connectedDevice`):** the matching use case is **"Continuous Data Transfer to an External Device"**, and the video "must show the user pairing and connecting to an external device directly inside the app… The video must show the in-app setup and subsequent device interaction, **not system settings**."
+- **Finding (`mediaProjection`):** the matching use case is **"Media or Content Projection and streaming or recording with MediaProjection API"**; the video must show the user initiating capture or streaming of the screen to an external display. That is exactly DroidBridge's mirroring flow.
+- **Review risk created by ADR-010:** the Android app's peer choice happens in the **system NSD picker**, not an in-app device list. The picker is launched from an in-app flow and is not *Settings*, so the requirement is satisfied in spirit, but a reviewer comparing the video against "in-app setup" is a real risk. Mitigation: the demo video must show the app's own UI → picker → an in-app "connected" state → the clipboard/mirroring effect, and the declaration description must state that the peer is chosen through the Android 17 system service picker as the least-privilege alternative to `ACCESS_LOCAL_NETWORK`.
+- **Finding (list churn):** Play's use-case list changes — geofencing stops being an approved FGS use case on 2027-01-27. The declaration is therefore a *maintained* artefact, not a one-off form.
+- **Decision:** **GO** — both types map to documented use cases, so the declaration is release work rather than a feasibility blocker. The `connectedDevice` review risk is tracked as U15.
+- **Prototype:** none; verified by the Phase 9 submission.
+
+---
+
+### R-27 — macOS distribution outside the App Store requires a paid membership, hardened runtime and notarisation
+
+- **Checked:** 2026-11-08
+- **Target:** macOS app, direct distribution (Developer ID)
+- **Sources (official):**
+  - https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution
+  - https://developer.apple.com/documentation/xcode/creating-distribution-signed-code-for-the-mac
+  - https://developer.apple.com/documentation/security/customizing-the-notarization-workflow
+  - https://developer.apple.com/documentation/security/resolving-common-notarization-issues
+  - https://developer.apple.com/documentation/security/hardened-runtime
+  - https://help.apple.com/xcode/mac/current/en.lproj/dev033e997ca.html
+  - https://support.apple.com/en-us/102445
+- **Finding (requirement):** beginning with macOS 10.15, software built after 2019-06-01 and distributed with Developer ID **must be notarised** to run. Apple's notary service requires: a valid signature on every executable, a **Developer ID** certificate, the **Hardened Runtime** enabled, and a **secure timestamp**. It also rejects `com.apple.security.get-task-allow` set to true, requires entitlements as ASCII XML with no BOM or comments, and requires linking against the macOS 10.9+ SDK.
+- **Finding (signing mechanics):** sign **inside out** — innermost code first. Apple explicitly says **do not pass `--deep` when signing**: it applies one set of options to every item (so an app's entitlements leak onto a nested tool) and it only signs code in locations it expects. Never sign with `sudo`; never attach entitlements to frameworks or libraries.
+- **Finding (workflow):** `xcrun notarytool submit <zip|dmg|pkg> --keychain-profile <profile> --wait`, then `xcrun stapler staple`. Stapling lets Gatekeeper validate without contacting Apple, which matters for an offline first launch. `notarytool` does not accept a bare `.app`.
+- **Finding (failure path):** an app that is unnotarised or from an unidentified developer is blocked with only "Done" and "Move to Trash" buttons. The supported override is **System Settings → Privacy & Security → Open Anyway**, offered for about an hour after the blocked launch. The long-standing Control-click → Open bypass exists only in the older (macOS 11) user guide; current Apple instructions describe the Settings route only. "Tell the user to right-click Open" is therefore not an acceptable distribution plan.
+- **Finding (who can sign):** only the **Account Holder** of an Apple Developer Program (or Enterprise) membership can create Developer ID certificates. DroidBridge therefore depends on a **paid membership** and on the owner either holding that role or having the Account Holder issue the certificate, plus notary credentials (an app-specific password or an App Store Connect API key) for `notarytool`.
+- **Finding (identity stability):** TN3179 notes that local-network privacy tracks a program by its **code signature**, and recommends signing macOS programs with an Apple-issued identity so that the privilege state tracks reliably. Ad-hoc ("Sign to Run Locally") builds are fine for development but can lose the recorded TCC decision when the signature changes — expect re-prompts, and do not read them as a product bug (P15).
+- **Decision:** **GO** for direct distribution, with a hard external dependency recorded: no notarisation without the paid program. This is a release-plan prerequisite, not a blocker on development. Mac App Store distribution stays a deferred option — it requires the same sandbox (R-28) but adds review and does not need notarisation.
+- **Prototype:** P15.
+
+---
+
+### R-28 — A sandboxed listening Mac app needs both network entitlements; only restricted entitlements need a profile
+
+- **Checked:** 2026-11-08
+- **Target:** macOS App Sandbox, Hardened Runtime, Keychain, Local Network privacy
+- **Sources (official):**
+  - https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.network.server
+  - https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.network.client
+  - https://developer.apple.com/documentation/xcode/configuring-the-macos-app-sandbox
+  - https://developer.apple.com/documentation/xcode/creating-distribution-signed-code-for-the-mac
+  - https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy
+  - https://developer.apple.com/documentation/technotes/tn3137-on-mac-keychains
+  - https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain
+- **Finding (network):** `com.apple.security.network.server` permits "listening for incoming network connections"; `com.apple.security.network.client` permits outgoing ones. For **TCP** the entitlements restrict only the *initiation* of a connection, not the flow of data — so one accepted socket is full duplex for clipboard and video. For **UDP** they restrict initiation *and* data flow: "an app with only the server entitlement enabled can receive, but not send".
+- **Consequence:** Bonjour/mDNS is UDP multicast, and the advertiser must **send** responses as well as receive queries. Under ADR-010 the Mac advertises, so it must claim `app-sandbox` **plus both** network entitlements. Declaring only `network.server` would look correct for the TCP listener and still break discovery.
+- **Finding (profiles):** Apple documents which entitlements may be claimed without a provisioning profile: `get-task-allow`, `application-groups`, **entitlements that enable and configure the App Sandbox**, and **entitlements that configure the Hardened Runtime**. Everything else is restricted — for example `keychain-access-groups`, which needs an embedded **distribution provisioning profile**. So the sandbox/network set needs **no profile**; the keychain choice does.
+- **Finding (keychain fork, affects ADR-024):** the **legacy file-based keychain** uses ACLs and needs no entitlement. The **data protection keychain** (`kSecUseDataProtectionKeychain`) uses access groups, and TN3137 states those groups "must be authorized by a provisioning profile" and that the program "needs an app-like bundle structure in which to embed that profile". Storing the identity therefore forks: legacy keychain (no profile) or data protection keychain (one embedded Developer ID profile, no ACL prompts when the signing identity changes).
+- **Finding (local network TCC refinement of R-10):** TN3179's operation table says **"Listening for and accepting incoming TCP connections — no"** local-network access required, while **"All Bonjour operations require local network access"** (register, browse, resolve). Under ADR-010 the Mac's prompt is therefore triggered by **advertising**, not by accepting the Android connection. The multicast entitlement is iOS-only — "The multicast entitlement isn't required on macOS".
+- **Finding (what is auto-allowed):** macOS automatically grants local network access to launchd daemons, root processes and command-line tools. DroidBridge does **not** exploit that: moving the listener into a daemon purely to avoid the prompt would remove the user's control over a privacy permission, which is the same class of shortcut as the ones `AGENTS.md` prohibits.
+- **Decision:** **GO** — enable App Sandbox from the first macOS build with `app-sandbox`, `network.client` and `network.server`; store the identity in the data protection keychain with an embedded Developer ID profile (ADR-025), falling back to the legacy keychain only if P15 shows the profile is unworkable.
+- **Prototype:** P15.
+
+---
+
 ## 3. Uncertain areas that require prototypes
 
 Nothing below has been tested. Every one is a gate before the corresponding build phase.
@@ -443,6 +533,10 @@ Nothing below has been tested. Every one is a gate before the corresponding buil
 | U11 | Does a `connectedDevice` foreground service actually keep a TLS socket usable through screen-off, Doze entry and a full night? | Decides whether "clipboard while mirroring is off" is a real feature or a foreground-only one | P14 |
 | U12 | What keepalive interval and reconnect backoff keep the session alive without measurable battery cost? | Battery/thermal acceptance | P14 |
 | U13 | Does a programmatic pinning `TrustManager` handshake cleanly on API 37 with CT/ECH at their defaults? | Confirms R-24's medium-confidence CT inference | P13 |
+| U14 | Does a sandboxed, Developer ID-signed and notarised Mac build advertise Bonjour, accept the Android connection and read its keychain identity exactly like an ad-hoc debug build? | The sandbox is enabled from the first build; a violation discovered at release would force a redesign | P15 |
+| U15 | Will a `connectedDevice` declaration pass review when the peer is chosen through the Android 17 system NSD picker rather than an in-app device list? | Decides whether the picker-first design costs a policy round-trip at submission | Play submission (Phase 9) |
+| U16 | Does the picker-first path require declaring `ACCESS_LOCAL_NETWORK` in the manifest at all, given Play ties its declaration to *using* the permission? | Confirms that the chosen design avoids the 2027 declaration | P02 |
+| U17 | After a Developer ID certificate renewal (or a team change), does the app still read its data-protection-keychain identity, or must the identity be regenerated and the pair re-created? | A keychain that fails closed after re-signing would silently force re-pairing for every user | P15 |
 
 Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 
@@ -458,6 +552,10 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - Added: the background-session mechanism — `connectedDevice` foreground service, its zero-prompt prerequisite, the absence of a timeout and its boot-start legality, plus Doze's device-wide network suspension (R-20).
 - Added: foreground-service notification visibility rules and the Play Console FGS declaration (R-21).
 - Added: concrete identity/TLS implementation — Keystore-generated self-signed certificate on Android (R-22), `swift-certificates` on macOS because the Security framework cannot create certificates (R-23), and the SPKI-pinning model including the server-side peer-authentication default (R-24).
+- Added: Play's target-API floor (API 36 since 2026-08-31, so API 37 is a choice) and the new restricted-permission status of `ACCESS_LOCAL_NETWORK` with its 2027-08-25 declaration date (R-25).
+- Added: the four-part Play Console FGS declaration, including the mandatory demo video, and the use cases that `connectedDevice` and `mediaProjection` map to — plus the review risk the system NSD picker creates for the `connectedDevice` video (R-26).
+- Added: the macOS release chain — Developer ID, hardened runtime, secure timestamp, inside-out signing, `notarytool`/`stapler`, the `get-task-allow` rejection, and the fact that only the Account Holder can issue a Developer ID certificate (R-27).
+- Added: the App Sandbox entitlement set for a listening Mac app, the unrestricted-versus-restricted entitlement rule, the keychain fork between the legacy and data-protection keychains, and TN3179's finding that accepting inbound TCP does not itself require local network access (R-28, refining R-10).
 - Confirmed unchanged: MediaProjection consent/FGS rules (R-04, R-05), `FLAG_SECURE` (R-08), clipboard focus gate (R-09), macOS local-network privacy (R-10).
 
 ## 5. Negative findings worth repeating
@@ -467,6 +565,9 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - There is **no** way to capture cellular call audio with public APIs.
 - macOS pasteboard access is no longer guaranteed to be silent; assume a user-visible prompt.
 - Local network permission on Android 17 is not avoidable for a device that advertises a service.
+- macOS cannot distribute an unnotarised app to a normal user on a current system: the only override is System Settings → Privacy & Security → Open Anyway, and the Control-click bypass is gone. A paid Apple Developer Program membership is a hard prerequisite for releasing the Mac app.
+- Only the Developer Program Account Holder can create a Developer ID certificate, so the release path depends on that person, not just on the developer writing the code.
+- Play accepts an FGS type only with a demo video and a declaration; the picker-based pairing flow is a documented review risk for the `connectedDevice` type.
 
 ## 6. Source index
 
@@ -502,6 +603,13 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Telecom framework (`TelecomManager`, `ConnectionService`) — https://developer.android.com/reference/android/telecom/package-summary
 - `RoleManager` — https://developer.android.com/reference/android/app/role/RoleManager
 - `WindowManager.LayoutParams` (`FLAG_SECURE`) — https://developer.android.com/reference/android/view/WindowManager.LayoutParams
+- Play target API level requirements (Play Console Help) — https://support.google.com/googleplay/android-developer/answer/11926878
+- Meet Google Play's target API level requirement — https://developer.android.com/google/play/requirements/target-sdk
+- Google Play policy timeline — https://developer.android.com/distribute/play-policies
+- Permissions and APIs that access sensitive information (Local Network Permission) — https://support.google.com/googleplay/android-developer/answer/16558241
+- Understanding foreground service and full-screen intent requirements (Play Console declaration) — https://support.google.com/googleplay/android-developer/answer/13392821
+- Permissions for foreground services (Device and Network Abuse policy) — https://support.google.com/googleplay/android-developer/answer/13315670
+- About Android App Bundles — https://developer.android.com/guide/app-bundle
 
 **Apple**
 
@@ -519,6 +627,18 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Creating an Identity — https://developer.apple.com/documentation/security/creating-an-identity
 - `sec_protocol_options_set_local_identity(_:_:)` — https://developer.apple.com/documentation/security/sec_protocol_options_set_local_identity(_:_:)
 - swift-certificates, Creating Certificates (Apple open source) — https://swiftpackageindex.com/apple/swift-certificates/1.21.0/documentation/x509/creating-certificates
+- Notarizing macOS software before distribution — https://developer.apple.com/documentation/security/notarizing-macos-software-before-distribution
+- Creating distribution-signed code for macOS — https://developer.apple.com/documentation/xcode/creating-distribution-signed-code-for-the-mac
+- Customizing the notarization workflow (`notarytool`, `stapler`) — https://developer.apple.com/documentation/security/customizing-the-notarization-workflow
+- Resolving common notarization issues (`get-task-allow`, entitlements format) — https://developer.apple.com/documentation/security/resolving-common-notarization-issues
+- Hardened Runtime — https://developer.apple.com/documentation/security/hardened-runtime
+- `com.apple.security.network.server` — https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.network.server
+- `com.apple.security.network.client` — https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.network.client
+- Configuring the macOS App Sandbox — https://developer.apple.com/documentation/xcode/configuring-the-macos-app-sandbox
+- TN3137: On Mac keychain APIs and implementations — https://developer.apple.com/documentation/technotes/tn3137-on-mac-keychains
+- `kSecUseDataProtectionKeychain` — https://developer.apple.com/documentation/security/ksecusedataprotectionkeychain
+- Distribute outside the Mac App Store — https://help.apple.com/xcode/mac/current/en.lproj/dev033e997ca.html
+- Safely open apps on your Mac (Gatekeeper "Open Anyway") — https://support.apple.com/en-us/102445
 
 **Samsung**
 

@@ -95,3 +95,14 @@ Every manifest permission must have:
 - Test proving it is needed.
 
 No broad permissions for speculative future features.
+
+## 9. Play submission
+
+- `targetSdk 37` is above Play's floor (API 36 since 2026-08-31). Re-check the floor at every release — it moves each August — and never drop below it (R-25).
+- Ship as an **AAB** signed with the upload key, with Play App Signing enabled (R-25).
+- Declare every foreground-service type in Play Console exactly as the manifest declares it, each with a description, the impact if the task is deferred or interrupted, the preset use case, and a demo video (R-26):
+  - `connectedDevice` → "Continuous Data Transfer to an External Device". The video must show app-led setup, so it starts in DroidBridge's own UI and ends on an in-app connected state with the clipboard or background sync visibly working. It must not look like a System Settings walkthrough.
+  - `mediaProjection` → media/content projection, showing the user starting a projection to the Mac.
+- The `connectedDevice` video carries a known review risk because pairing happens in the **system NSD picker**. The declaration description must state that the picker is used deliberately as the least-privilege Android 17 alternative to `ACCESS_LOCAL_NETWORK` (U15).
+- Submit the `ACCESS_LOCAL_NETWORK` declaration and a matching store-description justification only if that permission actually ships; the picker-first design is chosen partly to avoid both (R-25).
+- Data safety form: no data collected or shared — no cloud endpoint, no telemetry, no analytics SDK. Keep that true in code, not only in the form.

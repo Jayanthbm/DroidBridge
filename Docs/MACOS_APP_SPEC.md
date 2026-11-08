@@ -65,4 +65,17 @@
 - No Screen Recording permission is needed merely to view Android's stream. Only request macOS Screen Recording if a separately approved Mac screen-capture feature is introduced.
 - No Accessibility permission on macOS unless a future, separately approved feature requires it.
 - No Input Monitoring permission unless justified by an explicit system-wide shortcut feature; prefer app-scoped keyboard/mouse events.
-- Use Keychain for device credentials.
+- Use Keychain for device credentials (see §8).
+- The Local Network prompt is triggered by **advertising** (Bonjour), not by accepting the Android connection: TN3179 exempts listening/accepting inbound TCP but requires access for every Bonjour operation. Re-check the privilege before re-advertising instead of assuming it still holds.
+
+## 8. Distribution and sandbox
+
+- **App Sandbox on from the first build**, with exactly `com.apple.security.app-sandbox`, `com.apple.security.network.client` and `com.apple.security.network.server` (ADR-026). Both network entitlements are needed: the server one for accepting the Android TCP connection, the client one because Bonjour advertising is UDP and the client entitlement gates sending.
+- Do not add `com.apple.security.cs.*` hardened-runtime exceptions. Nothing in the app needs JIT, unsigned libraries or disabled library validation, and each exception weakens a protection.
+- **Identity storage (ADR-025):** data protection keychain (`kSecUseDataProtectionKeychain: true`) under the app's own `keychain-access-groups` entry, authorized by an embedded **Developer ID** provisioning profile. `kSecAttrSynchronizable` stays off. The private key is non-exportable.
+- **Signing:** Developer ID Application identity, hardened runtime (`-o runtime`), secure timestamp (`--timestamp`), signed **inside-out**; never `codesign --deep`, never `sudo`. No `get-task-allow` in a release build. Entitlements file is ASCII XML with no BOM or comments.
+- **Notarisation:** submit a ZIP or DMG with `xcrun notarytool submit … --wait`, then `xcrun stapler staple` so Gatekeeper can validate offline. Read the notary log for warnings even when the status is `Accepted`.
+- The release bundle carries a **distribution** provisioning profile; a development profile in a release build is a bug.
+- Distribution is direct (DMG), not the Mac App Store, for now. The sandbox is kept on so a Mac App Store build stays possible without a redesign.
+- Never tell users to bypass Gatekeeper. An unnotarised build is not a release candidate.
+- Ad-hoc development builds may re-prompt for Local Network access when the signature changes. That is expected; record it, do not "fix" it by weakening the prompt.

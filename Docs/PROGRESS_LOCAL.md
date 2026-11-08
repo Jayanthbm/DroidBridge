@@ -44,6 +44,7 @@
   - Background session persistence: `connectedDevice` foreground service type, its zero-prompt prerequisite, the absence of a timeout, boot-start legality, and Doze's device-wide network suspension.
   - Foreground-service notification visibility (`POST_NOTIFICATIONS`) and the Play Console FGS declaration.
   - Identity and TLS mechanics: Keystore-generated self-signed certificate on Android, `swift-certificates` on macOS (Security framework cannot create certificates), SPKI pinning, and the macOS server-side peer-authentication default.
+  - Distribution requirements: Play's target-API floor and the restricted `ACCESS_LOCAL_NETWORK` permission declaration, per-type foreground-service declarations with demo videos, macOS Developer ID/hardened runtime/notarisation, and the App Sandbox network and keychain entitlement rules.
 - [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
 
 ## Not started
@@ -63,6 +64,8 @@
 - [ ] Run P11 macOS local-network permission tests.
 - [ ] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
+- [ ] Run P15 sandboxed, signed and notarised distribution prototype (entitlements, TCC, keychain after re-signing).
+- [ ] Confirm Apple Developer Program membership and Account Holder access for the Developer ID certificate.
 - [ ] Verify the owner-reported Android 17 / One UI 9 version on the device.
 
 ## Current blockers
@@ -72,6 +75,7 @@
 - **Android 17 LAN path must be proven on the target firmware.** The design depends on the NSD picker granting a usable duplex session with the Mac as the listener (U1). If P02 disproves it, `ACCESS_LOCAL_NETWORK` becomes mandatory and the owner must accept that permission.
 - **Mac-as-Bluetooth-HID-peripheral is not proven and is expected to fail** (`CBError.uuidNotAllowed`); P09 exists to record the evidence.
 - **Background clipboard sync is best-effort, not guaranteed.** The `connectedDevice` foreground service keeps the session alive in normal use, but Doze suspends network access device-wide, so the design is reconnect-on-resume rather than an always-on promise. Whether a socket survives a full night is unproven (U11).
+- **The macOS app cannot be released without a paid Apple Developer Program membership.** Notarisation requires a Developer ID certificate, only the Account Holder can create one, and an unnotarised app is blocked by Gatekeeper on current macOS (R-27). This is an external dependency on the owner, not a technical uncertainty, and it blocks Phase 9 rather than Phase 0.
 
 ## Tests and evidence
 

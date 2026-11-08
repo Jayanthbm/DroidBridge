@@ -4,7 +4,7 @@
 
 Complete the research work first, including the official-source checks and feasibility prototypes listed in `PROTOTYPE_PLAN.md`. Update the research, decisions, permissions and progress documents. Commit the research package to `development` and present the findings to the owner. Then begin Phase 0 unless a specific unresolved decision blocks progress.
 
-**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-21, ADR-010–ADR-023). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
+**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-28, ADR-010–ADR-026). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
 
 Execute the phases below one at a time. At the end of every phase, commit, report and wait for owner input. Approval to continue authorizes only the next phase.
 
@@ -18,7 +18,7 @@ Execute the phases below one at a time. At the end of every phase, commit, repor
 Exit: both shells build from a clean checkout. Commit the phase, report results, then wait for owner approval before Phase 1.
 
 ## Phase 1 — Feasibility prototypes
-- P00–P12 as applicable.
+- P00–P15 as applicable.
 - Research and document all hard constraints.
 - Decide which features are GO, CONDITIONAL or NO-GO.
 
@@ -91,6 +91,12 @@ Exit: documented feasibility decision.
 - user documentation.
 - no debugging required.
 - release notes and known limitations.
+
+Distribution gates (from R-25–R-28):
+- Android `targetSdk` is at or above Play's current floor (API 36 since 2026-08-31, so the chosen 37 satisfies it), and the AAB is signed with the upload key under Play App Signing.
+- Play Console declarations are complete for every foreground-service type the manifest declares, each with its description, impact statement, chosen use case and demo video; the `ACCESS_LOCAL_NETWORK` declaration is submitted only if that permission shipped.
+- The macOS build is Developer ID-signed with the hardened runtime, a secure timestamp and no `get-task-allow`, has been accepted by notarisation and **stapled**, and launches from a clean Mac with a normal first-run prompt rather than an "Open Anyway" override.
+- The shipped macOS entitlements are exactly the audited set (`app-sandbox`, `network.client`, `network.server`, keychain access group) and any embedded provisioning profile is a distribution profile.
 
 Exit: owner approves release.
 

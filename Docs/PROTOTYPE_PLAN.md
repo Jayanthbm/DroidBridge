@@ -2,7 +2,7 @@
 
 All prototypes are small, isolated and disposable. They should be implemented before production modules. Use USB/ADB only for development installation and diagnostics; every prototype must have a final wireless-only test.
 
-**Research pass 2026-11-08:** the instructions below were expanded for the uncertainties identified in `RESEARCH_AND_FEASIBILITY.md` §3 (U1–U10). Nothing here has been run. A prototype is only "complete" when its report contains real evidence.
+**Research pass 2026-11-08:** the instructions below were expanded for the uncertainties identified in `RESEARCH_AND_FEASIBILITY.md` §3 (U1–U17). Nothing here has been run. A prototype is only "complete" when its report contains real evidence.
 
 ## Rules that apply to every prototype
 
@@ -352,6 +352,37 @@ Acceptance:
 - Reconnect implemented and measured (time to reconnect after each condition).
 - No use of `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no wake-lock workaround, no silent retry loop.
 - If the session cannot survive an ordinary overnight idle, ADR-023's degradation path is taken: background sync becomes foreground-only and the product copy changes.
+
+## P15 — Sandboxed, signed and notarised macOS build
+
+Goal:
+- Prove that the Mac app behaves the same when built the way it will ship — App Sandbox on, Developer ID-signed, hardened runtime, notarised — and record what changes between an ad-hoc build and a signed one (U14, U17, R-27, R-28, ADR-025, ADR-026).
+
+Prerequisites:
+- macOS with Xcode, and the P13 identity code.
+- An Apple Developer Program membership for the signed and notarised steps. Steps 1–4 run without one; every step that could not be run must be listed as not run, and the release dependency (ADR-026) recorded instead of a pass.
+- A test bundle identifier that is not the shipping one.
+
+Setup:
+- Entitlements file: `com.apple.security.app-sandbox`, `com.apple.security.network.client`, `com.apple.security.network.server`, and `keychain-access-groups` for the app's own group. Keep a second entitlements file without the keychain group, for the legacy-keychain comparison.
+- `Info.plist`: `NSLocalNetworkUsageDescription` and `NSBonjourServices` = `_droidbridge-dev._tcp`.
+- Minimal target: `NWListener` advertising on a dynamic port with `_droidbridge-dev._tcp`, `NWBrowser` logging peers, and a one-line echo on each accepted connection. No production code, no protocol work.
+
+Tests:
+1. Ad-hoc "Sign to Run Locally" build with the sandbox on: does advertising succeed, does the Local Network prompt appear, and does the app then appear in System Settings → Privacy & Security → Local Network? Record the exact prompt text.
+2. Connect from a second machine (`nc`, or the P02 client) and confirm the sandbox does not block accepting: the accepted socket must echo in both directions.
+3. Remove `network.client`, keep `network.server`: confirm TCP accept still works while Bonjour stops answering. This is the concrete proof behind R-28's claim that advertising needs both entitlements.
+4. Rebuild after a clean checkout so the ad-hoc signature changes: record whether the Local Network privilege is retained or asked again. That is the development re-prompt expected in R-27, and it must be documented so it is not later mistaken for a product bug.
+5. Developer ID-signed build with `-o runtime --timestamp`: repeat tests 1–2, and label the result "signed, not notarised".
+6. Keychain: store the identity, quit, relaunch and read it back. Re-sign the same bundle with the same certificate and repeat. If a second certificate or team is available, re-sign with it and record whether the item is still readable (U17).
+7. Notarisation: `ditto -c -k --keepParent`, `xcrun notarytool submit … --wait`, `xcrun stapler staple`, then `spctl -a -vvv -t install` and a launch from a **quarantined** copy (download it rather than copying locally, or `xattr -w com.apple.quarantine`). Paste the notary log's warnings, not only the `Accepted` status.
+8. Code-review evidence: paste `codesign -d --entitlements -` for the shipped bundle; confirm no `get-task-allow`, no `--deep` in the build script, and that the embedded profile (if used) is a distribution profile.
+
+Acceptance:
+- A written statement of the exact entitlement set under which advertising, accepting and keychain access all work sandboxed.
+- A recorded difference (or none) between ad-hoc and Developer ID builds, including the Local Network privilege behaviour.
+- The notarisation path proven end to end with a stapled ticket, or explicitly reported as not run for lack of a membership.
+- Definitive answers for U14 and U17.
 
 ## Prototype report template
 
