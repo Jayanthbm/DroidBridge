@@ -191,3 +191,22 @@ is not created until the tab is selected — `--advertise-on-launch` silently di
 is now owned by the `App`.
 
 Report: `Docs/prototypes/P02-local-networking.md`.
+
+### P04 — Clipboard Android to Mac (matrix unrun, 2026-11-09)
+
+Built `android/experiments/clipboard/`, a separate app declaring no permission at all, with a probe
+that runs one matrix row per action and logs a greppable observation line.
+
+**Verified:** 9 unit tests pass over the reporting contract; lint clean with `warningsAsErrors`;
+installs and launches with zero crashes and no clipboard-related permission.
+
+**Two findings that change the matrix:**
+1. `ClipDescription.EXTRA_IS_SENSITIVE` is API 33, so the sensitive row cannot be exercised on
+   API 31 at all. The probe logs `NOT_APPLICABLE` rather than a misleading `false`.
+2. The read gate is a focus gate, and the keyguard holds input focus, so no button can be pressed.
+   Every matrix row is unrun.
+
+**Defect found:** the log line interpolated clipboard content raw, so a newline would have split
+one observation across two lines. Now escaped.
+
+Report: `Docs/prototypes/P04-clipboard-android-to-mac.md`.

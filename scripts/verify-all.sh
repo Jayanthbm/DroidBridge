@@ -39,6 +39,9 @@ fi
     :experiments:media-projection:assembleDebug \
     :experiments:media-projection:testDebugUnitTest \
     :experiments:media-projection:lintDebug \
+    :experiments:clipboard:assembleDebug \
+    :experiments:clipboard:testDebugUnitTest \
+    :experiments:clipboard:lintDebug \
     "${ANDROID_ARGS[@]+"${ANDROID_ARGS[@]}"}"
 
 if [[ "$SKIP_MACOS" -eq 1 ]]; then

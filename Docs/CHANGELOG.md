@@ -26,7 +26,13 @@ All notable project changes are recorded here.
 - macOS Bonjour advertiser: `NWListener` publishing `_droidbridge-dev._tcp` with a versioned TXT
   record, an echo handler, and a live event view. The Mac half of the ADR-010 direction.
 
+### Added — Phase 1, P04 (2026-11-09)
+- `android/experiments/clipboard/`: clipboard read-access probe with one action per P04 matrix row
+  and a greppable observation line. Declares no permission, by design.
+
 ### Fixed
+- The clipboard probe escaped its preview; a newline in clipboard content would have split one
+  observation across two lines and corrupted the evidence log.
 - The advertiser model is owned by the app rather than a tab view; SwiftUI builds `TabView`
   content lazily, so it was never constructed and `--advertise-on-launch` did nothing.
 - `shared/protocol` now targets Java 17 to match its Android consumer; the Java 21 toolchain made

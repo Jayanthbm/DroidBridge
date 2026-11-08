@@ -48,3 +48,4 @@ include(":feature:settings")
 // depended on by :app, so an experiment can never leak a permission or a code path into the
 // production manifest (AGENTS.md: keep experimental code out of production paths).
 include(":experiments:media-projection")
+include(":experiments:clipboard")

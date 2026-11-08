@@ -62,6 +62,9 @@ jobs:
             :experiments:media-projection:assembleDebug \
             :experiments:media-projection:testDebugUnitTest \
             :experiments:media-projection:lintDebug \
+            :experiments:clipboard:assembleDebug \
+            :experiments:clipboard:testDebugUnitTest \
+            :experiments:clipboard:lintDebug \
             --no-daemon
 
       - name: Upload lint report
