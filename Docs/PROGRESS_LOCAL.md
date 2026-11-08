@@ -98,3 +98,8 @@
 ## Next task
 
 Phase 0 (repository and environment): create `android/`, `macos/`, `shared/` and `scripts/`, add `.gitignore`, and verify both shells build from a clean checkout. This is a build phase and requires the owner's approval after the research report.
+
+
+## Workflow correction (2026-11-08)
+
+The owner's active integration branch is **`development`**; **`master`** remains the stable-release branch. Do not rename either branch or assume `main`. This section supersedes older statements in this progress file that Phase 0 or any later phase requires routine owner approval. Under the approved two-agent workflow, the cloud agent is research/documentation-only and the local agent owns implementation, builds and physical-device testing. Agents hand off sequentially on `development` and must not push competing changes simultaneously. After each phase passes its documented gate, the responsible agent commits, pushes, reports the result and automatically proceeds to the next phase. Stop only for a genuine blocker or an owner decision involving scope, permissions, security, privacy, cost, entitlement or an unresolved product/architecture choice. No physical-device prototype is complete until actual device evidence is recorded. The next build step remains Phase 0; research documentation is complete, while physical prototypes remain pending as already recorded above.
