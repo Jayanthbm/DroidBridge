@@ -30,7 +30,7 @@
 - [x] Reconcile stale workflow instructions in agent prompts, README, phase plan and progress docs.
 - [x] Add cloud-specific progress tracking.
 - [x] Add a prioritized cloud research backlog with dependencies on local evidence.
-- [ ] Verify all edited files after the final commit and scan for contradictory legacy workflow language.
+- [x] Re-fetch and verify the edited core workflow, phase, prompt, README and progress files on `development`; no active contradictions remain in those files.
 - [ ] Review Phase 0 commit after local agent pushes it.
 - [ ] Review prototype reports and identify missing evidence, source changes or decision updates.
 - [ ] Refresh volatile platform/distribution research before release.
