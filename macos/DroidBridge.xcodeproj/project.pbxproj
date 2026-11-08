@@ -15,7 +15,9 @@
 		5D27F31FAF1BADE14D1705F6 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */; };
 		6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */; };
 		6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */; };
+		8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */; };
 		9AD2106B58A6FAD8F3E0DC29 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6E7C447918BA19DECC45CCB /* CoreVideo.framework */; };
+		B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */; };
 		B761DDE9E0330B1CE1828DDE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C6E7D435733DFE75E0B09E /* Security.framework */; };
 		C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */; };
 		FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */; };
@@ -33,6 +35,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCodeTests.swift; sourceTree = "<group>"; };
 		062980F55EED673BE05F608F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertiser.swift; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -44,6 +47,7 @@
 		89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
 		9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DroidBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummary.swift; sourceTree = "<group>"; };
+		9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCode.swift; sourceTree = "<group>"; };
 		A277847708B2692DCD474697 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
@@ -112,6 +116,7 @@
 				9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */,
 				8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */,
 				31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */,
+				9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -142,6 +147,7 @@
 			children = (
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
 				425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */,
+				026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -238,6 +244,7 @@
 			files = (
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
 				C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */,
+				8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -251,6 +258,7 @@
 				6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */,
 				2EA838E7F8E807B48F061EDD /* ServiceAdvertisement.swift in Sources */,
 				FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */,
+				B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

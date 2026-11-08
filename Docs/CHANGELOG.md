@@ -26,6 +26,11 @@ All notable project changes are recorded here.
 - macOS Bonjour advertiser: `NWListener` publishing `_droidbridge-dev._tcp` with a versioned TXT
   record, an echo handler, and a live event view. The Mac half of the ADR-010 direction.
 
+### Added — Phase 1, P03 (2026-11-09)
+- Length-prefixed control framing with a validated, unsigned length prefix and a 1 MiB cap.
+- Short authentication code for pairing, implemented in Kotlin and Swift with shared test vectors
+  proving the two agree.
+
 ### Added — Phase 1, P04 (2026-11-09)
 - `android/experiments/clipboard/`: clipboard read-access probe with one action per P04 matrix row
   and a greppable observation line. Declares no permission, by design.

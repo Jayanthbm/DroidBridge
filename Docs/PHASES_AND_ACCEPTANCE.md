@@ -24,7 +24,7 @@ no crash or ANR. Audits in `PERMISSIONS_MATRIX.md` §6. Reports in `Docs/prototy
 (the phone was PIN-locked).
 
 ## Phase 1 — Feasibility prototypes (next)
-**Status:** In progress — P00 done; P01 partially verified (encoder measured, capture pending an unlocked device); P02 blocked (needs API 37 hardware, and Bonjour is blocked on this host); P04 implemented, matrix unrun (needs an unlocked device)
+**Status:** In progress — P00 done; P01 partially verified (encoder measured, capture pending an unlocked device); P02 blocked (needs API 37 hardware, and Bonjour is blocked on this host); P04 implemented, matrix unrun (needs an unlocked device); P03 protocol layer done, session not built (needs P02)
 Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P15 and its per-prototype order/dependencies.
 - Execute each applicable isolated prototype on the required platform/device.
 - Record evidence header, exact steps, positive and negative results, logs and limitations.

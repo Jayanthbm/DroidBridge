@@ -210,3 +210,25 @@ installs and launches with zero crashes and no clipboard-related permission.
 one observation across two lines. Now escaped.
 
 Report: `Docs/prototypes/P04-clipboard-android-to-mac.md`.
+
+### P03 — Transport and pairing (protocol layer done, 2026-11-09)
+
+Built the two parts of P03 that can be proven without a live peer, and that carry the real risk:
+
+**`shared/protocol/session/Framing.kt`** — length-prefixed framing per ADR-012. The length prefix is
+validated before allocation, so a peer announcing 2 GiB is rejected on the header alone. The prefix
+is decoded unsigned, because a signed read turns `0xFFFFFFFF` into `-1` and every bound check then
+passes. A reader that hits a framing error latches failed rather than resynchronising.
+
+**`ShortAuthenticationCode`** in both Kotlin and Swift — the pairing code from ADR-011. Inputs are
+sorted by content so both sides agree without a role, and length-prefixed so `("ab","c")` and
+`("a","bc")` cannot collide.
+
+**Verified:** 64 protocol tests (up from 31) and 19 macOS tests pass. Six fixed vectors are asserted
+in both languages, so the two implementations cannot drift silently — which matters because a drift
+would show two different codes on two screens and reject a valid device.
+
+**Not built:** TLS session, discovery wiring, reconnect, rate limiting. None of P03's six acceptance
+criteria are met; two are partially met at the primitive level.
+
+Report: `Docs/prototypes/P03-transport-and-pairing.md`.
