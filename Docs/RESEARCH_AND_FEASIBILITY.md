@@ -299,9 +299,11 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Checked:** 2026-11-08
 - **Target:** Android 17; Telecom framework
 - **Sources (official):**
-  - https://developer.android.com/develop/connectivity/telecom/dialer-apps
+  - https://developer.android.com/reference/android/telecom/package-summary
+  - https://developer.android.com/reference/android/telecom/TelecomManager
+  - https://developer.android.com/reference/android/telecom/ConnectionService
   - https://developer.android.com/reference/android/app/role/RoleManager
-- **Finding:** answering/rejecting calls and reading incoming-call details requires Telecom integration as the default dialer (`ROLE_DIALER`), a `ConnectionService` used by a calling app, or a notification listener for call notifications. The first changes the user's dialer, the third is on the project's prohibited list, and the middle does not apply to calls originated by other apps.
+- **Finding:** answering/rejecting calls and reading incoming-call details requires Telecom integration as the default dialer (`RoleManager.ROLE_DIALER` plus `TelecomManager`), a `ConnectionService` owned by the calling app, or a notification listener for call notifications. The first changes the user's dialer, the third is on the project's prohibited list, and the middle does not apply to calls originated by other apps.
 - **Decision:** **NO-GO** for MVP. Remains a separately-approvable future product decision.
 - **Note:** Android 17 extends SMS/OTP protections (standard SMS OTPs are withheld from non-recipient apps for three hours), confirming there is no "read the OTP from SMS" path either — and that path is prohibited anyway.
 
@@ -390,7 +392,7 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Secure clipboard handling — https://developer.android.com/privacy-and-security/risks/secure-clipboard-handling
 - `AudioPlaybackCaptureConfiguration` — https://developer.android.com/reference/android/media/AudioPlaybackCaptureConfiguration
 - `BluetoothHidDevice` — https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice
-- Telecom dialer integration — https://developer.android.com/develop/connectivity/telecom/dialer-apps
+- Telecom framework (`TelecomManager`, `ConnectionService`) — https://developer.android.com/reference/android/telecom/package-summary
 - `RoleManager` — https://developer.android.com/reference/android/app/role/RoleManager
 - `WindowManager.LayoutParams` (`FLAG_SECURE`) — https://developer.android.com/reference/android/view/WindowManager.LayoutParams
 
