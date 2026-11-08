@@ -4,6 +4,14 @@ Use newest entries at the top. Every change must include date, status, context, 
 
 Research pass of 2026-11-08 produced ADR-010 to ADR-022. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
 
+## ADR-023 — Background clipboard session runs in a `connectedDevice` foreground service
+- Date: 2026-11-08
+- Status: Proposed — pending `P14`
+- Context: "Clipboard sync while mirroring is off" needs a live session, but MediaProjection is not available for clipboard-only work. The `connectedDevice` type covers network connections to external devices, has no documented timeout, is not blocked from `BOOT_COMPLETED`, and its runtime prerequisite can be met by **declaring** the normal `CHANGE_NETWORK_STATE` permission — so it needs no runtime prompt (`RESEARCH_AND_FEASIBILITY.md` R-20). Doze still suspends the network device-wide, so liveness is best-effort.
+- Decision: One `connectedDevice` foreground service owns the LAN session whenever background sync is enabled by the user; the mirroring session uses its own `mediaProjection` service and, when both run, shares the same connection. The service is started only from app UI or from `BOOT_COMPLETED`, shows a persistent notification with connection state and a disconnect action, and on any network change, Doze exit, socket error or app resume it reconnects with exponential backoff. Declare `POST_NOTIFICATIONS` and request it in context, and declare the `connectedDevice` type on the Play Console app-content page (R-21).
+- Alternatives: `dataSync` (rejected: 6 h/24 h cap and boot restriction); `specialUse` (rejected: Play subtype review for a covered use case); no background service at all (rejected for the P0 clipboard user story, retained as the degradation path if P14 fails); `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (rejected: not justifiable for a consumer app).
+- Consequences: the app always shows a session notification while background sync is on, must treat "connected" as a state that can lapse, and must never present a stale socket as reachable. If P14 shows the socket cannot survive a normal night, the feature degrades to foreground-only sync and the product copy changes accordingly.
+
 ## ADR-022 — Reserve a private Bonjour service type during development
 - Date: 2026-11-08
 - Status: Accepted for prototypes

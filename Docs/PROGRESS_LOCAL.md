@@ -41,6 +41,8 @@
   - Knox `RemoteInjection` permission/authorisation eligibility and DeX API removal on Android 16+.
   - Audio playback capture boundaries; impossibility of call audio; Android 17 background-audio hardening.
   - Transport comparison (TLS/TCP vs WebRTC) and the macOS mDNS/local-network interaction.
+  - Background session persistence: `connectedDevice` foreground service type, its zero-prompt prerequisite, the absence of a timeout, boot-start legality, and Doze's device-wide network suspension.
+  - Foreground-service notification visibility (`POST_NOTIFICATIONS`) and the Play Console FGS declaration.
 - [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
 
 ## Not started
@@ -59,6 +61,7 @@
 - [ ] Run P10 secure-screen/screenshare-protection tests.
 - [ ] Run P11 macOS local-network permission tests.
 - [ ] Run P13 pinned TLS/CT prototype.
+- [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
 - [ ] Verify the owner-reported Android 17 / One UI 9 version on the device.
 
 ## Current blockers
@@ -67,6 +70,7 @@
 - **Automatic background clipboard sync is not a release claim.** Android requires focus/IME for reads; macOS 15.4+ can prompt or deny programmatic pasteboard access.
 - **Android 17 LAN path must be proven on the target firmware.** The design depends on the NSD picker granting a usable duplex session with the Mac as the listener (U1). If P02 disproves it, `ACCESS_LOCAL_NETWORK` becomes mandatory and the owner must accept that permission.
 - **Mac-as-Bluetooth-HID-peripheral is not proven and is expected to fail** (`CBError.uuidNotAllowed`); P09 exists to record the evidence.
+- **Background clipboard sync is best-effort, not guaranteed.** The `connectedDevice` foreground service keeps the session alive in normal use, but Doze suspends network access device-wide, so the design is reconnect-on-resume rather than an always-on promise. Whether a socket survives a full night is unproven (U11).
 
 ## Tests and evidence
 

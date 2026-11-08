@@ -309,6 +309,38 @@ Acceptance:
 - no global security weakening in the final manifest/config.
 - confirm the local-IP/no-SNI case is handled (no hostname verification against an IP literal).
 
+## P14 — Background session persistence (clipboard while mirroring is off)
+
+Goal:
+- Prove or disprove ADR-023: a `connectedDevice` foreground service keeps a TLS session usable in normal use, and characterise exactly where it stops working (U11, U12).
+
+Setup:
+- Manifest: `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `POST_NOTIFICATIONS`, and exactly one prerequisite permission — `CHANGE_NETWORK_STATE`. Deliberately **no** Bluetooth permissions, so the test proves the type is satisfied without a runtime prompt.
+- Service declared with `android:foregroundServiceType="connectedDevice"` and an `exported="false"` attribute.
+- Minimal TLS echo client that connects to the Mac listener from P03/P02 and sends a heartbeat every 15 s with a monotonically increasing counter.
+
+Tests:
+1. Start the service from a visible activity. Record: does `startForeground()` succeed with no runtime permission dialog? Does the Play Console prerequisite appear in any log?
+2. Start the same service from a background context (e.g. a timer with the app backgrounded). Expected: `ForegroundServiceStartNotAllowedException`. Record the exact exception.
+3. Start it from `BOOT_COMPLETED` (`adb shell am broadcast -a android.intent.action.BOOT_COMPLETED <pkg>` during development, then a real reboot). Expected: allowed for `connectedDevice`, unlike `dataSync`/`mediaProjection`. Record it.
+4. Session survival matrix — for each, record whether heartbeats arrive on the Mac, and the reconnect time after the condition ends:
+   - app backgrounded, screen on, 10 min;
+   - screen off, unplugged, 10 min;
+   - screen off, idle and stationary, 60 min (Doze);
+   - overnight, unplugged, 8 h;
+   - Wi-Fi toggle off/on;
+   - Mac sleep/wake;
+   - phone reboot with background sync previously enabled.
+5. Doze forcing (development only): `adb shell dumpsys deviceidle force-idle` then observe whether the socket stalls and whether it recovers on `unforce`. Record USB/debugging state for this step and repeat the key cases without USB for the final result.
+6. Notification behaviour: with `POST_NOTIFICATIONS` granted, confirm the notification appears with connection state and a disconnect action; deny it and confirm the service still runs and appears in the FGS Task Manager; dismiss the notification and confirm the service continues while the in-app indicator stays truthful.
+7. Battery: 60 min idle with a 15 s heartbeat vs no session; record percentage drain and any thermal notes, then propose the keepalive interval and backoff schedule.
+
+Acceptance:
+- A written statement of exactly which conditions keep the session alive and which end it.
+- Reconnect implemented and measured (time to reconnect after each condition).
+- No use of `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, no wake-lock workaround, no silent retry loop.
+- If the session cannot survive an ordinary overnight idle, ADR-023's degradation path is taken: background sync becomes foreground-only and the product copy changes.
+
 ## Prototype report template
 
 For each prototype, write:

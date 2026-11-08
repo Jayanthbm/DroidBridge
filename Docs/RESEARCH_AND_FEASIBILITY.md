@@ -34,6 +34,7 @@
 | Android screen capture (MediaProjection) | **GO** | Documented consent flow; capture-only, no input injection |
 | Android 17 local network access | **CONDITIONAL** | `ACCESS_LOCAL_NETWORK` required for targetSdk ≥ 37; NSD picker is the least-privilege route but has a hard limit on advertising (§2 R-02) |
 | Full-duplex LAN session on Android 17 | **CONDITIONAL** | Only viable zero-broad-permission shape is "Mac advertises, Android selects via picker and connects out" — must be prototyped |
+| Clipboard session while mirroring is off (background) | **CONDITIONAL** | Needs a `connectedDevice` foreground service with a visible notification; Doze can still suspend the network, so reconnect-on-resume, not an always-on promise (R-20) |
 | Mac → Android text clipboard | **GO** with limits | `setPrimaryClip` is unrestricted; Android 15+ system clipboard UI is user-visible and cannot be suppressed |
 | Android → Mac text clipboard | **CONDITIONAL** | `getPrimaryClip()` returns `null` unless the app has input focus or is the default IME — no IME/input-method requirement is allowed |
 | Automatic two-way background clipboard | **NO-GO** (as a default) | Android focus restriction plus macOS pasteboard access prompt; manual/foreground baseline only |
@@ -332,6 +333,41 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Implication:** this is another reason the Bluetooth-HID-keyboard idea cannot deliver a general remote-input experience, and it must be stated in the remote-input research conclusion.
 - **Decision:** informational; supports R-12/R-13 NO-GO.
 
+### R-20 — Keeping a LAN session alive without MediaProjection
+
+- **Checked:** 2026-11-08
+- **Target:** Android 14+ (foreground service types), Android 15/17 timeout and boot rules
+- **Sources (official):**
+  - https://developer.android.com/develop/background-work/services/fgs/service-types
+  - https://developer.android.com/develop/background-work/services/fgs/timeout
+  - https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+  - https://developer.android.com/about/versions/15/behavior-changes-15
+  - https://developer.android.com/training/monitoring-device-state/doze-standby
+- **Finding (positive):** the `connectedDevice` foreground service type is documented as *"Interactions with external devices that require a Bluetooth, NFC, IR, USB, or network connection"* — a paired Mac over Wi-Fi is squarely in scope. Its permission is `FOREGROUND_SERVICE_CONNECTED_DEVICE` (plus `FOREGROUND_SERVICE`). Its runtime prerequisite is satisfied by **declaring** at least one of `CHANGE_NETWORK_STATE`, `CHANGE_WIFI_STATE`, `CHANGE_WIFI_MULTICAST_STATE`, `NFC` or `TRANSMIT_IR` — all normal permissions with no prompt — *or* by holding a granted Bluetooth/UWB runtime permission, or a USB permission. Declaring `CHANGE_NETWORK_STATE` therefore satisfies the type with **zero runtime prompts**, with no additional capability being used.
+- **Finding (positive):** no timeout is documented for `connectedDevice`. The 6-hours-per-24-hour limit applies only to `dataSync` and `mediaProcessing` (`Service.onTimeout`), and `connectedDevice` is **not** in the Android 15 list of types that `BOOT_COMPLETED` receivers may not launch (that list is `dataSync`, `camera`, `mediaPlayback`, `phoneCall`, `mediaProjection`, `microphone`). A `BOOT_COMPLETED` receiver is itself an exemption from the background-start restriction.
+- **Finding (negative / constraint):** apps targeting Android 12+ cannot start a foreground service from the background without an exemption (user-visible transition, notification/widget/bubble interaction, exact alarm, boot, Companion Device Manager permissions, battery-optimisation off, `SYSTEM_ALERT_WINDOW` with a visible overlay on Android 15+, and a few others). So the persistent service must be started from the app UI or from boot — never from a background timer.
+- **Finding (negative / constraint):** Doze suspends **network access** device-wide and ignores wake locks, resuming only during maintenance windows; App Standby defers background network for inactive apps, and a running foreground service keeps the app "active" for App Standby purposes but does **not** exempt it from Doze's device-level network suspension. A socket can therefore stall on an idle, stationary, unplugged phone and must be treated as reconnectable rather than permanent. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is not an acceptable answer for a consumer app and is not pursued.
+- **Alternatives considered:** `dataSync` — rejected (6 h/24 h cap, `BOOT_COMPLETED` restriction, and it misdescribes the work); `specialUse` — rejected (Play Console review of the declared subtype for a use case that `connectedDevice` already covers); Companion Device Manager — retained as a future option, since the official docs recommend it for continuous transfer to an external device and it provides its own background-start exemptions.
+- **Implication:** "clipboard sync while mirroring is off" is real but **must be a visible, user-enabled background session** with a notification, and its liveness is best-effort across Doze. The app must reconnect on wake, on network change and on app resume, and must never claim the Mac is reachable when the socket is stale.
+- **Decision:** **CONDITIONAL** — `connectedDevice` foreground service is the mechanism; correctness under Doze and across reboot is a prototype gate (P14).
+- **Prototype:** P14.
+
+---
+
+### R-21 — Foreground-service notification visibility and Play declaration
+
+- **Checked:** 2026-11-08
+- **Target:** Android 13+ (`POST_NOTIFICATIONS`), Play Console FGS declaration (Android 14+)
+- **Sources (official):**
+  - https://developer.android.com/develop/ui/views/notifications/notification-permission
+  - https://developer.android.com/about/versions/13/behavior-changes-all
+  - https://developer.android.com/develop/background-work/services/fgs/service-types
+- **Finding:** `POST_NOTIFICATIONS` is **not** required to launch a foreground service, but the app must still supply a notification. If the user denies the permission, the service keeps running and appears in the Foreground Services Task Manager instead of the notification drawer. On Android 13+ foreground-service notifications are dismissible by default, and the service continues after dismissal.
+- **Implication:** the notification is the user's visibility and stop affordance, so the permission should be declared and requested in context when background sync is first enabled; the app's own UI must independently display session state, because the drawer notification is not guaranteed. Apps targeting Android 14+ must also declare each foreground service type in the Play Console app-content page.
+- **Decision:** **GO** — declare `POST_NOTIFICATIONS`, request it in context, keep in-app session state authoritative.
+
+---
+
 ## 3. Uncertain areas that require prototypes
 
 Nothing below has been tested. Every one is a gate before the corresponding build phase.
@@ -348,6 +384,8 @@ Nothing below has been tested. Every one is a gate before the corresponding buil
 | U8 | How do Android 15+ screenshare protections appear in a mirrored stream (notifications, password fields, OTP activities)? | Product copy and test expectations | P10 |
 | U9 | MediaProjection + rotation/resize behavior on the S24 Ultra (foldable-class display metrics, high refresh) | Stream quality and viewer layout | P01/P08 |
 | U10 | Does whole-display capture survive a 30-minute session with the screen off/locked? | Real-world usability | P08 |
+| U11 | Does a `connectedDevice` foreground service actually keep a TLS socket usable through screen-off, Doze entry and a full night? | Decides whether "clipboard while mirroring is off" is a real feature or a foreground-only one | P14 |
+| U12 | What keepalive interval and reconnect backoff keep the session alive without measurable battery cost? | Battery/thermal acceptance | P14 |
 
 Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 
@@ -360,6 +398,8 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - Added: Knox authorization-scope requirement and DeX API removal on Android 16+ (R-14).
 - Added: audio playback capture boundary conditions and call-audio impossibility, plus Android 17 background-audio hardening (R-15, R-16).
 - Added: Android 15+ screenshare protections (notifications/passwords/OTP activities) (R-07) and physical-keyboard password masking (R-19).
+- Added: the background-session mechanism — `connectedDevice` foreground service, its zero-prompt prerequisite, the absence of a timeout and its boot-start legality, plus Doze's device-wide network suspension (R-20).
+- Added: foreground-service notification visibility rules and the Play Console FGS declaration (R-21).
 - Confirmed unchanged: MediaProjection consent/FGS rules (R-04, R-05), `FLAG_SECURE` (R-08), clipboard focus gate (R-09), macOS local-network privacy (R-10).
 
 ## 5. Negative findings worth repeating
@@ -386,7 +426,13 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Media projection guide — https://developer.android.com/media/grow/media-projection
 - Capture video and audio playback — https://developer.android.com/media/platform/av-capture
 - `MediaProjectionManager` — https://developer.android.com/reference/android/media/projection/MediaProjectionManager
-- Foreground service types — https://developer.android.com/about/versions/14/changes/fgs-types-required
+- Foreground service types — https://developer.android.com/develop/background-work/services/fgs/service-types
+- Foreground service timeouts — https://developer.android.com/develop/background-work/services/fgs/timeout
+- Restrictions on starting an FGS from the background — https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- Android 15 foreground service and `BOOT_COMPLETED` changes — https://developer.android.com/about/versions/15/behavior-changes-15
+- Doze and App Standby — https://developer.android.com/training/monitoring-device-state/doze-standby
+- Notification runtime permission — https://developer.android.com/develop/ui/views/notifications/notification-permission
+- Foreground service types (Android 14 requirements) — https://developer.android.com/about/versions/14/changes/fgs-types-required
 - `ClipboardManager` — https://developer.android.com/reference/android/content/ClipboardManager
 - Copy and paste guide — https://developer.android.com/develop/ui/views/touch-and-input/copy-paste
 - Secure clipboard handling — https://developer.android.com/privacy-and-security/risks/secure-clipboard-handling

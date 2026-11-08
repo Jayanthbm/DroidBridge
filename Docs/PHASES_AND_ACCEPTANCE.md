@@ -4,7 +4,7 @@
 
 Complete the research work first, including the official-source checks and feasibility prototypes listed in `PROTOTYPE_PLAN.md`. Update the research, decisions, permissions and progress documents. Commit the research package to `development` and present the findings to the owner. Then begin Phase 0 unless a specific unresolved decision blocks progress.
 
-**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-19, ADR-010–ADR-022). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
+**Gate A status, 2026-11-08:** the official-source research and documentation package is complete and committed to `development` (`RESEARCH_AND_FEASIBILITY.md` R-01–R-21, ADR-010–ADR-023). The feasibility **prototypes** are not done — they require the target device and Mac, and they run as Phase 1. No prototype or device evidence exists yet. Gate A therefore splits into A1 (research documentation — done) and A2 (prototype evidence — pending, Phase 1), and Phase 0 may proceed once the owner has the research report.
 
 Execute the phases below one at a time. At the end of every phase, commit, report and wait for owner input. Approval to continue authorizes only the next phase.
 

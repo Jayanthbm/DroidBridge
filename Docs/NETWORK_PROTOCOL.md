@@ -67,6 +67,15 @@ Pairing code is not a long-term secret. Use certificate/public-key pinning or an
 - No plaintext fallback.
 - No internet binding or relay.
 
+## 4A. Session persistence, keepalive and reconnect
+
+- The session is owned by a `connectedDevice` foreground service on Android when background sync is enabled (ADR-023, R-20). There is no session without that service or a visible app.
+- Liveness is best-effort: Doze suspends network access device-wide, so the protocol must assume a socket can go stale at any time.
+- Keepalive: a small `session.ping`/`session.pong` at a modest interval (start at 15 s, tune from P14 measurements). Never spin a tight loop.
+- Reconnect: exponential backoff with jitter, a cap, and reset on success. Reconnect re-resolves the peer through `registerServiceInfoCallback()` rather than reusing a stored IP, and re-authenticates with the pinned identity.
+- A stale connection must be treated as "disconnected" in the UI; the app must never show "connected" for a socket that has not completed a ping round-trip.
+- Message loss across reconnect must not corrupt state: clipboard offers are idempotent by content hash, and the media channel restarts from a keyframe.
+
 ## 5. Message envelope
 
 Conceptual JSON envelope for control messages:

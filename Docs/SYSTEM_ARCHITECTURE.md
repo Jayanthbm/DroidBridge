@@ -76,6 +76,8 @@ DroidBridge/
 
 Connection direction (ADR-010): the macOS app advertises the Bonjour service and listens; the Android app selects it through the system NSD picker and dials out, so the Android app can run without the broad `ACCESS_LOCAL_NETWORK` permission.
 
+Session ownership (ADR-023): when the user enables background clipboard sync, an Android `connectedDevice` foreground service owns the connection and shows a persistent notification; a mirroring session uses its own `mediaProjection` service and shares the same connection when both are active. Because Doze suspends network access device-wide, every consumer of the session treats "connected" as a state that can lapse and reconnects with backoff.
+
 The P08 comparison must still record:
 - Latency.
 - Frame loss and recovery.
