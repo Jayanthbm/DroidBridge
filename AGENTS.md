@@ -61,50 +61,32 @@ Do not treat an API class being public in documentation as proof that a normal c
 - Add integration tests for LAN discovery, connection loss and reconnection.
 - Add physical-device test evidence for MediaProjection, clipboard, secure screens and input experiments.
 
-## Mandatory research-first, commit, and phase-by-phase owner-checkpoint workflow
+## Active workflow and agent ownership (owner-approved; 2026-11-08)
 
-The project must follow this exact sequence. Do not combine or reorder the stages.
+The active integration branch is `development`; `master` is the stable-release branch. Never assume `main`, rename branches, force-push, or merge to `master` without explicit release approval.
 
-### Stage A — Complete research before implementation
+### Cloud Research Agent
+- Research and verify current official Android, Apple and Samsung documentation; record dates, target OS/API applicability, source URLs, restrictions, confidence, alternatives and GO / CONDITIONAL / NO-GO conclusions.
+- Maintain research, architecture, technical-decision, permission, workflow, cloud-progress and backlog documentation.
+- Prepare prototype procedures, acceptance matrices and test checklists for the local agent.
+- Review pushed local code, test reports and evidence for API correctness, security, privacy, permissions and architecture.
+- Research release requirements, signing, notarisation and store declarations.
+- **Must not** implement product features, edit Android/macOS application code, own local builds, run or claim physical-device tests, or mark device-specific prototypes complete.
 
-1. Start with a repository and environment inspection; do not create feature code.
-2. Research every relevant feasibility question and every high-risk platform/API dependency in the project docs. Prioritise current official Android, Apple and Samsung sources. Use secondary sources only to identify pitfalls, clearly labelled as secondary.
-3. Research both positive and negative findings. Verify API availability for the actual target OS/API levels, permission prompts, foreground/background restrictions, entitlements, distribution rules, device-role requirements and Samsung-specific limitations.
-4. Run only small, isolated research probes if needed; do not build production features during this stage.
-5. Update `RESEARCH_AND_FEASIBILITY.md`, `TECHNICAL_DECISIONS.md`, `PERMISSIONS_MATRIX.md`, and `PROGRESS_LOCAL.md`. Record source URLs, date checked, target OS/API, evidence, confidence, limitations, and GO / CONDITIONAL / NO-GO status.
-6. When the research checklist is complete, create a dedicated research commit (or a small set of clearly scoped research commits) on `development`. Research-only work must be committed even when no application code changed. Push when a remote is configured and access is available.
-7. Present a concise research report, the commit hash, confirmed capabilities, unresolved risks, and recommended build scope to the owner. Then begin the first build phase (Phase 0) unless a specific unresolved issue requires an owner decision. Do not treat this as approval to bypass any later phase gate.
+### Local Development Agent
+- Own Android/macOS project implementation, builds, automated tests, prototypes, physical-device validation and local progress/evidence.
+- Record actual device/OS/build details and USB, USB-debugging and wireless-debugging state for every relevant test.
+- Never claim a device test passed without captured evidence.
 
-### Stage B — Build one phase at a time
+### Sequential handoffs
+Both agents sync the latest `development` before starting. The cloud agent completes and pushes a scoped documentation/review update; the local agent pulls it before implementation. Before cloud work resumes, local changes and evidence must be committed and pushed. Do not work on or push competing changes simultaneously. Never overwrite uncommitted work.
 
-1. After research is committed, execute only the next phase listed in `PHASES_AND_ACCEPTANCE.md` (starting with Phase 0), unless a blocker requires owner input.
-2. Finish that phase completely: implement its scoped work, run relevant builds/tests, inspect permission/security impact, update docs/progress/changelog, and create a descriptive Git commit.
-3. Report the phase result, commit hash, changed files, tests and evidence, permission changes, limitations, and the exact next phase.
-4. **Stop and wait for the owner's input after every completed phase.** Do not automatically start, partially implement, or pre-emptively prepare the next phase while waiting.
-5. Resume only after the owner responds. Their response may approve the next phase, request changes, or change scope. Apply that instruction before proceeding.
-6. If a phase is blocked, fails acceptance, or requires a product/permission/security decision, stop and ask the owner instead of moving on.
+### Autonomous phase progression
+Follow `Docs/PHASES_AND_ACCEPTANCE.md` in order. After a phase passes its acceptance criteria, the responsible agent records tests and unavailable tests honestly, audits permissions/security, updates progress/decisions/changelog, commits and pushes, reports the milestone, and automatically begins the next phase. Do not skip or combine phases.
 
-### Git documentation policy
+Stop only for a genuine blocker: a hard constraint cannot be met; a feasibility gate fails; a new/expanded permission or sensitive capability, cost, entitlement, security/privacy trade-off needs owner approval; an irreversible/destructive operation is proposed; or a product/architecture decision cannot be resolved from documented requirements and evidence. Do not pause for routine phase approval and never silently relax a hard constraint.
 
-- All completed project work belongs in Git: research, source links, feasibility findings, architecture decisions, permission/security analysis, prototype evidence, test results, implementation, bug fixes, progress and changelog updates.
-- Never leave completed research or decisions only in chat, local notes, or an untracked file.
-- Commit research separately from implementation. Commit the completed research package before beginning Phase 0. Owner approval is required at the end of each completed phase before the next phase begins.
-- Commit each completed build phase separately. Do not accumulate several phases into one large commit.
-- Use descriptive messages such as `docs(research): verify Android 17 LAN permission model`, `docs(research): record Samsung remote input feasibility`, `test(android): validate MediaProjection consent flow`, or `feat(macos): add Bonjour discovery`.
-- Push commits to `origin/development` when configured and available. Never force-push, commit secrets/private user data, or merge to `main` without explicit owner approval.
-
-## Phase gates
-
-A phase is complete only when:
-- Its acceptance criteria pass.
-- Tests and build results are recorded.
-- Permission and security impact is documented.
-- Known limitations are recorded.
-- The progress file is updated.
-- A Git commit is created with a descriptive message.
-- The owner has received the phase report and the agent is waiting for explicit approval before beginning the next phase.
-
-If a hard requirement is technically impossible with supported APIs, stop and report the evidence. Do not silently relax the requirement. Offer choices to the owner.
+Research documentation completion does not mean prototypes passed. Phase 0 is the next build phase; P00–P15 device/platform prototypes remain pending for their scheduled phase.
 
 ## USB debugging development policy
 
@@ -133,21 +115,3 @@ Keep these files current:
 
 Never mark an untested feature as complete.
 
-
-## Owner-approved workflow clarification (authoritative; 2026-11-08)
-
-This section supersedes any earlier wording in this file that conflicts with it. The active integration branch is **`development`**. The existing **`master`** branch remains the stable-release branch. Do not rename branches or assume a `main` branch. All ongoing research and implementation commits target `development`; do not merge to `master` without the owner's explicit release approval.
-
-### Two-agent responsibility split
-
-- **Cloud Research Agent:** research current official platform documentation; verify and record technical facts, feasibility, sources, risks and alternatives; maintain research, architecture, decision and permission documentation; prepare prototype instructions and review documentation. It must not implement product features, modify Android/macOS application code, run or claim physical-device tests, or mark device-specific prototypes complete. It commits and pushes its research/documentation work to `development`.
-- **Local Development Agent:** owns all implementation, Android/macOS project changes, builds, automated tests, physical-device prototypes and validation, and local progress/test evidence. It pulls the latest `development` before starting and pushes implementation and test evidence to `development`.
-- **Coordination:** agents must not work on or push competing changes to `development` simultaneously. Use sequential handoffs: the cloud agent finishes and pushes a scoped research update; the local agent pulls it before implementation. Before a later cloud research update, local work must be committed/pushed and the cloud agent must sync to the latest branch head. Never force-push or overwrite uncommitted work.
-
-### Autonomous phase progression
-
-After completing a phase, the responsible agent must verify its acceptance criteria, run all feasible tests, record unavailable tests honestly, update progress/decisions/changelog/permission records, create a focused commit and push to `development`. It must then **automatically begin the next phase** in the documented sequence without waiting for routine owner approval. Continue phase by phase; do not skip gates or combine phases. Report meaningful milestones and handoffs while continuing.
-
-Stop and request owner input only when a genuine blocker requires it: a hard constraint cannot be met; a prototype fails a feasibility gate; a new or expanded permission, sensitive capability, cost, account entitlement or security/privacy trade-off needs approval; an irreversible/destructive operation is proposed; or a product/architecture choice cannot be resolved from existing requirements and documented evidence. Do not pause merely because a phase ended. Do not silently relax any hard constraint. If blocked, document the evidence and precise decision needed, then wait.
-
-The documented phase sequence and acceptance criteria remain unchanged. Research completion does not imply that physical prototypes have passed. The current next build phase remains Phase 0; physical prototypes remain pending for their scheduled phase. The local agent must not claim device results until it has actually run them on the target phone and recorded USB/debugging state.
