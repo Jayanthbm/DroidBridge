@@ -45,11 +45,18 @@ You are the engineering agent for **DroidBridge**, a native Android + macOS appl
 - Update progress, decisions, research, permissions and changelog as applicable.
 - Create one descriptive Git commit for the completed phase and push when possible.
 - Report the phase outcome, commit hash, files changed, tests/evidence, permission changes, known limitations and exact next phase.
-- **Stop after the report and wait for the owner's input. Do not start the next phase automatically.** The owner’s approval to continue applies to the next phase only.
+- After a phase passes its acceptance gate, commit, push, report and automatically begin the next documented phase. Stop only for a genuine blocker requiring owner input.
 
 ### If a phase is blocked or acceptance criteria fail
 
 Do not mark it complete, do not commit misleading completion status, and do not move to the next phase. Explain the evidence, impact and choices that require the owner's decision.
+
+## Agent ownership and handoff
+
+- Cloud agent is research/documentation/prototype-planning/code-review only; it must not implement app features, edit Android/macOS project code, build, or claim physical-device tests.
+- Local agent owns implementation, builds, automated tests, all prototypes and physical-device evidence.
+- Work sequentially on `development`; sync latest branch before starting. `master` is stable release; never assume `main` or merge to `master` without explicit release approval.
+- After a phase passes, automatically progress to the next phase. Stop only for a genuine blocker or an owner decision involving hard constraints, permissions, sensitive capability, security/privacy, cost/entitlement, destructive work or unresolved product/architecture choices.
 
 ## Non-negotiable product constraints
 
@@ -78,20 +85,4 @@ Always finish with:
 Start by inspecting the repository and determining the current gate. Do not assume permission to proceed to the next phase.
 
 
-## Owner-approved workflow clarification (authoritative; 2026-11-08)
-
-This section supersedes any earlier wording in this file that conflicts with it. The active integration branch is **`development`**. The existing **`master`** branch remains the stable-release branch. Do not rename branches or assume a `main` branch. All ongoing research and implementation commits target `development`; do not merge to `master` without the owner's explicit release approval.
-
-### Two-agent responsibility split
-
-- **Cloud Research Agent:** research current official platform documentation; verify and record technical facts, feasibility, sources, risks and alternatives; maintain research, architecture, decision and permission documentation; prepare prototype instructions and review documentation. It must not implement product features, modify Android/macOS application code, run or claim physical-device tests, or mark device-specific prototypes complete. It commits and pushes its research/documentation work to `development`.
-- **Local Development Agent:** owns all implementation, Android/macOS project changes, builds, automated tests, physical-device prototypes and validation, and local progress/test evidence. It pulls the latest `development` before starting and pushes implementation and test evidence to `development`.
-- **Coordination:** agents must not work on or push competing changes to `development` simultaneously. Use sequential handoffs: the cloud agent finishes and pushes a scoped research update; the local agent pulls it before implementation. Before a later cloud research update, local work must be committed/pushed and the cloud agent must sync to the latest branch head. Never force-push or overwrite uncommitted work.
-
-### Autonomous phase progression
-
-After completing a phase, the responsible agent must verify its acceptance criteria, run all feasible tests, record unavailable tests honestly, update progress/decisions/changelog/permission records, create a focused commit and push to `development`. It must then **automatically begin the next phase** in the documented sequence without waiting for routine owner approval. Continue phase by phase; do not skip gates or combine phases. Report meaningful milestones and handoffs while continuing.
-
-Stop and request owner input only when a genuine blocker requires it: a hard constraint cannot be met; a prototype fails a feasibility gate; a new or expanded permission, sensitive capability, cost, account entitlement or security/privacy trade-off needs approval; an irreversible/destructive operation is proposed; or a product/architecture choice cannot be resolved from existing requirements and documented evidence. Do not pause merely because a phase ended. Do not silently relax any hard constraint. If blocked, document the evidence and precise decision needed, then wait.
-
-The documented phase sequence and acceptance criteria remain unchanged. Research completion does not imply that physical prototypes have passed. The current next build phase remains Phase 0; physical prototypes remain pending for their scheduled phase. The local agent must not claim device results until it has actually run them on the target phone and recorded USB/debugging state.
+Follow `AGENTS.md`, `Docs/DEVELOPMENT_WORKFLOW.md` and `Docs/PHASES_AND_ACCEPTANCE.md` as the authoritative workflow; this prompt is a quick-start aid and must not override them.
