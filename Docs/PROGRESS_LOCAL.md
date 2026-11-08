@@ -2,7 +2,7 @@
 
 **Status:** Research stage complete and documented. One platform-independent module exists (`shared/protocol/`, H.264 media framing) and its tests run on a plain JVM; no Android or macOS application code exists yet, no prototype has been run and no physical-device test has been performed.
 **Last updated:** 2026-11-08
-**Current gate:** Gate A (research) closed on documentation evidence — Phase 0 is the next build step, subject to owner approval.
+**Current gate:** Gate A research documentation is complete. Phase 0 is the next local build phase; no routine owner approval is required. No native shells or physical prototypes are complete yet.
 
 ## Device and environment
 
@@ -90,16 +90,16 @@
 
 ## Workflow from here
 
-1. Owner reviews the research report and the ADRs (especially ADR-010, the picker-vs-permission choice, and ADR-014, the clipboard degradation).
-2. Phase 0 — create the repository structure and both native shells, verify clean builds, add `.gitignore`/CI scripts. No feature code.
-3. Then prototypes P00–P13 in the order given in `PROTOTYPE_PLAN.md`, each with a written report and a commit.
-4. No production feature work until the prototype gates that affect it have passed.
+1. Pull the latest `development` after the cloud documentation handoff.
+2. Phase 0 — create the repository structure and both native shells, verify clean builds, record actual toolchain/device environment, and add CI/build scripts where practical. No feature code.
+3. Automatically proceed to Phase 1 prototypes P00–P15 in the order and dependencies in `PROTOTYPE_PLAN.md`; each requires a written evidence report and focused commit.
+4. Do not begin dependent production features until their prototype gates pass. Stop only for genuine blockers or owner decisions listed in `AGENTS.md`.
 
 ## Next task
 
-Phase 0 (repository and environment): create `android/`, `macos/`, `shared/` and `scripts/`, add `.gitignore`, and verify both shells build from a clean checkout. This is a build phase and requires the owner's approval after the research report.
+Phase 0 (repository and environment): create `android/`, `macos/`, `shared/` and `scripts/` as specified, verify both native shells build from a clean checkout, and record the actual Mac/device environment. This is owned by the local agent; routine phase approval is not required.
 
 
-## Workflow correction (2026-11-08)
+## Agent handoff status (2026-11-08)
 
-The owner's active integration branch is **`development`**; **`master`** remains the stable-release branch. Do not rename either branch or assume `main`. This section supersedes older statements in this progress file that Phase 0 or any later phase requires routine owner approval. Under the approved two-agent workflow, the cloud agent is research/documentation-only and the local agent owns implementation, builds and physical-device testing. Agents hand off sequentially on `development` and must not push competing changes simultaneously. After each phase passes its documented gate, the responsible agent commits, pushes, reports the result and automatically proceeds to the next phase. Stop only for a genuine blocker or an owner decision involving scope, permissions, security, privacy, cost, entitlement or an unresolved product/architecture choice. No physical-device prototype is complete until actual device evidence is recorded. The next build step remains Phase 0; research documentation is complete, while physical prototypes remain pending as already recorded above.
+Cloud research/documentation pass is complete. The cloud agent's immediate follow-up is documentation consistency and cloud tracking; it does not own Phase 0 implementation. Local agent should pull the latest `development` after the cloud handoff and begin Phase 0. Cloud must not modify app code or claim prototype/device results. After local Phase 0 commits are pushed, cloud may review them before later local work.
