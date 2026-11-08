@@ -1,50 +1,88 @@
 # Local Development Progress
 
-**Status:** Documentation pack prepared; repository not yet created. Research-first, research commit, and one-phase-at-a-time workflow with owner checkpoints defined.  
-**Last updated:** 2026-11-07
+**Status:** Research stage complete and documented; no application code exists yet; no prototype has been run and no physical-device test has been performed.
+**Last updated:** 2026-11-08
+**Current gate:** Gate A (research) closed on documentation evidence — Phase 0 is the next build step, subject to owner approval.
 
 ## Device and environment
+
 - Android device: Samsung Galaxy S24 Ultra.
 - Region: India.
-- Android: 17 (owner-reported).
-- One UI: 9 (owner-reported).
-- Mac model/macOS/Xcode: To be recorded when development begins.
-- USB debugging: Development-only allowance; final release must not require it.
-- Bluetooth: Optional.
+- Android: 17 (owner-reported; API level 37 assumed and supported by current Google documentation — **not yet verified on the device**).
+- One UI: 9 (owner-reported, not yet verified).
+- Mac model / macOS / Xcode: **to be recorded in P00**.
+- USB debugging: development-only allowance; final release must not require it.
+- Bluetooth: optional and non-core.
+
+## Repository state
+
+- Branch: `development` (created from `master` at the start of this research pass, because the remote had only `master`).
+- Content: documentation only — `AGENTS.md`, `README.md`, `Docs/*`, no `android/`, no `macos/`, no `shared/`, no `.gitignore` yet.
+- Build/test tooling: none yet; nothing to build or run.
 
 ## Completed
+
 - [x] Product concept and constraints documented.
 - [x] Two-native-app direction documented.
 - [x] Wi-Fi-first / optional Bluetooth decision recorded.
 - [x] Research baseline added.
 - [x] Prototype plan added.
 - [x] Security and permission policies added.
-- [x] Agent workflow added.
+- [x] Agent workflow added (2026-11-07).
+- [x] **2026-11-08 research pass — official-source verification of every high-risk dependency:**
+  - Android 17 local network permission model and the NSD advertising/discovery asymmetry.
+  - Android 17 certificate-transparency default and its interaction with pinned custom anchors; ECH default.
+  - MediaProjection consent/FGS/stop rules, selected-app capture, resize/visibility callbacks.
+  - Android 15+ screenshare protections (notifications, password fields, OTP activities) and `FLAG_SECURE`.
+  - Android clipboard focus/IME gate, clipboard toast, sensitive-clip flag.
+  - macOS local network privacy (TN3179) and the requirement that the Mac advertise under the new design.
+  - macOS 15.4+ pasteboard access prompts — newly identified risk to automatic clipboard sync.
+  - macOS Bluetooth HID peripheral refusal; Android `BluetoothHidDevice` reverse direction.
+  - Knox `RemoteInjection` permission/authorisation eligibility and DeX API removal on Android 16+.
+  - Audio playback capture boundaries; impossibility of call audio; Android 17 background-audio hardening.
+  - Transport comparison (TLS/TCP vs WebRTC) and the macOS mDNS/local-network interaction.
+- [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
 
 ## Not started
-- [ ] Create Git repository.
-- [ ] Create Android project shell.
-- [ ] Create macOS project shell.
-- [ ] Capture exact device build/API details.
-- [ ] Run P00 environment baseline.
+
+- [ ] Create the Android project shell (`android/`, Kotlin + Compose, Gradle KTS).
+- [ ] Create the macOS project shell (`macos/`, Swift + SwiftUI, Xcode project).
+- [ ] Add `.gitignore` and CI/build scripts.
+- [ ] Capture exact device build/API details (P00).
 - [ ] Run P01 MediaProjection prototype.
-- [ ] Run P02 Android 17 LAN permission prototype.
+- [ ] Run P02 Android 17 LAN strategy prototype (picker vs runtime permission).
 - [ ] Run P03 pairing/transport prototype.
-- [ ] Run clipboard prototypes.
-- [ ] Run video receiver/stream prototypes.
-- [ ] Run remote input/HID experiments.
+- [ ] Run P04/P05 clipboard prototypes.
+- [ ] Run P06 macOS pasteboard prompt prototype.
+- [ ] Run P07/P08 video receiver and end-to-end stream prototypes.
+- [ ] Run P09 remote-input confirmation experiment.
+- [ ] Run P10 secure-screen/screenshare-protection tests.
+- [ ] Run P11 macOS local-network permission tests.
+- [ ] Run P13 pinned TLS/CT prototype.
+- [ ] Verify the owner-reported Android 17 / One UI 9 version on the device.
 
 ## Current blockers
-- Full remote input without Accessibility/ADB/root is not proven.
-- Android 17 LAN permission path must be tested on target firmware.
-- Background clipboard behaviour must be measured.
-- Mac-as-Bluetooth-HID-peripheral capability is not proven.
 
-## Mandatory workflow from repository creation
-1. Create the repository and commit the documentation pack.
-2. Complete the research stage before production implementation; commit all research and evidence to Git.
-3. Present the research report and proceed to Phase 0 unless a specific blocker requires owner input.
-4. Execute one build phase only, commit and report it, then wait for owner input before the next phase.
+- **Full remote input is NO-GO** under the current constraints (research conclusion, not a device test): no public injection API, Knox is signature/managed-device gated, macOS cannot publish a HID peripheral.
+- **Automatic background clipboard sync is not a release claim.** Android requires focus/IME for reads; macOS 15.4+ can prompt or deny programmatic pasteboard access.
+- **Android 17 LAN path must be proven on the target firmware.** The design depends on the NSD picker granting a usable duplex session with the Mac as the listener (U1). If P02 disproves it, `ACCESS_LOCAL_NETWORK` becomes mandatory and the owner must accept that permission.
+- **Mac-as-Bluetooth-HID-peripheral is not proven and is expected to fail** (`CBError.uuidNotAllowed`); P09 exists to record the evidence.
+
+## Tests and evidence
+
+- None. No build has been produced, no prototype executed, no device attached. Every statement in the research documents is documentation-based.
+
+## USB / debugging state
+
+- Not applicable yet: no device session has occurred in this pass. When one occurs, the report must state: USB connected yes/no, USB debugging enabled yes/no, wireless debugging enabled yes/no.
+
+## Workflow from here
+
+1. Owner reviews the research report and the ADRs (especially ADR-010, the picker-vs-permission choice, and ADR-014, the clipboard degradation).
+2. Phase 0 — create the repository structure and both native shells, verify clean builds, add `.gitignore`/CI scripts. No feature code.
+3. Then prototypes P00–P13 in the order given in `PROTOTYPE_PLAN.md`, each with a written report and a commit.
+4. No production feature work until the prototype gates that affect it have passed.
 
 ## Next task
-Create the repository from this documentation pack and use `Docs/AI_AGENT_RESUME_START_PROMPT.md`. The agent must inspect the actual repo and begin with the research gate, not jump into implementation.
+
+Phase 0 (repository and environment): create `android/`, `macos/`, `shared/` and `scripts/`, add `.gitignore`, and verify both shells build from a clean checkout. This is a build phase and requires the owner's approval after the research report.

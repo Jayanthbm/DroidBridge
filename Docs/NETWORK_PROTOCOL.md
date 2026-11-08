@@ -12,7 +12,7 @@
 
 ## 2. Discovery
 
-Proposed service type: choose and document a unique Bonjour/DNS-SD type before implementation; do not invent a globally registered type if public distribution is planned. A private development type may be used during prototypes.
+Service type: prototypes and the first implementation use the private type `_droidbridge-dev._tcp`. A final unique type must be chosen and recorded here before any public release; do not invent a globally registered type if public distribution is planned (ADR-022).
 
 Advertised TXT metadata should contain only:
 - protocol version,
@@ -23,10 +23,13 @@ Advertised TXT metadata should contain only:
 
 Do not publish clipboard data, personal names, serial numbers, stable hardware identifiers or authentication secrets in discovery records.
 
-Android 17 discovery options:
-A. NSD system service picker with `DiscoveryRequest.FLAG_SHOW_PICKER`.
-B. Direct NSD/mDNS requiring `ACCESS_LOCAL_NETWORK`.
-Test both.
+Android 17 discovery (researched 2026-11-08, R-01/R-02):
+
+- **Direction is fixed by the permission model.** `NsdManager.registerService()` (advertising) always requires `ACCESS_LOCAL_NETWORK`, while a picker-selected service can be connected to without it. Therefore the **macOS app advertises and listens**, and the **Android app selects the Mac through `DiscoveryRequest.FLAG_SHOW_PICKER` and connects outbound** (ADR-010).
+- The picker grant is per-service, persists across reboots, is re-checkable with `checkPermissionForService()` and reusable via `DiscoveryRequest.FLAG_USER_APPROVED_ONLY`; it can be revoked by the user or for storage reasons.
+- Never cache the peer IP: re-resolve through `registerServiceInfoCallback()` on every reconnect, network change and wake.
+- Fallback only: `ACCESS_LOCAL_NETWORK` runtime permission plus Android-side advertising, if P02 shows the picker path cannot sustain the session.
+- The Mac must declare `NSLocalNetworkUsageDescription` and list the service type in `NSBonjourServices`, and must handle the local-network prompt being undetermined or denied (R-10).
 
 macOS:
 - `NSLocalNetworkUsageDescription`
@@ -45,6 +48,8 @@ Initial pairing should be user-confirmed on both devices:
 7. Establish mutually authenticated encrypted session.
 
 Prefer standard, maintained cryptographic libraries and TLS 1.3 where supported. Do not implement custom cryptography.
+
+Identity model (ADR-011): each side generates a self-signed certificate on first run; the user confirms a short code on both screens; the peer certificate is pinned. Android declares the peer certificate as a custom trust anchor in `network_security_config.xml` — certificate transparency is not applied to custom trust anchors, so the Android 17 CT default does not block a pinned local certificate (R-03). Never disable CT or verification to make a handshake succeed.
 
 Pairing code is not a long-term secret. Use certificate/public-key pinning or another documented authenticated identity model after pairing.
 

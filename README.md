@@ -29,9 +29,9 @@ Remote input, audio and phone-call integration are research tracks. They must no
 
 ## Important feasibility warning
 
-A normal third-party Android app can request screen capture with MediaProjection, but MediaProjection does not grant arbitrary touch injection into other apps. With the project's prohibition on Accessibility, ADB, root and privileged Samsung APIs, full arbitrary remote touch control is **not currently a confirmed capability**. This is a major proof-of-concept gate, not an implementation assumption.
+A normal third-party Android app can request screen capture with MediaProjection, but MediaProjection does not grant arbitrary touch injection into other apps. With the project's prohibition on Accessibility, ADB, root and privileged Samsung APIs, full arbitrary remote touch control is **NO-GO as of the 2026-11-08 research pass**: no public injection API exists, Knox `RemoteInjection` requires a signature permission plus managed-device or MDM-issued authorisation, and macOS cannot publish a Bluetooth HID peripheral. Mirroring therefore ships view-only. See `Docs/RESEARCH_AND_FEASIBILITY.md` §2.
 
-Clipboard behaviour also has limits: Android 10+ restricts clipboard reads from background apps. Two-way automatic background sync must not be promised until tested. A foreground/manual workflow is the safe baseline.
+Clipboard behaviour also has limits on both sides: Android 10+ restricts clipboard reads from background apps (focus or default-IME required), and macOS 15.4+ can prompt for or deny programmatic pasteboard access. Two-way automatic background sync is not a release claim; a foreground/manual workflow is the safe baseline.
 
 ## Repository layout
 

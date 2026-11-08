@@ -72,12 +72,11 @@ DroidBridge/
 
 ## 5. Transport decision
 
-Do not lock in WebRTC before measuring. Prototype two options:
+**Researched 2026-11-08 (R-18, ADR-012): TLS 1.3 over TCP with length-prefixed framing is the MVP transport.** Reasons: one authenticated duplex channel covers clipboard and the H.264 stream; no ICE/STUN/TURN; no mDNS candidate machinery, which on macOS 26+ can itself trigger the local-network prompt. WebRTC remains a measured fallback only if P08 shows the simple transport cannot meet latency/quality targets.
 
-A. Simple authenticated TCP/TLS with length-prefixed messages and a separate video stream for initial proof.
-B. WebRTC with local-only ICE candidates, no STUN/TURN/cloud relay, if latency, congestion control and media adaptation justify the dependency.
+Connection direction (ADR-010): the macOS app advertises the Bonjour service and listens; the Android app selects it through the system NSD picker and dials out, so the Android app can run without the broad `ACCESS_LOCAL_NETWORK` permission.
 
-The final choice must compare:
+The P08 comparison must still record:
 - Latency.
 - Frame loss and recovery.
 - Network handoff behaviour.
@@ -99,7 +98,7 @@ Use hardware encoding/decoding where supported. Measure on the actual S24 Ultra 
 ## 7. Clipboard pipeline
 
 Mac → Android:
-NSPasteboard change detection → policy/filter → authenticated message → Android receive → explicit/allowed clipboard write → confirmation.
+NSPasteboard change detection (**subject to the macOS 15.4+ programmatic-access prompt, ADR-014**) → policy/filter → authenticated message → Android receive → `setPrimaryClip()` → confirmation. If pasteboard access is denied, only a user-initiated "send clipboard now" action is offered.
 
 Android → Mac:
 Foreground user action or verified permitted clipboard event → read current clip → policy/filter → authenticated message → Mac NSPasteboard write.
@@ -110,12 +109,14 @@ Use origin IDs and content hashes to prevent echo loops. Avoid storing raw clipb
 
 Mac pointer/keyboard events → experimental transport → selected supported input adapter.
 
-Possible adapters are research-only:
-- Bluetooth HID peripheral implementation on macOS.
-- Android hardware keyboard/mouse support.
-- Official OEM APIs only if eligible and authorized.
+**Status 2026-11-08: NO-GO for the MVP (ADR-015, ADR-016, ADR-017).**
 
-No generic input-injection API is assumed. If no compliant input adapter passes the proof of concept, release mirroring as view-only and clearly state the limitation.
+- macOS cannot publish a HID-over-GATT peripheral service through CoreBluetooth, and classic HID transports are owned by the system (R-12).
+- Android's `BluetoothHidDevice` makes Android the peripheral, which is the wrong direction (R-13).
+- Knox `RemoteInjection` needs a `signature` permission plus device-owner/profile-owner or an MDM-issued authorized scope (R-14).
+- No generic input-injection API is available to an ordinary app.
+
+Therefore mirroring is released **view-only**, and the Mac UI must not offer a control affordance. The input pipeline stays a documented, closed gate; reopening it requires new official platform capability, not a workaround.
 
 ## 9. Calls/audio
 

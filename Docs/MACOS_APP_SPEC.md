@@ -22,8 +22,8 @@
 ## 3. Clipboard
 
 - Use `NSPasteboard.general`.
-- Observe `changeCount` with a modest polling interval or a safe observation strategy.
-- Do not busy-loop.
+- Observe `changeCount` with a modest polling interval; do not busy-loop.
+- **Handle the macOS 15.4+ pasteboard access prompt** (`NSPasteboard.accessBehavior`, R-11): model undetermined/allowed/denied, explain the prompt before it appears, link to System Settings, and always keep a manual "send clipboard now" action that works without background monitoring (ADR-014).
 - Track changes made by DroidBridge to prevent echo.
 - Do not store clipboard history by default.
 - Use a policy filter before sending content.
@@ -32,9 +32,10 @@
 
 ## 4. Networking
 
-- Use Network.framework (`NWBrowser`, `NWListener`, `NWConnection`) where suitable.
-- Bonjour service types must be declared in `NSBonjourServices`.
-- Add `NSLocalNetworkUsageDescription` with a clear explanation.
+- Use Network.framework (`NWBrowser`, `NWListener`, `NWConnection`).
+- **The Mac is the advertiser and listener** (`NWListener` + Bonjour); the Android app discovers it through the system NSD picker and dials out (ADR-010).
+- Bonjour service types must be declared in `NSBonjourServices` and must match `NETWORK_PROTOCOL.md` exactly.
+- Add `NSLocalNetworkUsageDescription` with a clear explanation, and handle the local-network privilege being undetermined or denied (R-10).
 - Use TLS with authenticated peer identity; do not trust a peer merely because it is on the same Wi-Fi.
 - Handle local network permission denied/revoked.
 - Bind only to the intended interfaces where possible; avoid exposing an unauthenticated server on all networks.

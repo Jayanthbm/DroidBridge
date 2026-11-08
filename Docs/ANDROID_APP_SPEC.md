@@ -36,7 +36,8 @@
 
 - Foreground/manual send is the initial guaranteed workflow.
 - Use `ClipboardManager.getPrimaryClip()` only when allowed by Android focus/default-IME rules.
-- Test `setPrimaryClip(ClipData.newPlainText(...))` in foreground and background separately.
+- Test `setPrimaryClip(ClipData.newPlainText(...))` in foreground and background separately; the system clipboard preview/copy UI is expected and must not be suppressed (R-09).
+- Mark clips written on behalf of a sensitive source with the `ClipDescription` sensitive flag so Android 13+ does not preview their content.
 - Never require default IME.
 - Never add Accessibility.
 - No clipboard history by default.
@@ -59,12 +60,12 @@
 
 ## 6. Local network
 
-- Android 17 target API 37 requires evaluation of `ACCESS_LOCAL_NETWORK`.
-- Prototype NSD system picker (`FLAG_SHOW_PICKER`) first for least privilege.
-- If direct LAN access is needed, declare/request `ACCESS_LOCAL_NETWORK` and handle denial/revocation.
-- Do not assume `INTERNET` alone grants local LAN access.
-- Do not use hard-coded IPs or ports.
-- Use a registered service type and dynamic port.
+- Android 17 target API 37 requires `ACCESS_LOCAL_NETWORK` **or** a picker grant (R-01).
+- The app does not advertise: the macOS app advertises and the Android app selects it with `DiscoveryRequest.FLAG_SHOW_PICKER` and connects outbound, so no broad LAN permission is needed (ADR-010).
+- Declare/request `ACCESS_LOCAL_NETWORK` only if the P02 prototype disproves the picker path, and handle denial/revocation explicitly.
+- Do not assume `INTERNET` alone grants local LAN access on API 37.
+- Do not use hard-coded IPs or ports; re-resolve through `registerServiceInfoCallback()` instead of caching addresses.
+- Use the service type recorded in `NETWORK_PROTOCOL.md` (`_droidbridge-dev._tcp` during development) and a dynamic port.
 
 ## 7. Bluetooth optional module
 
