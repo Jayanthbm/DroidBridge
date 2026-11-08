@@ -66,7 +66,7 @@ DroidBridge/
 2. Complete the full research/feasibility stage first; do not start production coding.
 3. Record official sources, positive and negative findings, decisions, permission impacts and prototype evidence in Git-tracked docs.
 4. Commit the completed research package and present the report, then begin Phase 0 unless a specific blocker requires owner input.
-5. Build one phase at a time. Commit and report each completed phase, then stop and wait for the owner's input before starting the next phase.
+5. Follow the documented phases in order. After a phase passes its acceptance gate, commit, push, report and automatically proceed; stop only for a genuine blocker requiring owner input.
 6. Use `Docs/AI_AGENT_RESUME_START_PROMPT.md` to start or resume an agent session.
 7. Keep prototype code isolated from production modules and update progress/decision records after every phase.
 
@@ -75,20 +75,6 @@ DroidBridge/
 Use official Android Developers, Apple Developer and Samsung Knox documentation first. Use issue trackers and reputable engineering discussions for implementation pitfalls, but label them as secondary evidence. Record the URL, date checked, API level, relevant limitation and the conclusion. Re-check volatile documentation before implementation.
 
 
-## Owner-approved workflow clarification (authoritative; 2026-11-08)
+## Agent responsibilities
 
-This section supersedes any earlier wording in this file that conflicts with it. The active integration branch is **`development`**. The existing **`master`** branch remains the stable-release branch. Do not rename branches or assume a `main` branch. All ongoing research and implementation commits target `development`; do not merge to `master` without the owner's explicit release approval.
-
-### Two-agent responsibility split
-
-- **Cloud Research Agent:** research current official platform documentation; verify and record technical facts, feasibility, sources, risks and alternatives; maintain research, architecture, decision and permission documentation; prepare prototype instructions and review documentation. It must not implement product features, modify Android/macOS application code, run or claim physical-device tests, or mark device-specific prototypes complete. It commits and pushes its research/documentation work to `development`.
-- **Local Development Agent:** owns all implementation, Android/macOS project changes, builds, automated tests, physical-device prototypes and validation, and local progress/test evidence. It pulls the latest `development` before starting and pushes implementation and test evidence to `development`.
-- **Coordination:** agents must not work on or push competing changes to `development` simultaneously. Use sequential handoffs: the cloud agent finishes and pushes a scoped research update; the local agent pulls it before implementation. Before a later cloud research update, local work must be committed/pushed and the cloud agent must sync to the latest branch head. Never force-push or overwrite uncommitted work.
-
-### Autonomous phase progression
-
-After completing a phase, the responsible agent must verify its acceptance criteria, run all feasible tests, record unavailable tests honestly, update progress/decisions/changelog/permission records, create a focused commit and push to `development`. It must then **automatically begin the next phase** in the documented sequence without waiting for routine owner approval. Continue phase by phase; do not skip gates or combine phases. Report meaningful milestones and handoffs while continuing.
-
-Stop and request owner input only when a genuine blocker requires it: a hard constraint cannot be met; a prototype fails a feasibility gate; a new or expanded permission, sensitive capability, cost, account entitlement or security/privacy trade-off needs approval; an irreversible/destructive operation is proposed; or a product/architecture choice cannot be resolved from existing requirements and documented evidence. Do not pause merely because a phase ended. Do not silently relax any hard constraint. If blocked, document the evidence and precise decision needed, then wait.
-
-The documented phase sequence and acceptance criteria remain unchanged. Research completion does not imply that physical prototypes have passed. The current next build phase remains Phase 0; physical prototypes remain pending for their scheduled phase. The local agent must not claim device results until it has actually run them on the target phone and recorded USB/debugging state.
+The cloud agent is restricted to platform research, documentation, prototype planning and review of pushed local work. It does not implement app features, edit Android/macOS project code, build or run device tests. The local agent owns implementation, builds, automated tests, prototypes and physical-device evidence. Agents hand off sequentially on `development`; `master` is the stable-release branch. See `AGENTS.md` and `Docs/DEVELOPMENT_WORKFLOW.md` for the authoritative rules.
