@@ -5,7 +5,8 @@
 
 Official-source research and the documentation pass are recorded in `RESEARCH_AND_FEASIBILITY.md`, `TECHNICAL_DECISIONS.md`, and `PERMISSIONS_MATRIX.md` (R-01–R-31 and ADR-010–ADR-028). This closes the documentation research gate only. No physical-device prototype is implied to have passed.
 
-## Phase 0 — Repository and environment (next)
+## Phase 0 — Repository and environment
+**Status:** Complete — 2026-11-09
 Owner: Local Development Agent.
 - Inspect repository, toolchains and actual device/host environment.
 - Create native Android and macOS project shells.
@@ -15,7 +16,15 @@ Owner: Local Development Agent.
 
 Exit: both native shells build cleanly; actual tool/device versions are recorded; permission and repository audits are documented; focused commit pushed to `development`.
 
-## Phase 1 — Feasibility prototypes
+**Result:** met. `android/` (10 modules) and `macos/` (sandboxed SwiftUI shell) both build from a
+clean checkout; 31/31 shared protocol tests and 4/4 macOS tests pass; Android lint is clean with
+`warningsAsErrors`; the APK installs and launches on the OnePlus Nord CE (Android 12 / API 31) with
+no crash or ANR. Audits in `PERMISSIONS_MATRIX.md` §6. Reports in `Docs/prototypes/`.
+**Not done, and not claimed:** the S24 Ultra baseline (device not attached) and a device screenshot
+(the phone was PIN-locked).
+
+## Phase 1 — Feasibility prototypes (next)
+**Status:** In progress — P00 host/device baseline done; P01 onward pending
 Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P15 and its per-prototype order/dependencies.
 - Execute each applicable isolated prototype on the required platform/device.
 - Record evidence header, exact steps, positive and negative results, logs and limitations.

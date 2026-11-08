@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Placeholder launcher art. Real branding is a Phase 6 UX task, not a Phase 0 one. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,38h22a16,16 0 0 1 0,32h-22zM38,46v16h14a8,8 0 0 0 0,-16z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,38h16v32h-16z" />
+</vector>

@@ -2,7 +2,7 @@
 
 This file is the source of truth for permission minimization. The agent must compare this matrix against the actual Android manifest and macOS entitlements at every release.
 
-**Research status:** updated 2026-11-08 from the research pass in `RESEARCH_AND_FEASIBILITY.md`. No manifest or entitlements file exists yet, so every row below is a *plan*, not an observed diff. The first real audit happens in Phase 0 (empty manifest) and every phase after that.
+**Research status:** updated 2026-11-08 from the research pass in `RESEARCH_AND_FEASIBILITY.md`. **First real audit: 2026-11-09 (Phase 0)** — see §6 for the measured diff against the built artifacts. Rows in §1 and §3 remain the *plan* for later phases; §6 records what actually shipped.
 
 ## 1. Android permission candidates
 
@@ -100,3 +100,64 @@ Before adding any permission:
 6. Obtain owner approval for any permission outside the approved list.
 
 At every phase, run a manifest/entitlement diff and report newly added permissions. A phase report that does not state the permission diff is incomplete.
+
+## 6. Measured audit — Phase 0 (2026-11-09)
+
+First audit against real build artifacts rather than intent. Method: `aapt2 dump permissions` and
+`aapt2 dump badging` on the debug APK, and `codesign -d --entitlements :-` on the signed Release
+bundle. Full narrative in `Docs/prototypes/PHASE0-repository-and-environment.md` §6.
+
+### 6.1 Android manifest diff
+
+| Permission | Declared in source | Present in built APK | Verdict |
+|---|---:|---:|---|
+| *(none from §1)* | — | — | Correct: no feature exists yet |
+| `com.droidbridge.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | no | **yes** | Injected by AndroidX Core. App-private `signature` permission; grants no access to anything and cannot be requested by other apps. Not a matrix candidate; recorded so the diff is not reported as "zero". |
+
+No permission from §1 is declared. No new permission was added in Phase 0, so no owner approval is
+outstanding for this phase.
+
+### 6.2 Android manifest security settings
+
+| Setting | Value | Matrix reference |
+|---|---|---|
+| `allowBackup` | `false` | §4 — no clipboard history, no cloud |
+| `dataExtractionRules` | all domains excluded (cloud backup and device transfer) | §4 |
+| `fullBackupContent` | `false` | §4 |
+| `exported` | `true` on the launcher activity only | §4 |
+| `debuggable` | debug builds only; release has no signing config | §4 |
+
+### 6.3 macOS entitlements diff
+
+Read from the signed **Release** bundle:
+
+| Entitlement | Present | Required by | Verdict |
+|---|---:|---|---|
+| `com.apple.security.app-sandbox` | yes | ADR-026 | Correct |
+| `com.apple.security.network.client` | yes | ADR-026 (Bonjour is UDP; client gates sending) | Correct |
+| `com.apple.security.network.server` | yes | ADR-026 (Mac is the listener, ADR-010) | Correct |
+| `com.apple.security.get-task-allow` | **no** | must be absent in a shipped build (§4) | Correct — see note |
+| `com.apple.security.cs.*` | no | must never be added (§3) | Correct |
+| `keychain-access-groups` | no | needed only with the Developer ID profile (ADR-025) | Correctly deferred to Phase 2 |
+
+**Note on `get-task-allow`:** Xcode injects it into any ad-hoc/development-signed build, so the
+first Release build of this project carried it. That is a real defect against §4, not a cosmetic
+one. Fixed with `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` on the Release configuration only, and
+re-verified by reading the entitlements back out of the rebuilt bundle. Debug keeps it, because a
+build without it cannot be debugged.
+
+### 6.4 macOS Info.plist privacy keys
+
+| Key | Value | Matrix reference |
+|---|---|---|
+| `NSLocalNetworkUsageDescription` | present, explains LAN-only clipboard and mirroring | §3 |
+| `NSBonjourServices` | `["_droidbridge-dev._tcp"]` | §3, ADR-022 |
+
+Nothing advertises yet, so the Local Network prompt is not triggered in Phase 0. That behaviour is
+P11.
+
+### 6.5 Signing state
+
+Ad-hoc (`Signature=adhoc`, `TeamIdentifier=not set`). Hardened runtime is requested in the build
+settings but Xcode disables it for ad-hoc signing. Notarisation not attempted. **This build is not a
+release candidate** and must not be described as one.

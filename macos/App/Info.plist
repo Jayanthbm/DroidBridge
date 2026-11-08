@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>DroidBridge</string>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>NSSupportsSuddenTermination</key>
+	<false/>
+	<!--
+	  Local Network privacy (R-10, TN3179). The prompt is triggered by advertising, not by
+	  accepting a connection, so both keys are needed before Phase 2 adds Bonjour.
+
+	  NSBonjourServices must match NETWORK_PROTOCOL.md exactly. The development type is
+	  `_droidbridge-dev._tcp` (ADR-022). It is listed now, while nothing advertises it, so the
+	  declaration and the protocol document cannot drift apart when the listener lands.
+	-->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DroidBridge connects to your Android phone over your local Wi-Fi network to sync the clipboard and mirror the screen. Nothing is sent to the internet.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_droidbridge-dev._tcp</string>
+	</array>
+</dict>
+</plist>

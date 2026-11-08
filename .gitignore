@@ -8,23 +8,33 @@ local.properties
 *.apk
 *.aab
 captures/
+lint-results*.html
+lint-results*.xml
+lint-results*.txt
 
 # Xcode / macOS
 DerivedData/
 xcuserdata/
 *.xcuserstate
 *.dSYM
+*.xcworkspace/xcuserdata/
+build/
 
 # IDE
 .idea/
 *.iml
+.vscode/
 
 # Secrets and local configuration
 *.keystore
 *.jks
 *.p12
+*.mobileprovision
 .env
 .dev.vars
 
 # OS
 .DS_Store
+
+# Perch local agent state (not project content)
+.perch/

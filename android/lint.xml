@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lint policy.
+
+  The default is: everything on, warnings are errors (see the root build.gradle.kts). A
+  suppression is only acceptable when the finding is a deliberate, documented choice, so each
+  entry below says why. Adding an entry here is a decision, not a way to get a green build.
+-->
+<lint>
+
+    <!--
+      The wrapper pins the Gradle version this build was verified against. Lint reports a newer
+      Gradle release as an error; upgrading is a scheduled, verified change, not something to
+      adopt mid-phase. Scoped to the wrapper file so the AGP version is still checked.
+    -->
+    <issue id="AndroidGradlePluginVersion">
+        <ignore path="gradle/wrapper/gradle-wrapper.properties" />
+    </issue>
+
+</lint>

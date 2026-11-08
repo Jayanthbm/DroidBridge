@@ -1,0 +1,81 @@
+name: DroidBridge
+options:
+  bundleIdPrefix: com.droidbridge
+  deploymentTarget:
+    macOS: "15.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    # Swift 6 language mode is deliberately NOT enabled yet. The shell has no concurrency to
+    # prove, and adopting strict concurrency in the same commit that creates the project would
+    # mix "does it build" with "is the concurrency model right". It is a Phase 2 decision.
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # No DEVELOPMENT_TEAM: signing identity is Phase 9 (ADR-026). Ad-hoc signing is enough to
+    # build and run locally, and a missing team must not silently become a release build.
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    ENABLE_HARDENED_RUNTIME: YES
+    # App Sandbox from the first build (ADR-026). The entitlements file is the audited set.
+    CODE_SIGN_ENTITLEMENTS: App/DroidBridge.entitlements
+    # Warnings are visible; treat-as-error is a Phase 6 hardening decision, not a Phase 0 one,
+    # because the AVSampleBufferDisplayLayer deprecation (ADR-028) is expected and unavoidable.
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: NO
+    GCC_TREAT_WARNINGS_AS_ERRORS: NO
+
+targets:
+  DroidBridge:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+      - path: Core
+      - path: Features
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.macos
+        PRODUCT_NAME: DroidBridge
+        INFOPLIST_FILE: App/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        COMBINE_HIDPI_IMAGES: YES
+        ENABLE_PREVIEWS: YES
+        # Apple Silicon first (MACOS_APP_SPEC §1). Intel is only claimed if tested.
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+    dependencies:
+      - sdk: Network.framework
+      - sdk: Security.framework
+      - sdk: AVFoundation.framework
+      - sdk: CoreMedia.framework
+      - sdk: CoreVideo.framework
+    settings:
+      configs:
+        # Xcode injects get-task-allow into any ad-hoc/development-signed build. A release
+        # build must not carry it (MACOS_APP_SPEC §8), so the injection is switched off for
+        # Release. Debug keeps it, because debugging a build without it is not possible.
+        Release:
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO
+    scheme:
+      testTargets:
+        - DroidBridgeTests
+
+  DroidBridgeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: DroidBridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.macos.tests
+        GENERATE_INFOPLIST_FILE: YES
+        # Test bundles are not shipped; the sandbox entitlement would block the test host from
+        # loading. This does not affect the app target's entitlements.
+        CODE_SIGN_ENTITLEMENTS: ""

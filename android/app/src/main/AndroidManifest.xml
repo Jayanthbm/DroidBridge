@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Phase 0 shell manifest. The permission set is deliberately empty.
+
+      Every permission must be justified in Docs/PERMISSIONS_MATRIX.md before it is added here,
+      and each one needs a feature owner, a user-facing reason and a test proving it is needed
+      (ANDROID_APP_SPEC.md §8). Nothing in the shell needs one yet:
+
+      - No INTERNET / ACCESS_LOCAL_NETWORK: no networking code exists. ADR-010 targets the
+        system NSD picker path, so the broad LAN permission may never be needed at all.
+      - No FOREGROUND_SERVICE*: no service exists.
+      - No POST_NOTIFICATIONS: no notifications exist.
+      - No BLUETOOTH*: Bluetooth is optional and not in the MVP (ADR-016).
+      - No READ/WRITE_CLIPBOARD: clipboard access needs no permission on Android; it needs
+        foreground focus, which is a runtime behaviour, not a manifest entry (R-09).
+
+      Adding any of these is a permission-matrix change and a reviewable decision, not a build fix.
+    -->
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DroidBridge">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.DroidBridge">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

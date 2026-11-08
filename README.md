@@ -54,11 +54,35 @@ DroidBridge/
 │   ├── PHASES_AND_ACCEPTANCE.md
 │   ├── TECHNICAL_DECISIONS.md
 │   ├── PROGRESS_LOCAL.md
+│   ├── PROGRESS_CLOUD.md
+│   ├── CLOUD_RESEARCH_BACKLOG.md
 │   ├── CHANGELOG.md
 │   ├── RELEASE_CHECKLIST.md
-│   └── AI_AGENT_MASTER_PROMPT.md
+│   ├── AI_AGENT_MASTER_PROMPT.md
+│   └── prototypes/            # per-phase and per-prototype evidence reports
+├── android/                   # Kotlin + Jetpack Compose (Gradle KTS, AGP 9)
+│   ├── app/
+│   ├── core/{common,protocol,network,pairing,security}/
+│   └── feature/{dashboard,clipboard,mirroring,settings}/
+├── macos/                     # Swift + SwiftUI (xcodegen project)
+│   ├── App/ Core/ Features/ Tests/
+│   └── project.yml
+├── shared/protocol/           # platform-independent Kotlin/JVM wire format
+├── scripts/                   # env-baseline, verify-all, android-install
+├── .github/workflows/         # CI: shared protocol + Android
 └── .gitignore
 ```
+
+## Building and verifying
+
+```bash
+./scripts/verify-all.sh          # shared protocol + Android + macOS, from a clean state
+./scripts/env-baseline.sh        # regenerate the P00 host/device baseline
+./scripts/android-install.sh --launch   # build, install and launch on the attached device
+```
+
+`android/` needs the Android SDK (`ANDROID_HOME` or `android/local.properties`). `macos/` needs
+Xcode; `xcodegen` regenerates the project from `macos/project.yml`.
 
 ## Getting started and mandatory agent workflow
 

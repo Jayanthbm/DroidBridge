@@ -1,8 +1,8 @@
 # Local Development Progress
 
-**Status:** Research stage complete and documented. One platform-independent module exists (`shared/protocol/`, H.264 media framing) and its tests run on a plain JVM; no Android or macOS application code exists yet, no prototype has been run and no physical-device test has been performed.
-**Last updated:** 2026-11-08
-**Current gate:** Gate A research documentation is complete. Phase 0 is the next local build phase; no routine owner approval is required. No native shells or physical prototypes are complete yet.
+**Status:** Phase 0 complete. Both native shells exist and build from a clean checkout: `android/` (Kotlin + Compose, 10 Gradle modules) and `macos/` (Swift + SwiftUI, sandboxed, xcodegen-generated). The Android shell installs, launches and stays resumed on the OnePlus Nord CE (Android 12 / API 31) with no crash and no ANR. No feature code exists and no feasibility prototype has been run yet.
+**Last updated:** 2026-11-09
+**Current gate:** Phase 0 exit criteria met (see `Docs/prototypes/PHASE0-repository-and-environment.md`). Phase 1 (prototypes P00–P15) is next; P00's host/device baseline is done, P01 is the first prototype proper.
 
 ## Device and environment
 
@@ -10,15 +10,24 @@
 - Region: India.
 - Android: 17 (owner-reported; API level 37 assumed and supported by current Google documentation — **not yet verified on the device**).
 - One UI: 9 (owner-reported, not yet verified).
-- Mac model / macOS / Xcode: **to be recorded in P00**.
+- Mac: MacBook Air (M1, 2020), 8 GB, macOS 27.0.1 (26A434), arm64.
+- Xcode 27.2 (27B52), Swift 6.4.2, macOS SDK 27.2, xcodegen 2.46.0.
+- JDK: Zulu 17.0.21 on PATH (build daemon runs JDK 27 from Homebrew); Gradle 9.8.2; AGP 9.5.1.
+- Android SDK: platforms 34/36/37.0, build-tools 34–37, adb 37.0.2.
+- Temporary test device: OnePlus Nord CE (AC2001), Android 12 / API 31, build `AC2001_11_F.24`,
+  security patch 2023-12-05, `ro.debuggable=0`, bootloader unlocked (verified boot `orange`).
+  Treated as an ordinary non-rooted device throughout.
 - USB debugging: development-only allowance; final release must not require it.
 - Bluetooth: optional and non-core.
 
 ## Repository state
 
-- Branch: `development` (created from `master` at the start of this research pass, because the remote had only `master`).
-- Content: `AGENTS.md`, `README.md`, `Docs/*`, `.gitignore`, and `shared/protocol/` (a pure Kotlin/JVM library — the only thing allowed in `shared/` right now). No `android/`, no `macos/`.
-- Build/test tooling: a Gradle wrapper plus the Kotlin/JVM plugin, for `shared/protocol` only. Nothing Android or macOS can be built in this environment (no Android SDK, no Xcode), so those builds belong on the owner's machines.
+- Branch: `development`.
+- Content: `AGENTS.md`, `README.md`, `Docs/*`, `.gitignore`, `shared/protocol/` (pure Kotlin/JVM),
+  `android/` (10 modules), `macos/` (xcodegen project), `scripts/`, `.github/workflows/`.
+- Build/test tooling: Gradle wrapper 9.8.2 + AGP 9.5.1 for Android; Xcode 27.2 + xcodegen for
+  macOS; Gradle wrapper 8.10.2 for `shared/protocol`. Both native toolchains are present on this
+  machine, so both shells build here.
 
 ## Completed
 
@@ -49,13 +58,44 @@
 - [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
 - [x] **2026-11-08 shared protocol module — H.264 media framing (`shared/protocol/`):** Annex-B start-code splitting (both start-code lengths, trailing-zero padding, rejection of unframed or empty NAL units), codec-specific-data parsing into bare SPS/PPS, and Annex-B→AVCC conversion with 4-byte big-endian lengths plus IDR detection; `mirror.format` payload with deterministic JSON and Base64 parameter sets. 31 unit tests, all passing on JVM 21 (`./gradlew test`); two mutation checks confirmed the start-code and padding tests fail when the rule they cover is broken. This is the producer side of `NETWORK_PROTOCOL.md` §7 and ADR-027. **Not device-tested** — no phone was involved, and nothing here proves encoder output, only the framing rules.
 
+- [x] **2026-11-09 Phase 0 — repository and environment (complete).**
+  - `android/`: Kotlin + Compose shell, Gradle KTS, AGP 9.5.1, `compileSdk`/`targetSdk` 37,
+    `minSdk` 31. Modules: `app`, `core:{common,protocol,network,pairing,security}`,
+    `feature:{dashboard,clipboard,mirroring,settings}`. SDK levels and lint policy live once in the
+    root build file; versions and SDK numbers live once in `gradle/libs.versions.toml`.
+  - `shared/protocol` is consumed as a **composite build** (`includeBuild` + dependency
+    substitution), not copied. `core/protocol/MediaFraming.kt` is a facade whose only job is to make
+    that linkage a compile-time fact.
+  - `macos/`: Swift + SwiftUI shell, `project.yml` (xcodegen) as source of truth with the generated
+    `.xcodeproj` committed. App Sandbox on from the first build with exactly the three audited
+    entitlements; `NSLocalNetworkUsageDescription` and `NSBonjourServices` declared.
+  - `scripts/`: `env-baseline.sh` (regenerates the P00 baseline), `verify-all.sh` (Phase 0 gate and
+    CI entry point), `android-install.sh` (development install helper).
+  - `.github/workflows/verify.yml`: shared protocol + Android assemble/test/lint on a clean runner,
+    read-only token, no secrets.
+  - **Verified:** 31/31 shared protocol tests; Android `assembleDebug` + `lintDebug` clean (5 real
+    lint findings fixed at source); macOS Debug and Release builds; 4/4 macOS unit tests; all three
+    rebuilt from a clean checkout with no `local.properties`; APK installed and launched on the
+    OnePlus with no crash and no ANR.
+  - **Audited:** Android manifest declares no permissions (only the AndroidX-injected app-private
+    `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` appears in the APK); macOS Release carries exactly
+    `app-sandbox` + `network.client` + `network.server` and **no** `get-task-allow`.
+  - **Defect found and fixed:** Xcode injected `get-task-allow` into Release builds, which the
+    notary service rejects. Fixed with `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` on Release only.
+  - Reports: `Docs/prototypes/P00-environment-report.md`,
+    `Docs/prototypes/PHASE0-repository-and-environment.md`.
+  - **Not verified:** the dashboard's rendered content on the device — the phone was PIN-locked, so
+    `screencap` returned nothing and the UI hierarchy belonged to the keyguard. The app's launch,
+    resumed state and absence of crashes are confirmed; the pixels are not.
+
 ## Not started
 
-- [ ] Create the Android project shell (`android/`, Kotlin + Compose, Gradle KTS).
-- [ ] Create the macOS project shell (`macos/`, Swift + SwiftUI, Xcode project).
+- [x] Create the Android project shell (`android/`, Kotlin + Compose, Gradle KTS).
+- [x] Create the macOS project shell (`macos/`, Swift + SwiftUI, Xcode project).
 - [x] Add `.gitignore` (Gradle, Android, Xcode, IDE, secrets).
-- [ ] Add CI/build scripts.
-- [ ] Capture exact device build/API details (P00).
+- [x] Add CI/build scripts.
+- [x] Capture exact host toolchain and temporary-device details (P00 host half).
+- [ ] Capture S24 Ultra build/API details (P00 device half) — needs the target device attached.
 - [ ] Run P01 MediaProjection prototype.
 - [ ] Run P02 Android 17 LAN strategy prototype (picker vs runtime permission).
 - [ ] Run P03 pairing/transport prototype.
@@ -82,24 +122,46 @@
 
 ## Tests and evidence
 
-- None. No build has been produced, no prototype executed, no device attached. Every statement in the research documents is documentation-based.
+- **2026-11-09 (Phase 0):** 31/31 shared protocol tests (JVM); Android `assembleDebug`,
+  `testDebugUnitTest`, `lintDebug` all pass; macOS Debug + Release builds and 4/4 unit tests pass;
+  clean-checkout rebuild of all three passes; APK installed and launched on OnePlus Nord CE
+  (Android 12 / API 31), `ResumedActivity` held, 0 crash entries, 0 ANRs.
+- **Not captured:** a device screenshot. The phone was PIN-locked, so `screencap` produced empty
+  output and `uiautomator` dumped the keyguard. Unlocking needs the owner's PIN.
+- No feasibility prototype has been executed. Every statement in the research documents remains
+  documentation-based.
 
 ## USB / debugging state
 
-- Not applicable yet: no device session has occurred in this pass. When one occurs, the report must state: USB connected yes/no, USB debugging enabled yes/no, wireless debugging enabled yes/no.
+- **Phase 0 device session (2026-11-09):** USB connected **yes**; USB debugging enabled **yes**;
+  wireless debugging enabled **no**. Development session only — nothing in the product requires
+  USB or debugging at runtime, and no runtime behaviour was tested with USB disconnected because no
+  runtime behaviour exists yet.
 
 ## Workflow from here
 
-1. Pull the latest `development` after the cloud documentation handoff.
-2. Phase 0 — create the repository structure and both native shells, verify clean builds, record actual toolchain/device environment, and add CI/build scripts where practical. No feature code.
-3. Automatically proceed to Phase 1 prototypes P00–P15 in the order and dependencies in `PROTOTYPE_PLAN.md`; each requires a written evidence report and focused commit.
-4. Do not begin dependent production features until their prototype gates pass. Stop only for genuine blockers or owner decisions listed in `AGENTS.md`.
+1. Phase 0 is complete and pushed.
+2. Phase 1 — begin with P01 (Android MediaProjection capture) on the OnePlus. P00's device half
+   (S24 Ultra baseline) stays pending until that device is attached.
+3. Each prototype gets a written evidence report under `Docs/prototypes/` and a focused commit.
+4. Do not begin dependent production features until their prototype gates pass. Stop only for
+   genuine blockers or owner decisions listed in `AGENTS.md`.
 
 ## Next task
 
-Phase 0 (repository and environment): create `android/`, `macos/`, `shared/` and `scripts/` as specified, verify both native shells build from a clean checkout, and record the actual Mac/device environment. This is owned by the local agent; routine phase approval is not required.
+Phase 1, prototype **P01 — Android MediaProjection capture** on the OnePlus Nord CE: consent UI,
+a `mediaProjection` foreground service, a `VirtualDisplay`, and a surface-fed `MediaCodec` H.264
+encoder, with the framing converted by `shared/protocol` and verified against the real encoder
+output. Isolated experiment module, no production feature code.
+
+Two things the owner can unblock that are not blockers for P01:
+- Unlock the phone during a session so a device screenshot can be captured.
+- Attach the S24 Ultra when available, to complete the P00 device baseline.
 
 
 ## Agent handoff status (2026-11-08)
 
-Cloud research/documentation pass is complete. The cloud agent's immediate follow-up is documentation consistency and cloud tracking; it does not own Phase 0 implementation. Local agent should pull the latest `development` after the cloud handoff and begin Phase 0. Cloud must not modify app code or claim prototype/device results. After local Phase 0 commits are pushed, cloud may review them before later local work.
+Local Phase 0 is complete and pushed. The cloud agent may now review the Phase 0 commit — specifically
+the build configuration, the manifest/entitlement audit in `PERMISSIONS_MATRIX.md` §6, and the two
+Phase 0 reports — before local work continues into P01. Cloud must not modify app code or claim
+prototype/device results.

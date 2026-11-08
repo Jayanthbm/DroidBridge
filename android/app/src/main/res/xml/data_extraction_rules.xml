@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ backup/transfer rules. Everything is excluded.
+
+  The product stores no clipboard history and no cloud data (PRODUCT_REQUIREMENTS §3), and the
+  only durable state it will hold is pairing material, which must not travel to another device
+  through a backup. Excluding by default is the safe direction: a later feature that genuinely
+  needs backup has to come here and say so.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

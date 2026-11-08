@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The audited entitlement set (ADR-026, MACOS_APP_SPEC §8). Exactly three keys, and each one
+	  is load-bearing:
+
+	  - app-sandbox: on from the first build, so a Mac App Store build stays possible and the
+	    app cannot reach anything the user did not grant.
+	  - network.client: the Mac dials nothing, but Bonjour advertising is UDP and the client
+	    entitlement gates sending. Without it, discovery silently fails.
+	  - network.server: the Mac is the listener (ADR-010) and accepts the Android TCP connection.
+
+	  Deliberately absent: every com.apple.security.cs.* hardened-runtime exception (nothing here
+	  needs JIT or unsigned libraries, and each exception weakens a protection), and
+	  keychain-access-groups, which arrives with the Developer ID provisioning profile in Phase 2
+	  (ADR-025) rather than being declared before it can be authorized.
+
+	  Keep this file ASCII XML with no BOM and no comments inside a key's value: codesign parses it
+	  literally.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+</dict>
+</plist>

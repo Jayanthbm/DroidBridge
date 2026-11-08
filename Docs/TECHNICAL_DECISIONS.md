@@ -4,6 +4,30 @@ Use newest entries at the top. Every change must include date, status, context, 
 
 Research pass of 2026-11-08 produced ADR-010 to ADR-028. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
 
+## ADR-029 — Android build: AGP 9 built-in Kotlin, SDK levels in one place, shared protocol as a composite build
+- Date: 2026-11-09
+- Status: Accepted
+- Context: Phase 0 needed a real Android build. Three constraints surfaced while making it work. (a) AGP 9.0+ has built-in Kotlin support and **fails the build** if `org.jetbrains.kotlin.android` is also applied. (b) `compileSdk` must be set per module; a `subprojects` convention block alone does not satisfy the application module. (c) `shared/protocol` is a standalone Kotlin/JVM build that must stay testable without an Android SDK, but the app must not carry a second copy of the framing rules.
+- Decision: Apply only `com.android.application` / `com.android.library` plus `org.jetbrains.kotlin.plugin.compose`; no Kotlin Android plugin. Put `compileSdk`/`targetSdk`/`minSdk` and the lint policy in the root `build.gradle.kts` for both the library and application plugin ids, with the numbers themselves in `gradle/libs.versions.toml`. Consume `shared/protocol` through `includeBuild("../shared/protocol")` with a `dependencySubstitution`, and keep `core/protocol/MediaFraming.kt` as a facade so a broken substitution is a compile error.
+- Alternatives: (a) downgrade to AGP 8 to keep the separate Kotlin plugin (rejected: buys nothing and starts on a version that will be removed); (b) copy the protocol sources into an Android module (rejected: two definitions of the wire format, which is exactly the failure ADR-027 exists to prevent); (c) publish the protocol to a local Maven repo (rejected: an extra publish step in the developer loop for no benefit over a composite build).
+- Consequences: `minSdk = 31` is a Phase 0 choice, not a product decision — it is the OS on the available test device and the level at which the clipboard and FGS rules in the specs are current. Raising it later is cheap; lowering it after code exists is not. Lint runs with `warningsAsErrors = true` and an empty baseline, so a new warning fails the build rather than accumulating.
+
+## ADR-030 — The Xcode project is generated from `project.yml` and the generated project is committed
+- Date: 2026-11-09
+- Status: Accepted
+- Context: `MACOS_APP_SPEC.md` requires an Xcode project in `macos/`. A hand-edited `.pbxproj` is unreadable in review, merges badly, and hides settings such as entitlements and signing flags in a binary-ish blob. xcodegen 2.46.0 is installed on the owner's machine.
+- Decision: `macos/project.yml` is the source of truth; `xcodegen generate` produces `DroidBridge.xcodeproj`. The generated project is **committed** so the repository opens in Xcode without the tool, and `scripts/verify-all.sh` regenerates it before building so the committed project cannot silently drift.
+- Alternatives: hand-maintained `.pbxproj` (rejected: unreviewable, and the entitlement/signing settings are the security-relevant part); Swift Package Manager only (rejected: no app bundle, no entitlements, no Info.plist — not a macOS app target); Tuist (rejected: not installed, and xcodegen is sufficient).
+- Consequences: a contributor without xcodegen can still build; a contributor who changes `project.yml` must regenerate and commit, or CI's regeneration step will produce a diff. Deployment target is macOS 15.0 and `ARCHS = arm64` only — Intel is not claimed because it has not been built or tested.
+
+## ADR-031 — Release builds must not carry `get-task-allow`; injection is disabled for Release only
+- Date: 2026-11-09
+- Status: Accepted
+- Context: `PERMISSIONS_MATRIX.md` §4 requires `com.apple.security.get-task-allow` to be absent from a shipped build, because the notary service rejects it. The first Phase 0 Release build carried it anyway: Xcode injects base entitlements into any ad-hoc/development-signed build. This was caught by reading the entitlements back out of the signed bundle, not by reading the settings.
+- Decision: set `CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO` for the **Release** configuration only. Debug keeps the injection, because a build without `get-task-allow` cannot be debugged. Verify by `codesign -d --entitlements :-` on the built bundle, not by inspecting project settings.
+- Alternatives: strip the entitlement in a post-build script (rejected: a second signing pass, and it hides the cause); leave it and rely on the eventual Developer ID export to strip it (rejected: "Xcode strips it on export" is a claim about a step that does not exist yet, and the audit must pass on the artifact in hand).
+- Consequences: the Release bundle now carries exactly `app-sandbox`, `network.client`, `network.server`. Any future configuration that re-enables base-entitlement injection re-introduces the defect, so the audit step in `scripts/verify-all.sh` is the control, not the setting.
+
 ## ADR-028 — The Mac decodes and displays compressed frames with `AVSampleBufferDisplayLayer` behind one adapter
 - Date: 2026-11-08
 - Status: Proposed — pending `P07`
