@@ -293,21 +293,33 @@ Acceptance:
 ## P13 — Pinned TLS identity on Android 17 with CT/ECH defaults
 
 Goal:
-- Prove ADR-011 on the real API 37 device (U3).
+- Prove ADR-011 and ADR-024 on real hardware: per-install identity generation, mutual TLS, SPKI pinning, and the Android 17 CT/ECH interaction (U3, U13).
 
-Steps:
-1. Generate a self-signed certificate for the Android app and one for the Mac app.
-2. Add the Mac's certificate as a custom trust anchor in `network_security_config.xml` (debug build may add a debug-override anchor; release must not).
-3. Connect with TLS 1.3; confirm the handshake succeeds while targetSdk is 37 and certificate transparency is at its default.
-4. Confirm the handshake fails against an unpinned/self-signed peer that is not in the anchor set.
-5. Remove the anchor temporarily and confirm failure, then restore it. Record the exact exception (`SSLHandshakeException`, `CertificateException`, etc.).
-6. Confirm the app makes no attempt to disable CT globally and no `TrustManager` that accepts everything (code review evidence).
-7. Record whether ECH/ECH GREASE appears in handshake traces or is irrelevant to a raw `SSLSocket` to a literal IP address.
+Android side:
+1. Generate the identity with `KeyPairGenerator` over `AndroidKeyStore`: `KeyGenParameterSpec.Builder(alias, PURPOSE_SIGN or PURPOSE_VERIFY)`, `setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))`, `setCertificateSubject(X500Principal("CN=DroidBridge-Android-<random>")`, a random serial and a validity window. Read the certificate back with `KeyStore.getCertificate(alias)`.
+2. Confirm the certificate's signature verifies (that is the check that `PURPOSE_SIGN` was set correctly, per R-22). A certificate that fails to verify is still returned by the Keystore — this is the trap.
+3. Build an `SSLContext` with a `KeyManager` bound to the alias and a pinning `X509TrustManager` that accepts only the stored peer SPKI digest. Do **not** add a static `<trust-anchors>` entry: the peer certificate is unknown at build time.
+4. Connect to the Mac listener with TLS 1.3 only, with targetSdk 37 and CT/ECH at their defaults. Record whether the handshake succeeds (the CT inference in R-24 is unconfirmed).
+5. Record whether ECH/ECH GREASE appears in a packet/handshake trace, or is simply irrelevant to a raw `SSLSocket` to a literal IP address.
+
+macOS side:
+6. Generate a P-256 key, build a self-signed v3 certificate with `swift-certificates` (its documentation states the same key may be passed as `issuerPrivateKey`), and persist key + certificate in the app's Keychain.
+7. Rebuild the identity with `SecIdentityCreate(cert, key)` and present it via `sec_protocol_options_set_local_identity`. Set the minimum TLS version to 1.3.
+8. **Explicitly** call `sec_protocol_options_set_peer_authentication_required(options, true)` on the listener and prove that a client without a certificate is rejected — servers default to *not* requiring peer authentication, so this must be asserted, not assumed.
+9. Verify with `sec_protocol_options_set_verify_block`: accept the pinned SPKI, reject anything else and fail closed.
+
+Negative tests:
+10. Untrusted peer (no pin, self-signed): handshake must fail; record the exact exception/`OSStatus` on each platform.
+11. Pin mismatch (same peer, regenerated key): must fail as an identity change, with a distinct UI state — not a generic network error.
+12. Certificate re-issue with the **same** key: must still pass (validates the SPKI-not-certificate pinning choice).
+13. Code review evidence: no global CT disable, no trust-all `TrustManager`, no `SSLParameters` endpoint-identification workaround, no `kSecTrustSettingsResult` override.
 
 Acceptance:
-- documented working configuration and exact failure mode for an untrusted peer.
+- documented working configuration and exact failure mode for an untrusted peer on both platforms.
+- mutual authentication proven in both directions, including the case where the client presents no certificate.
 - no global security weakening in the final manifest/config.
-- confirm the local-IP/no-SNI case is handled (no hostname verification against an IP literal).
+- the local-IP/no-SNI case is handled without relying on hostname verification, and this is stated explicitly in the report.
+- definitive answer recorded for U3/U13: does pinned TLS work on API 37 with CT on by default?
 
 ## P14 — Background session persistence (clipboard while mirroring is off)
 

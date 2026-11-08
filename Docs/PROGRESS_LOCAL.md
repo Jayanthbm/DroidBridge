@@ -43,6 +43,7 @@
   - Transport comparison (TLS/TCP vs WebRTC) and the macOS mDNS/local-network interaction.
   - Background session persistence: `connectedDevice` foreground service type, its zero-prompt prerequisite, the absence of a timeout, boot-start legality, and Doze's device-wide network suspension.
   - Foreground-service notification visibility (`POST_NOTIFICATIONS`) and the Play Console FGS declaration.
+  - Identity and TLS mechanics: Keystore-generated self-signed certificate on Android, `swift-certificates` on macOS (Security framework cannot create certificates), SPKI pinning, and the macOS server-side peer-authentication default.
 - [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
 
 ## Not started

@@ -4,6 +4,14 @@ Use newest entries at the top. Every change must include date, status, context, 
 
 Research pass of 2026-11-08 produced ADR-010 to ADR-022. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
 
+## ADR-024 — Device identity is generated per install and pinned by public-key digest
+- Date: 2026-11-08
+- Status: Proposed — pending `P13`
+- Context: ADR-011 chose a pinned, app-owned certificate but left the mechanics open. Research (R-22–R-24) established that Android's Keystore generates a self-signed certificate for an asymmetric key at no extra cost, that macOS has **no** public certificate-creation API and needs Apple's `swift-certificates`, and that neither platform's default verification can be used for an IP-literal peer.
+- Decision: On first run each app generates a non-exportable P-256 key and a self-signed v3 certificate (Android: `KeyGenParameterSpec` with `PURPOSE_SIGN`, subject/serial/validity set, certificate read back from the Keystore; macOS: swift-crypto key + `X509.Certificate(version:serialNumber:publicKey:notValidBefore:notValidAfter:issuer:subject:extensions:issuerPrivateKey:)`, key and certificate stored in the app's Keychain). Both sides present the identity over mutual TLS (Android `setNeedClientAuth(true)` on the accepting socket; macOS `sec_protocol_options_set_local_identity` plus an explicit `sec_protocol_options_set_peer_authentication_required(true)`, because servers default to *not* requiring peer authentication). Verification is a SHA-256 digest of the peer's SubjectPublicKeyInfo compared on every handshake — no hostname matching, no system trust store, no static trust anchor in `network_security_config.xml` (impossible for a peer learned at pairing time).
+- Alternatives: static `<trust-anchors>` with a bundled peer certificate (rejected: the peer is unknown at build time); TLS-PSK (rejected: Apple PSK is TLS 1.2 only and Android has no public PSK API); hand-built DER/X.509 (rejected: unnecessary risk); system trust store with a local CA (rejected: no CA, no cloud, no build-time secret).
+- Consequences: a key change is an identity change and must be shown as such; a certificate renewal for the same key needs no re-pairing. One Apple-maintained dependency set (`swift-certificates`, `swift-crypto`, `swift-asn1`) is added to the macOS app. Peer-authentication defaults must be asserted in tests, since a silent default would produce one-way authentication that still "works".
+
 ## ADR-023 — Background clipboard session runs in a `connectedDevice` foreground service
 - Date: 2026-11-08
 - Status: Proposed — pending `P14`
@@ -102,7 +110,7 @@ Research pass of 2026-11-08 produced ADR-010 to ADR-022. Each one cites the regi
 
 ## ADR-011 — Identity is an app-owned pinned certificate, not a public CA
 - Date: 2026-11-08
-- Status: Accepted for prototypes; verify in `P13`
+- Status: Accepted for prototypes; implementation specified in ADR-024; verify in `P13`
 - Context: Android 17 enables Certificate Transparency by default for targetSdk 37, but CT verification is not performed for connections using custom trust anchors (`R-03`). No public CA can be used for a local IP anyway.
 - Decision: Each side generates a self-signed identity on first run, the user confirms a short authentication code on both screens, and the peer certificate is pinned. The Android app ships a `network_security_config.xml` declaring the app-owned anchor (never a global CT disable, never a trust-all manager).
 - Alternatives: A shared pre-shared key (weaker identity model, no forward secrecy story); public CA with a local hostname (infeasible offline).

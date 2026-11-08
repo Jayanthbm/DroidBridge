@@ -48,7 +48,7 @@ This file is the source of truth for permission minimization. The agent must com
 | `NSBonjourServices` | Info.plist array | Service types the app registers/browses | Yes, once the Mac advertises | Registering, browsing **and** resolving all require local-network access; a mismatched type fails silently (R-10, ADR-022). |
 | Local Network TCC privilege | User consent state | Gate for all LAN I/O | Yes | Can be `undetermined`; operations are denied until the user answers. App must handle denial explicitly (R-10). |
 | `NSPasteboard` programmatic access | User consent state (`NSPasteboard.accessBehavior`, macOS 15.4+) | Reading the general pasteboard | Conditional | Default is *ask upon programmatic access*; user-originated paste-related access is always allowed; per-app setting can be `ask`, `alwaysAllow`, `alwaysDeny` (R-11). Not an entitlement, but functionally a permission in the product design (ADR-014). |
-| Keychain | Entitlement / API | Store paired identity and pins | Yes, scoped | Use the app's own Keychain access group; no iCloud keychain sync of pairing material. |
+| Keychain | Entitlement / API | Store this Mac's identity key/certificate and the paired Android pin | Yes, scoped | Generated per install (ADR-024): non-exportable P-256 key + self-signed certificate + the peer's SPKI pin. Use the app's own Keychain access group; no iCloud keychain synchronisation of pairing material. |
 | App Sandbox network client | Entitlement | Dial out to Android | Only if sandboxed distribution is used | `com.apple.security.network.client`. |
 | App Sandbox network server | Entitlement | Accept the Android connection (Mac is the listener under ADR-010) | Only if sandboxed distribution is used | `com.apple.security.network.server`. |
 | Screen Recording | TCC permission | Capture the Mac display | No | Not needed to view Android's stream; only for a separately approved Mac-capture feature. |
@@ -61,7 +61,8 @@ This file is the source of truth for permission minimization. The agent must com
 
 | Item | Where | Requirement |
 |---|---|---|
-| Custom trust anchor for the pinned peer certificate | Android `res/xml/network_security_config.xml` | Required by ADR-011. Certificate transparency is not applied to custom trust anchors, so a pinned local certificate is not blocked by the Android 17 CT default (R-03). |
+| Peer-certificate pinning | Android TLS code (pinning `X509TrustManager`) | Required by ADR-024. A static `<trust-anchors>` entry is **not** used because the peer certificate is only known after pairing, and the file is fixed at build time. Certificate transparency is not applied to custom trust anchors (R-03); the programmatic-pinning equivalent must be confirmed in P13. |
+| Keystore identity key | Android Keystore (`KeyGenParameterSpec`) | Key must include `PURPOSE_SIGN`, otherwise the generated self-signed certificate has an invalid signature (R-22). No permission is involved. |
 | Certificate transparency setting | Same file | Leave at the platform default. **Never** disable CT globally or per-domain to work around a TLS failure. |
 | ECH / `domainEncryption` | Same file | Leave at default. ECH only applies where the library and server support it; a local IP connection must not depend on it (R-03). |
 | Trust-all `TrustManager` / hostname-verifier override | Android TLS code | Forbidden. Peer identity comes from pinning, not from disabling verification. |

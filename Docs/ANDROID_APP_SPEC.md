@@ -67,6 +67,14 @@
 - Do not use hard-coded IPs or ports; re-resolve through `registerServiceInfoCallback()` instead of caching addresses.
 - Use the service type recorded in `NETWORK_PROTOCOL.md` (`_droidbridge-dev._tcp` during development) and a dynamic port.
 
+## 6A. Device identity and TLS
+
+- Generate a per-install identity in the Android Keystore: EC P-256, purposes including `PURPOSE_SIGN`, subject/serial/validity set through `KeyGenParameterSpec` (ADR-024, R-22). The Keystore produces the self-signed certificate; read it back with `KeyStore.getCertificate(alias)`.
+- A key without `PURPOSE_SIGN` yields a certificate whose signature does not verify — assert verification in a unit test rather than assuming it.
+- Present the identity through an `SSLContext` built on a `KeyManager` bound to that alias; on the accepting side require the peer certificate with `setNeedClientAuth(true)`.
+- Verify the peer by pinned SHA-256 of its SubjectPublicKeyInfo in a dedicated `X509TrustManager`. Do not add a static `<trust-anchors>` entry (the peer is unknown at build time) and do not disable certificate transparency, endpoint identification or hostname checks as a workaround — the peer is an IP literal and identity comes from the pin.
+- The private key is non-exportable, so a device change requires re-pairing. Surface a key change as "device identity changed", never as a retryable network error.
+
 ## 7. Bluetooth optional module
 
 Only enabled after user opt-in.

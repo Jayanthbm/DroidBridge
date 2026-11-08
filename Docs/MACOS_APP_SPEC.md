@@ -36,7 +36,10 @@
 - **The Mac is the advertiser and listener** (`NWListener` + Bonjour); the Android app discovers it through the system NSD picker and dials out (ADR-010).
 - Bonjour service types must be declared in `NSBonjourServices` and must match `NETWORK_PROTOCOL.md` exactly.
 - Add `NSLocalNetworkUsageDescription` with a clear explanation, and handle the local-network privilege being undetermined or denied (R-10).
-- Use TLS with authenticated peer identity; do not trust a peer merely because it is on the same Wi-Fi.
+- Use TLS 1.3 with authenticated peer identity; do not trust a peer merely because it is on the same Wi-Fi.
+- Identity (ADR-024): generate a P-256 key and self-signed certificate on first run using Apple's `swift-certificates` package (the Security framework has no public certificate-creation API), keep them in the app's Keychain, and present them with `sec_protocol_options_set_local_identity`.
+- On the listener, explicitly require peer authentication (`sec_protocol_options_set_peer_authentication_required(options, true)`); macOS servers default to **not** requiring a client certificate.
+- Verify the peer by pinned SHA-256 of its SubjectPublicKeyInfo inside `sec_protocol_options_set_verify_block`. No hostname matching (the peer is an IP literal), no system trust store, no "continue anyway".
 - Handle local network permission denied/revoked.
 - Bind only to the intended interfaces where possible; avoid exposing an unauthenticated server on all networks.
 

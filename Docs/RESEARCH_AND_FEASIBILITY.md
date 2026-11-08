@@ -368,6 +368,62 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 
 ---
 
+### R-22 — Android identity: the Keystore generates the self-signed certificate for us
+
+- **Checked:** 2026-11-08
+- **Target:** Android 23+ (`KeyGenParameterSpec`), Android 24+ (`setEndpointIdentificationAlgorithm`), Android 17 at runtime
+- **Sources (official):**
+  - https://developer.android.com/reference/kotlin/android/security/keystore/KeyGenParameterSpec.Builder
+  - https://developer.android.com/privacy-and-security/security-ssl
+  - https://developer.android.com/reference/javax/net/ssl/SSLParameters
+- **Finding (positive):** for an asymmetric key pair the Android Keystore **generates and stores a self-signed X.509 certificate** as part of key generation, because the `KeyStore` abstraction cannot hold a key pair without one. `KeyGenParameterSpec.Builder.setCertificateSubject()` (API 23+) plus the serial-number and validity setters control that certificate, so an app-owned identity costs no extra library and no OpenSSL.
+- **Finding (negative / constraint):** the certificate is only validly signed when the key is authorised to sign — the class documentation notes that a key whose purposes exclude `PURPOSE_SIGN` gets a certificate with an invalid (placeholder) signature that will not verify. The identity key must therefore include `PURPOSE_SIGN` (ECDSA P-256 via `ECGenParameterSpec("secp256r1")`).
+- **Finding (negative / constraint):** *"SSLSocket does not perform hostname verification"* — Android's own security guidance says it is the app's job, either via `HttpsURLConnection.getDefaultHostnameVerifier()` or by setting `SSLParameters.setEndpointIdentificationAlgorithm("HTTPS")` (API 24+) to have the handshake do it. DroidBridge does neither, because the peer is an IP literal with no meaningful DNS name: identity comes from the pinned certificate (R-24).
+- **Implementation shape:** `KeyPairGenerator` with `AndroidKeyStore` → `KeyStore.getCertificate(alias)` for the public certificate → `SSLContext` initialised with a `KeyManager` over that alias; for the accepting side `SSLSocket.setNeedClientAuth(true)` to require the peer's certificate.
+- **Limitation:** the private key is non-exportable (by design), so the identity cannot be copied to another device — re-pairing is required after a device change.
+- **Decision:** **GO**.
+- **Prototype:** P13.
+
+---
+
+### R-23 — macOS identity: no public certificate-creation API; use Apple's swift-certificates
+
+- **Checked:** 2026-11-08
+- **Target:** macOS 10.12+ (`SecIdentityCreate`), macOS 10.15+ (swift-certificates)
+- **Sources (official):**
+  - https://developer.apple.com/documentation/security/secidentitycreate(_:_:_:)
+  - https://developer.apple.com/documentation/security/secidentitycreatewithcertificate(_:_:_:)
+  - https://developer.apple.com/documentation/security/creating-an-identity
+  - https://swiftpackageindex.com/apple/swift-certificates/1.21.0/documentation/x509/creating-certificates
+  - https://swiftpackageindex.com/apple/swift-certificates/1.21.0/documentation/x509/certificate/init(version:serialnumber:publickey:notvalidbefore:notvalidafter:issuer:subject:extensions:issuerprivatekey:)
+- **Finding (negative / decisive):** the Security framework gives no public API to **create** an X.509 certificate. It can generate keys (`SecKeyCreateRandomKey`), sign data, validate trust, and build an identity **from an existing certificate** (`SecIdentityCreate(allocator, certificate, privateKey)`, macOS 10.12+, which returns null if the key does not match the certificate; `SecIdentityCreateWithCertificate` searches a keychain). Certificate construction is not part of the public surface.
+- **Finding (positive):** Apple's own open-source `swift-certificates` package (module `X509`, macOS 10.15+, depending on `swift-crypto` and `swift-asn1`) constructs a certificate directly: `Certificate(version:serialNumber:publicKey:notValidBefore:notValidAfter:issuer:subject:extensions:issuerPrivateKey:)`, and its documentation states this "can be used to construct a self-signed key by passing the private key for publicKey as the issuerPrivateKey argument". Version 1.21.x was building cleanly against Swift 6.1 on macOS as of 2026-10.
+- **Implementation shape:** generate a P-256 key (swift-crypto or `SecKeyCreateRandomKey`), build a self-signed v3 certificate with `swift-certificates`, persist key + certificate in the app's Keychain, rebuild the identity with `SecIdentityCreate(cert, key)`, present it through `sec_protocol_options_set_local_identity(options, identity)` (macOS 10.14+).
+- **Finding (negative / watch-out):** `sec_protocol_options_set_peer_authentication_required` — *"Clients default to true, whereas servers default to false"* — so the Mac listener must explicitly enable peer authentication, or it will accept a TLS handshake without requiring the Android client's certificate, silently making the pairing one-way.
+- **Alternatives rejected:** TLS-PSK (`sec_protocol_options_add_pre_shared_key`) — Apple documents PSK as TLS 1.2 only and Android exposes no public PSK API, so it cannot be the cross-platform mechanism; hand-rolled ASN.1/X.509 DER generation — needless risk when Apple maintains an implementation; importing a PKCS#12 blob — needs a P12 producer anyway.
+- **Consequence:** one Apple-maintained dependency set is accepted for the macOS app. This is a build-time dependency, not runtime telemetry or cloud use, so it does not conflict with ADR-003.
+- **Decision:** **GO**.
+- **Prototype:** P13.
+
+---
+
+### R-24 — Peer verification model: pin a key, not a hostname, and require mutual auth
+
+- **Checked:** 2026-11-08
+- **Target:** both platforms
+- **Sources (official):** https://developer.android.com/privacy-and-security/security-ssl , https://developer.android.com/privacy-and-security/security-config , https://developer.apple.com/documentation/network/tls
+- **Finding:** the peer address is an IP literal obtained from NSD, so hostname verification has nothing meaningful to check. Both platforms' default verification would also reject a self-signed certificate outright. The workable model is explicit pinning: after pairing, store the peer's public-key digest (SHA-256 of SubjectPublicKeyInfo) and require an exact match on every handshake, on both sides, with the pairing code confirming the identity in person the first time.
+- **Design consequences:**
+  - Pin the **SPKI**, not the whole certificate, so the certificate can be re-issued for the same key without a forced re-pairing; a *key* change is an identity change and must be surfaced as "device identity changed", never silently re-trusted.
+  - Android: a pinning `X509TrustManager` (dynamic peer, so a static `<trust-anchors>` entry in `network_security_config.xml` is impossible — that file is fixed at build time).
+  - macOS: `sec_protocol_options_set_verify_block` compares the peer certificate chain against the stored pin and fails closed.
+  - No plaintext, no "continue anyway", no fallback to the system trust store.
+- **CT nuance (medium confidence):** the documented Android 17 statement is that certificate-transparency verification is not performed for connections using **custom trust anchors** (R-03). A programmatic pinning `TrustManager` likewise never consults the platform CT verifier, but that is an inference from the trust path rather than a sentence in the documentation, so P13 must confirm the handshake succeeds on API 37 with CT at its default before the design is treated as settled.
+- **Decision:** **GO** for the pinning model; the CT interaction is **CONDITIONAL** on P13.
+- **Prototype:** P13.
+
+---
+
 ## 3. Uncertain areas that require prototypes
 
 Nothing below has been tested. Every one is a gate before the corresponding build phase.
@@ -386,6 +442,7 @@ Nothing below has been tested. Every one is a gate before the corresponding buil
 | U10 | Does whole-display capture survive a 30-minute session with the screen off/locked? | Real-world usability | P08 |
 | U11 | Does a `connectedDevice` foreground service actually keep a TLS socket usable through screen-off, Doze entry and a full night? | Decides whether "clipboard while mirroring is off" is a real feature or a foreground-only one | P14 |
 | U12 | What keepalive interval and reconnect backoff keep the session alive without measurable battery cost? | Battery/thermal acceptance | P14 |
+| U13 | Does a programmatic pinning `TrustManager` handshake cleanly on API 37 with CT/ECH at their defaults? | Confirms R-24's medium-confidence CT inference | P13 |
 
 Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 
@@ -400,6 +457,7 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - Added: Android 15+ screenshare protections (notifications/passwords/OTP activities) (R-07) and physical-keyboard password masking (R-19).
 - Added: the background-session mechanism — `connectedDevice` foreground service, its zero-prompt prerequisite, the absence of a timeout and its boot-start legality, plus Doze's device-wide network suspension (R-20).
 - Added: foreground-service notification visibility rules and the Play Console FGS declaration (R-21).
+- Added: concrete identity/TLS implementation — Keystore-generated self-signed certificate on Android (R-22), `swift-certificates` on macOS because the Security framework cannot create certificates (R-23), and the SPKI-pinning model including the server-side peer-authentication default (R-24).
 - Confirmed unchanged: MediaProjection consent/FGS rules (R-04, R-05), `FLAG_SECURE` (R-08), clipboard focus gate (R-09), macOS local-network privacy (R-10).
 
 ## 5. Negative findings worth repeating
@@ -437,6 +495,9 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - Copy and paste guide — https://developer.android.com/develop/ui/views/touch-and-input/copy-paste
 - Secure clipboard handling — https://developer.android.com/privacy-and-security/risks/secure-clipboard-handling
 - `AudioPlaybackCaptureConfiguration` — https://developer.android.com/reference/android/media/AudioPlaybackCaptureConfiguration
+- `KeyGenParameterSpec.Builder` (certificate fields) — https://developer.android.com/reference/kotlin/android/security/keystore/KeyGenParameterSpec.Builder
+- Security with network protocols (custom `TrustManager`, `SSLSocket` hostname caution) — https://developer.android.com/privacy-and-security/security-ssl
+- `SSLParameters.setEndpointIdentificationAlgorithm` — https://developer.android.com/reference/javax/net/ssl/SSLParameters
 - `BluetoothHidDevice` — https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice
 - Telecom framework (`TelecomManager`, `ConnectionService`) — https://developer.android.com/reference/android/telecom/package-summary
 - `RoleManager` — https://developer.android.com/reference/android/app/role/RoleManager
@@ -452,6 +513,12 @@ All URLs below were read on 2026-11-08 unless marked otherwise.
 - `CBPeripheralManager` — https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager
 - `CBPeripheralManager.startAdvertising(_:)` — https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager/startadvertising(_:)
 - Network framework — https://developer.apple.com/documentation/network
+- Network framework TLS options — https://developer.apple.com/documentation/network/tls
+- `SecIdentityCreate(_:_:_:)` — https://developer.apple.com/documentation/security/secidentitycreate(_:_:_:)
+- `SecIdentityCreateWithCertificate(_:_:_:)` — https://developer.apple.com/documentation/security/secidentitycreatewithcertificate(_:_:_:)
+- Creating an Identity — https://developer.apple.com/documentation/security/creating-an-identity
+- `sec_protocol_options_set_local_identity(_:_:)` — https://developer.apple.com/documentation/security/sec_protocol_options_set_local_identity(_:_:)
+- swift-certificates, Creating Certificates (Apple open source) — https://swiftpackageindex.com/apple/swift-certificates/1.21.0/documentation/x509/creating-certificates
 
 **Samsung**
 
