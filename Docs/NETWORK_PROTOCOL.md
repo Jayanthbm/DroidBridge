@@ -133,7 +133,7 @@ Never include raw clipboard text in logs.
 
 Codec: H.264/AVC only for the MVP. VideoToolbox and Android hardware encoders both support it, and it keeps the parameter-set path on CoreMedia's documented API.
 
-- `mirror.format` carries `width`, `height`, `rotation`, `sps`, `pps` and `nalLengthSize`. `sps`/`pps` are **bare NAL units**: no start code, no length prefix, emulation-prevention bytes exactly as encoded. `nalLengthSize` is 4.
+- `mirror.format` carries `width`, `height`, `rotation`, `sps`, `pps` and `nalLengthSize`. `sps`/`pps` are **bare NAL units**: no start code, no length prefix, emulation-prevention bytes exactly as encoded, Base64 encoded inside the JSON payload. `nalLengthSize` is 4. The producing side of this message is implemented in `shared/protocol/` (`MirrorFormat`, `H264ParameterSets`), which refuses parameter sets that still carry a start code.
 - A media frame payload is **one access unit** made of repeated `[4-byte big-endian NAL length][NAL bytes]`. This is the AVCC shape CoreMedia requires, not Annex-B; the conversion happens on Android so a framing bug surfaces in the code that produced it.
 - Timestamps: `ptsUs`, a 64-bit microsecond value from the producer's monotonic clock. PTS must be strictly increasing across the session — CoreMedia documents duplicate presentation timestamps as undefined. On `mirror.started` and after any reconnect the receiver **rebases** to its own clock instead of trusting a resumed producer timeline.
 - No B-frames (`KEY_MAX_B_FRAMES = 0`), so samples are in decode order and the receiver uses `decodeTimeStamp = invalid`.

@@ -1,6 +1,6 @@
 # Local Development Progress
 
-**Status:** Research stage complete and documented; no application code exists yet; no prototype has been run and no physical-device test has been performed.
+**Status:** Research stage complete and documented. One platform-independent module exists (`shared/protocol/`, H.264 media framing) and its tests run on a plain JVM; no Android or macOS application code exists yet, no prototype has been run and no physical-device test has been performed.
 **Last updated:** 2026-11-08
 **Current gate:** Gate A (research) closed on documentation evidence — Phase 0 is the next build step, subject to owner approval.
 
@@ -17,8 +17,8 @@
 ## Repository state
 
 - Branch: `development` (created from `master` at the start of this research pass, because the remote had only `master`).
-- Content: documentation only — `AGENTS.md`, `README.md`, `Docs/*`, no `android/`, no `macos/`, no `shared/`, no `.gitignore` yet.
-- Build/test tooling: none yet; nothing to build or run.
+- Content: `AGENTS.md`, `README.md`, `Docs/*`, `.gitignore`, and `shared/protocol/` (Kotlin/JVM library with unit tests). No `android/`, no `macos/`.
+- Build/test tooling: a Gradle wrapper plus the Kotlin/JVM plugin for `shared/protocol` only. Nothing Android or macOS can be built in this environment (no Android SDK, no Xcode), so those builds belong on the owner's machines.
 
 ## Completed
 
@@ -47,12 +47,14 @@
   - Distribution requirements: Play's target-API floor and the restricted `ACCESS_LOCAL_NETWORK` permission declaration, per-type foreground-service declarations with demo videos, macOS Developer ID/hardened runtime/notarisation, and the App Sandbox network and keychain entitlement rules.
   - Media pipeline: surface-fed encoding (no colour handling in app code), the API-31 quality floor applying only to VBR, profile rejection and `KEY_LEVEL` not being a cap, B-frames defaulting to zero, the Annex-B→AVCC mismatch between MediaCodec and CoreMedia, and the deprecation of `AVSampleBufferDisplayLayer`'s enqueue API in favour of a macOS 27 replacement.
 - [x] Research register, decisions, permissions matrix and prototype instructions updated from that pass.
+- [x] **2026-11-08 shared protocol module — H.264 media framing (`shared/protocol/`):** Annex-B start-code splitting (both start-code lengths, trailing-zero padding, rejection of unframed or empty NAL units), codec-specific-data parsing into bare SPS/PPS, and Annex-B→AVCC conversion with 4-byte big-endian lengths plus IDR detection; `mirror.format` payload with deterministic JSON and Base64 parameter sets. 31 unit tests, all passing on JVM 21 (`./gradlew test`); two mutation checks confirmed the start-code and padding tests fail when the rule they cover is broken. This is the producer side of `NETWORK_PROTOCOL.md` §7 and ADR-027. **Not device-tested** — no phone was involved, and nothing here proves encoder output, only the framing rules.
 
 ## Not started
 
 - [ ] Create the Android project shell (`android/`, Kotlin + Compose, Gradle KTS).
 - [ ] Create the macOS project shell (`macos/`, Swift + SwiftUI, Xcode project).
-- [ ] Add `.gitignore` and CI/build scripts.
+- [x] Add `.gitignore` (Gradle, Android, Xcode, IDE, secrets).
+- [ ] Add CI/build scripts.
 - [ ] Capture exact device build/API details (P00).
 - [ ] Run P01 MediaProjection prototype.
 - [ ] Run P02 Android 17 LAN strategy prototype (picker vs runtime permission).
