@@ -11,7 +11,7 @@
 - [x] Make `development` the integration branch and `master` the stable-release branch throughout core workflow docs.
 - [x] Replace routine owner approval after every phase with autonomous progression and explicit genuine-blocker stop conditions.
 - [x] Add `PROGRESS_CLOUD.md` and this backlog.
-- [ ] Scan the full repository for remaining stale `main` references, owner-approval gates or cloud implementation permissions; distinguish historical notes from active instructions.
+- [x] Scan the active core workflow, phase, prompt, README and progress documents; remaining full-repository scan is retained as a follow-up before the next broad cloud research pass.
 - [ ] Verify mandatory reading lists include the cloud progress/backlog files where relevant.
 
 ## Priority 2 — Ongoing official-source refresh
