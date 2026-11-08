@@ -185,9 +185,21 @@ class ProjectionService : Service() {
                 setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
                 // A still screen must keep producing frames, or the viewer looks frozen.
                 setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 250_000L)
+                // PROFILE and LEVEL must be set together on this encoder.
+                //
+                // Measured, not assumed: setting KEY_PROFILE alone makes configure() fail with
+                // CodecException 0x80001001 (OMX_ErrorUndefined), and the stack names no key.
+                // A bisect over the format keys showed profile-alone failing while
+                // profile+level succeeded, so the encoder requires a level whenever a profile is
+                // pinned. Level 3.1 is the correct level for 1280x720@30 and is what the encoder
+                // reports supporting.
                 setInteger(
                     MediaFormat.KEY_PROFILE,
                     MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline,
+                )
+                setInteger(
+                    MediaFormat.KEY_LEVEL,
+                    MediaCodecInfo.CodecProfileLevel.AVCLevel31,
                 )
             }
 

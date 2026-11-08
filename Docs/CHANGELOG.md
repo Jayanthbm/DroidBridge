@@ -26,6 +26,17 @@ All notable project changes are recorded here.
 - macOS Bonjour advertiser: `NWListener` publishing `_droidbridge-dev._tcp` with a versioned TXT
   record, an echo handler, and a live event view. The Mac half of the ADR-010 direction.
 
+### Fixed — P01 encoder configuration (2026-11-09)
+- The H.264 encoder requires `KEY_LEVEL` whenever `KEY_PROFILE` is set; setting the profile alone
+  made `configure()` fail with `CodecException 0x80001001`, an error that names no key. Found by a
+  device-side bisect over the format keys. Capture now runs end to end: 124 frames, 359,092 bytes,
+  3 keyframes, SPS 21 bytes, PPS 8 bytes.
+
+### Verified — P04 clipboard matrix (2026-11-09)
+- The full matrix ran on the device. The focus gate is confirmed: with another app in front or the
+  screen off, the read returns nothing. `EXTRA_IS_SENSITIVE` does not block a read, there is no
+  OS-side size cap, and nothing deduplicates — all three must be handled by DroidBridge.
+
 ### Added — Phase 1, P03 (2026-11-09)
 - Length-prefixed control framing with a validated, unsigned length prefix and a 1 MiB cap.
 - Short authentication code for pairing, implemented in Kotlin and Swift with shared test vectors

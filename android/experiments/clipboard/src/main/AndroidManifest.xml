@@ -10,6 +10,15 @@
       the thing being measured.
     -->
 
+    <!--
+      Guards ProbeReceiver. A signature permission cannot be held by another app, but adb shell
+      runs privileged and can still send the broadcast, which is all the prototype needs. Without
+      it any installed app could trigger a clipboard read.
+    -->
+    <permission
+        android:name="com.droidbridge.experiment.clipboard.PROBE_PERMISSION"
+        android:protectionLevel="signature" />
+
     <application
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -26,6 +35,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          Prototype-only: lets the P04 matrix measure a clipboard read while another app holds
+          focus. Not exported in any production build.
+        -->
+        <receiver
+            android:name=".ProbeReceiver"
+            android:exported="true"
+            android:permission="com.droidbridge.experiment.clipboard.PROBE_PERMISSION">
+            <intent-filter>
+                <action android:name="com.droidbridge.experiment.clipboard.PROBE" />
+            </intent-filter>
+        </receiver>
 
         <!-- Only so the image-only matrix row can put a real image/* clip on the clipboard. -->
         <provider

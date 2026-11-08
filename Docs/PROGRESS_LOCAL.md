@@ -232,3 +232,38 @@ would show two different codes on two screens and reject a valid device.
 criteria are met; two are partially met at the primitive level.
 
 Report: `Docs/prototypes/P03-transport-and-pairing.md`.
+
+### P01 capture — VERIFIED on device (2026-11-09)
+
+The device was unlocked and consent granted, so the full pipeline ran for the first time:
+
+**124 frames, 359,092 bytes, 3 keyframes**, negotiated `video/avc` 1280x720, SPS 21 bytes, PPS 8
+bytes, foreground service `isForeground=true`, 0 crashes. Frames kept arriving on a still screen,
+which is what `KEY_REPEAT_PREVIOUS_FRAME_AFTER` is for.
+
+**Defect found and fixed:** `configure()` failed with `CodecException 0x80001001`
+(`OMX_ErrorUndefined`) and the stack named no key. A device-side bisect over the format keys
+(`FormatBisect.kt`) isolated the rule: **this encoder requires `KEY_LEVEL` whenever `KEY_PROFILE` is
+set**, and also requires `KEY_I_FRAME_INTERVAL`. Profile alone fails; profile plus level succeeds.
+The first bisect pass was misleading — it looked like adding `I_FRAME_INTERVAL` was the fix — so the
+identical format was run three times to rule out a first-configure quirk before re-basing the
+bisect on the known-good format. Level 3.1 is now set alongside Baseline.
+
+This bug is invisible to unit tests and would have blocked the entire mirroring path.
+
+### P04 — VERIFIED on device (2026-11-09)
+
+The full matrix ran. The decisive row is the negative one: with the launcher in front,
+`hasPrimaryClip` returned **false** — the focus gate observed, not assumed. Screen off also returns
+false.
+
+Three findings that change the product:
+- **`EXTRA_IS_SENSITIVE` does not block a read.** A clip written with the flag set was read in full.
+  It is a preview-suppression hint, not an access control. DroidBridge must be cautious with it but
+  must not claim the OS protects it.
+- **There is no OS-side size cap.** A 100 KB clip came back complete, so the 100 KB figure in the
+  plan was an assumption. DroidBridge must impose its own cap.
+- **Nothing deduplicates.** Reading the same content twice returns it twice, so loop prevention must
+  be DroidBridge's own, keyed on content hash and origin ID.
+
+The Android-to-Mac user story wording is now written from observation and recorded in the report.

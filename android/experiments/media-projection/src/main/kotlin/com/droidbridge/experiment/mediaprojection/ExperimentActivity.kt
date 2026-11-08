@@ -106,6 +106,7 @@ class ExperimentActivity : ComponentActivity() {
                         onStart = ::requestStart,
                         onStop = { ProjectionService.stop(this); statusText = "stop requested" },
                         onProbe = { probeText = EncoderProbe.probe().toReportText() },
+                        onBisect = { probeText = FormatBisect.run() },
                     )
                 }
             }
@@ -139,6 +140,7 @@ private fun ExperimentScreen(
     onStart: () -> Unit,
     onStop: () -> Unit,
     onProbe: () -> Unit,
+    onBisect: () -> Unit,
 ) {
     Column(
         modifier = modifier
@@ -159,6 +161,10 @@ private fun ExperimentScreen(
         }
         OutlinedButton(onClick = onProbe, modifier = Modifier.fillMaxWidth()) {
             Text("Probe encoder capabilities")
+        }
+
+        OutlinedButton(onClick = onBisect, modifier = Modifier.fillMaxWidth()) {
+            Text("Bisect format keys")
         }
 
         Text("status: $status", style = MaterialTheme.typography.bodyMedium)

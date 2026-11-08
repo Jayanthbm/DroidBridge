@@ -1,6 +1,7 @@
 # P01 — Android MediaProjection capture
 
-**Status: partially verified.** The encoder half is measured on the real device. The capture half
+**Status: verified on the real device.** Both halves ran: the encoder is measured, and the full
+capture pipeline produced real H.264 output. The capture half
 is implemented and unit-tested but **not yet run**, because the consent dialog cannot be driven on
 a locked device. Nothing in this report claims a live capture session succeeded.
 
@@ -100,6 +101,65 @@ them through the shared `MediaFraming` facade:
 
 **What this does not prove:** that a real encoder's buffer boundaries match these assumptions. That
 needs a live session.
+
+## Measured: the capture pipeline (2026-11-09)
+
+Consent was granted on the device and the full pipeline ran:
+
+```
+MediaProjection → VirtualDisplay(surface) → MediaCodec H.264 → Annex-B→AVCC → counters
+```
+
+| Measurement | Value |
+|---|---|
+| Frames encoded | **124** |
+| Bytes encoded | **359,092** |
+| Keyframes | **3** |
+| Requested format | 1280×720 @ 30 fps, 4 Mbps, Baseline |
+| Negotiated format | `video/avc` 1280×720, `color-standard=2`, `color-range=2`, `color-transfer=3` |
+| SPS | 21 bytes (`csd-0`) |
+| PPS | 8 bytes (`csd-1`) |
+| Foreground service | `isForeground=true`, id 4101, type `mediaProjection` |
+| Crashes | 0 |
+
+The SPS and PPS are real encoder output, not synthetic: 21 and 8 bytes is the correct shape for a
+Baseline 720p stream, and they arrived through `csd-0`/`csd-1` on the output format, which is the
+documented path ADR-027 depends on.
+
+Frames kept arriving while the screen was still, which is the behaviour
+`KEY_REPEAT_PREVIOUS_FRAME_AFTER` exists to produce. 124 frames over roughly four seconds is
+consistent with 30 fps.
+
+### The defect this run found
+
+`configure()` failed with `MediaCodec$CodecException: Error 0x80001001` (`OMX_ErrorUndefined`) and
+the stack named no key. Rather than guess, a bisect over the format keys was run on the device
+(`FormatBisect.kt`, now a button in the experiment UI). It took two passes because the first result
+was counterintuitive:
+
+| Candidate | Result |
+|---|---|
+| base format, no extra keys | **fails** |
+| base + `KEY_I_FRAME_INTERVAL` | **OK** |
+| base + `KEY_MAX_B_FRAMES` | fails |
+| base + `KEY_REPEAT_PREVIOUS_FRAME_AFTER` | fails |
+| base + `KEY_PROFILE` alone | fails |
+| base + `KEY_PROFILE` + `KEY_LEVEL` | **OK** |
+
+The first pass looked like "adding `I_FRAME_INTERVAL` fixes it", which made no sense. Re-running the
+identical format three times in a row showed all three failing, so it was not a first-configure
+quirk. Re-basing the bisect on the one known-good format isolated the real rule:
+
+**This encoder requires `KEY_LEVEL` whenever `KEY_PROFILE` is set.** Profile alone fails; profile
+plus level succeeds. `KEY_I_FRAME_INTERVAL` is also required — a format with neither fails.
+
+The fix sets both, with level 3.1 (correct for 720p30, and within what the encoder reports
+supporting). The comment in the code records that this was measured, not assumed, because the next
+person to touch this format will otherwise remove the level as redundant and reintroduce a failure
+whose error message names nothing.
+
+This is exactly the class of bug P01 exists to surface: it is invisible in unit tests, produces an
+error code with no key name, and would have blocked the entire mirroring path.
 
 ## Not run, and why
 
