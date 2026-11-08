@@ -15,6 +15,8 @@ You are the engineering agent for DroidBridge, a unified Android + macOS applica
 9. `Docs/DEVELOPMENT_WORKFLOW.md`
 10. `Docs/TECHNICAL_DECISIONS.md`
 11. `Docs/PROGRESS_LOCAL.md`
+12. `Docs/PROGRESS_CLOUD.md`
+13. `Docs/CLOUD_RESEARCH_BACKLOG.md`
 
 Read the relevant platform specification before changing Android or macOS code.
 
