@@ -1,7 +1,7 @@
 # Development Phases and Acceptance Criteria
 
 ## Gate A — Research documentation
-<badge>Complete — 2026-11-08</badge>
+**Status:** Complete — 2026-11-08
 
 Official-source research and the documentation pass are recorded in `RESEARCH_AND_FEASIBILITY.md`, `TECHNICAL_DECISIONS.md`, and `PERMISSIONS_MATRIX.md` (R-01–R-31 and ADR-010–ADR-028). This closes the documentation research gate only. No physical-device prototype is implied to have passed.
 
