@@ -158,4 +158,4 @@ Never send input commands if Android has not explicitly enabled a supported inpu
 - Minor version for compatible optional capabilities.
 - Capability negotiation at session start.
 - Unknown mandatory message type must fail safely.
-- Add protocol test vectors in `shared/test-vectors/`.
+- Add protocol test vectors only in `shared/test-vectors/` (binary golden files, hex, and JSON). No app data, logs or secrets may ever live there. No other directory under `shared/` may hold protocol artifacts.

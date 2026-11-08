@@ -17,8 +17,8 @@
 ## Repository state
 
 - Branch: `development` (created from `master` at the start of this research pass, because the remote had only `master`).
-- Content: `AGENTS.md`, `README.md`, `Docs/*`, `.gitignore`, and `shared/protocol/` (Kotlin/JVM library with unit tests). No `android/`, no `macos/`.
-- Build/test tooling: a Gradle wrapper plus the Kotlin/JVM plugin for `shared/protocol` only. Nothing Android or macOS can be built in this environment (no Android SDK, no Xcode), so those builds belong on the owner's machines.
+- Content: `AGENTS.md`, `README.md`, `Docs/*`, `.gitignore`, and `shared/protocol/` (a pure Kotlin/JVM library — the only thing allowed in `shared/` right now). No `android/`, no `macos/`.
+- Build/test tooling: a Gradle wrapper plus the Kotlin/JVM plugin, for `shared/protocol` only. Nothing Android or macOS can be built in this environment (no Android SDK, no Xcode), so those builds belong on the owner's machines.
 
 ## Completed
 
