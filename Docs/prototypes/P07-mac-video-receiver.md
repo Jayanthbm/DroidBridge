@@ -84,17 +84,31 @@ this is recovery from a deliberate flush, not from a decoder failure.
 - The P07 build produced no P07 deprecation warnings. The older `enqueueSampleBuffer` path is
   deprecated on macOS 27 and was not used; the audit records this rather than suppressing it.
 
+## Additional measurements
+
+- **First-frame latency:** `FIRST_FRAME_LATENCY_MS 496.6` from play to the first
+  `readyForDisplay=true`. This is startup/display readiness, not glass-to-glass latency; a
+  high-speed camera or burned-in millisecond counter was not used.
+- **Backpressure:** a burst enqueued all 90 frames and the renderer stayed
+  `isReadyForMoreMediaData=true` (`BURST enqueued=90 ready=true status=rendering`). The false state
+  was not induced, so bounded-queue coalescing is unproven.
+- **Corrupt sample:** an invalid IDR-like access unit was enqueued; the renderer stayed
+  `status=rendering` and `requiresFlush=false`. The decoder ignored it rather than failing, so
+  decoder-failure recovery is not proven. The deliberate flush/recover path remains proven.
+- **Resolution/portrait:** 480×640 and 1280×720 fixtures both reached `readyForDisplay=true` and
+  `status=rendering` for 60 frames each, including a portrait aspect.
+- **`preventsCapture`:** set to `true` on the layer. A screen-recording verification was attempted,
+  but macOS raised the Screen Recording TCC prompt for the capture host; no permission was granted,
+  so this is **not independently verified**. It is not claimed as a pass.
+
 ## Not yet measured
 
-- **Backpressure:** the layer stayed ready for the whole 90-frame live run. A forced
-  `isReadyForMoreMediaData=false` state was not induced, so the coalescing assertion is unproven.
-- **Latency:** no high-speed camera or burned-in millisecond counter was used; the display-path
-  latency is not a number yet.
-- **`preventsCapture`:** set to `true` on the layer, but not independently verified with a screen
-  recording because the host's screen-recording permission is not granted to this test harness.
-- **Rotation/resolution change, aspect-fit letterboxing, dropped frames, stream stop/restart** with
-  real Android input: fixed-fixture only.
-- **A corrupt sample / decoder failure:** the flush/recover path is proven; failure induction is not.
+- **`preventsCapture` screen-recording verification** (blocked on Screen Recording TCC permission).
+- **Glass-to-glass latency** (needs a camera or burned-in timecode).
+- **Forced backpressure false state and coalescing** (burst did not induce it).
+- **Decoder-failure recovery from a corrupt sample** (the decoder ignored the injected sample;
+  deliberate flush/recover is proven).
+- **Dropped frames, stream stop/restart with real Android input**: fixed-fixture only.
 
 ## Acceptance status
 
@@ -102,9 +116,9 @@ this is recovery from a deliberate flush, not from a decoder failure.
 |---|---|
 | Stable native viewer independent of Android capture | **Pass** — 90 frames, readyForDisplay, rendering |
 | Conversion and timing proven, including negative cases | **Pass** — 7 unit tests + live decode |
-| Recorded latency | **Pending** |
+| Recorded latency | **Startup 496.6 ms measured; glass-to-glass pending** |
 | Deprecation list | **Pass for P07 code** (no deprecated enqueue used) |
-| `preventsCapture = true` verified by screen recording | **Pending** |
+| `preventsCapture = true` verified by screen recording | **Pending — Screen Recording TCC not granted** |
 
 P07 is **in progress**, with the core viewer and conversion proven.
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03526CC76E4EDCA193BBA00A /* p07-1280x720.h264 in Resources */ = {isa = PBXBuildFile; fileRef = 9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */; };
 		0431767BF78F478395F96886 /* Crypto in Frameworks */ = {isa = PBXBuildFile; productRef = 7444ED0C876CC5A748B2389A /* Crypto */; };
 		14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */; };
 		1F937102D0F6B3F040834F61 /* AdvertisementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */; };
@@ -22,6 +23,7 @@
 		6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F3421D00129EB9F67855F /* ControlMessage.swift */; };
 		7C5AA12F868ABF3516AA7365 /* PeerPinStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7422664024570F46C67EDCDD /* PeerPinStore.swift */; };
 		7DB41ADDD235302D82CDFD2A /* p07-test.h264 in Resources */ = {isa = PBXBuildFile; fileRef = D25743DAABD330041FCEA833 /* p07-test.h264 */; };
+		7DCE7F8CE9C4571E7E55392E /* p07-480x640.h264 in Resources */ = {isa = PBXBuildFile; fileRef = BB3749161931C168AC4DDC03 /* p07-480x640.h264 */; };
 		822FACECDF22D3A8BB1B1AA8 /* VideoReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045D97DC485774CFC0878C91 /* VideoReceiver.swift */; };
 		83C66FC81B5DEB3DDF6D82CC /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = B3E021A54F2552181A777380 /* X509 */; };
 		86ADBF953EA0690DC9911617 /* PasteboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */; };
@@ -73,10 +75,12 @@
 		86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P03Harness.swift; sourceTree = "<group>"; };
 		8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P06Harness.swift; sourceTree = "<group>"; };
 		89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
+		9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */ = {isa = PBXFileReference; path = "p07-1280x720.h264"; sourceTree = "<group>"; };
 		9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DroidBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummary.swift; sourceTree = "<group>"; };
 		9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCode.swift; sourceTree = "<group>"; };
 		A277847708B2692DCD474697 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		BB3749161931C168AC4DDC03 /* p07-480x640.h264 */ = {isa = PBXFileReference; path = "p07-480x640.h264"; sourceTree = "<group>"; };
 		BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCodecTests.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
@@ -218,6 +222,8 @@
 		E72083E8893C174D02FB722F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				BB3749161931C168AC4DDC03 /* p07-480x640.h264 */,
+				9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */,
 				D25743DAABD330041FCEA833 /* p07-test.h264 */,
 			);
 			path = Resources;
@@ -322,6 +328,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				03526CC76E4EDCA193BBA00A /* p07-1280x720.h264 in Resources */,
+				7DCE7F8CE9C4571E7E55392E /* p07-480x640.h264 in Resources */,
 				7DB41ADDD235302D82CDFD2A /* p07-test.h264 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -15,7 +15,10 @@ clipboard matrix passes on both, including Android 17's generic "Copied." confir
 `ACCESS_LOCAL_NETWORK` requirement outside the picker; the active-mirroring-FGS integration context
 is deferred to P08. **P07 is in progress:** the Annex-B → AVCC → format-description → `AVSampleBufferDisplayLayer`
 pipeline decoded and displayed a generated 640×360 fixture (`readyForDisplay=true`,
-`status=rendering`) and recovered after a flush; backpressure/latency/preventsCapture are pending.
+`status=rendering`) and recovered after a flush; first-frame latency was 496.6 ms, 480×640 and
+1280×720 fixtures render, and a 90-frame burst did not induce backpressure. `preventsCapture` needs
+Screen Recording permission. **P15 is in progress:** the Release sandbox/entitlements dry run passes;
+Developer ID signing and notarisation are blocked by the Apple membership.
 **P06 is in progress:** macOS 27.0.1 reports
 `accessBehavior=alwaysAllow`, no prompt appears, and self-write suppression works; the deny/ask
 states need a signed P15 build or another macOS version.
@@ -579,3 +582,15 @@ access units into 4-byte-length AVCC `CMSampleBuffer`s and enqueues them on
   continue without error.
 - Pending: forced backpressure, display latency measurement, screen-recording verification of
   `preventsCapture`, rotation/resolution changes, corrupt-sample failure induction.
+
+
+## P15 — signed/sandboxed macOS dry run (partial, 2026-11-09)
+
+Release build with the intended settings:
+
+- `codesign --verify --deep --strict` valid; hardened runtime; ad-hoc signature.
+- Entitlements exactly `app-sandbox`, `network.client`, `network.server`; **no `get-task-allow`**.
+- Bundle identifier is now `com.droidbridge.macos`.
+- Gatekeeper rejects the ad-hoc build, as expected without notarisation.
+- Developer ID signing, notarisation and stapling are **blocked** by the missing Apple Developer
+  Program membership. P15 is partial, not passed.

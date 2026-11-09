@@ -32,6 +32,8 @@ public final class VideoReceiverModel: ObservableObject {
     private var timer: Timer?
     private var observer: NSObjectProtocol?
     private var enqueued = 0
+    private var playStartedAt: Date?
+    private var firstFrameLatencyMs: Double?
 
     @Published public private(set) var state: State = .idle
     @Published public private(set) var lastEvent = "idle"
@@ -50,6 +52,12 @@ public final class VideoReceiverModel: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.readyForDisplay = self.layer.isReadyForDisplay
+                if self.readyForDisplay, self.firstFrameLatencyMs == nil,
+                   let started = self.playStartedAt {
+                    let ms = Date().timeIntervalSince(started) * 1000
+                    self.firstFrameLatencyMs = ms
+                    self.emit("FIRST_FRAME_LATENCY_MS \(String(format: "%.1f", ms))")
+                }
                 self.emit("READY_FOR_DISPLAY \(self.readyForDisplay)")
             }
         }
@@ -65,6 +73,16 @@ public final class VideoReceiverModel: ObservableObject {
         if CommandLine.arguments.contains("--p07-recover") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                 self?.recover()
+            }
+        }
+        if CommandLine.arguments.contains("--p07-burst") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.burst()
+            }
+        }
+        if CommandLine.arguments.contains("--p07-corrupt") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+                self?.injectCorruptSample()
             }
         }
     }
@@ -111,6 +129,7 @@ public final class VideoReceiverModel: ObservableObject {
             emit("RESTART at keyframe after flush")
         }
         state = .playing
+        if nextIndex == 0 { playStartedAt = Date(); firstFrameLatencyMs = nil }
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.enqueueNext() }
@@ -176,6 +195,55 @@ public final class VideoReceiverModel: ObservableObject {
             state = .failed
             emit("SAMPLE_FAILED \(error)")
             pause()
+        }
+    }
+
+    /// Enqueues as fast as the renderer accepts, to observe backpressure rather than assume it.
+    public func burst() {
+        pause()
+        renderer.flush()
+        nextIndex = 0
+        var count = 0
+        while nextIndex < accessUnits.count && renderer.isReadyForMoreMediaData {
+            guard let format else { break }
+            do {
+                let unit = accessUnits[nextIndex]
+                let sample = try H264AnnexB.makeSampleBuffer(
+                    for: unit, format: format, frameDurationUs: frameDurationUs
+                )
+                renderer.enqueue(sample)
+                nextIndex += 1
+                count += 1
+            } catch {
+                emit("BURST_FAILED \(error)")
+                break
+            }
+        }
+        emit(
+            "BURST enqueued=\(count) next=\(nextIndex) " +
+                "ready=\(renderer.isReadyForMoreMediaData) status=\(statusName())"
+        )
+    }
+
+    /// Inject a deliberately malformed access unit to exercise the failure/flush path.
+    public func injectCorruptSample() {
+        guard let format else { return }
+        let corrupt = H264AccessUnit(
+            nals: [H264NAL(type: 5, bytes: [0x65, 0x00, 0x00, 0x00, 0x00])],
+            isKeyframe: true,
+            ptsUs: Int64(nextIndex) * frameDurationUs
+        )
+        do {
+            let sample = try H264AnnexB.makeSampleBuffer(
+                for: corrupt, format: format, frameDurationUs: frameDurationUs
+            )
+            renderer.enqueue(sample)
+            emit("CORRUPT_INJECTED status=\(statusName()) requiresFlush=\(renderer.requiresFlushToResumeDecoding)")
+        } catch {
+            emit("CORRUPT_FAILED \(error)")
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            self?.recover()
         }
     }
 
