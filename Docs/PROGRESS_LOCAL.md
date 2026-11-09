@@ -325,3 +325,42 @@ access control.**
 The unfocused row was measured with a new **delayed read** (schedule a read, switch away, read fires
 with another app in front) instead of the exported receiver, which is both a better test of the real
 product path and does not require weakening the receiver's signature guard.
+
+## P03 — secure session, device run 2026-11-09
+
+Run on SM-S928B (Android 17 / API 37, `CP2A.260605.016`) against MacBookAir10,1 / macOS 27.0.1 over
+Wi-Fi, USB connected, USB debugging on, wireless debugging enabled (but not used as the transport).
+Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P1.
+
+**What passed on the device**
+
+- First pairing showed the same code on both screens (`642 575`, then `614 068` after the fix below),
+  with data locked until confirmation; confirming persisted the pin (`pin persisted=true`) and only
+  then enabled data.
+- Data crossed both ways on the confirmed session (`session.ping` → `FRAME type=ping payload-bytes=12`;
+  Mac ping → `received ping:1:hello-from-mac`).
+- Stored-pin reconnect authenticated inside the handshake, with no code prompt.
+- The 30 s idle deadline closed sessions during the run, observed rather than inferred.
+- A restarted Mac with a new identity was refused by the phone: `peer pin mismatch: expected 95c71d5e…,
+  got ce3724ac…`.
+
+**Two defects found by doing this on hardware**
+
+1. The Android identity key permitted only SHA-256 digests, so Keystore refused Conscrypt's
+   `NONEwithECDSA` CertificateVerify (`InvalidKeyException: Keystore operation failed`) and no client
+   certificate was ever sent. Fixed by also permitting `DIGEST_NONE`; the app had to be reinstalled to
+   generate a compliant identity. No build or unit test could have caught this.
+2. The macOS verify block captured the expected pin when the listener started, so a listener that
+   began unpinned kept accepting "first pairings" after a confirmation and then granted data access
+   because a pin existed. Fixed by reading the pin at handshake time and by refusing a mismatched pin
+   in `connectionReady`. Regression is recorded with two loopback identities.
+
+**Still open for P03**
+
+- Wi-Fi drop/reconnect mid-session (reconnection was only a close-and-redial).
+- Mac identity is ephemeral (ADR-025), so a Mac restart forces re-pairing; cross-launch known-peer
+  sessions cannot be claimed yet.
+- Human code comparison was simulated by reading both UIs; no person compared two screens.
+- On-device tamper/replay/oversize input has no UI; those paths remain loopback/unit-test evidence.
+- Final acceptance must repeat the run with USB disconnected and both debugging modes disabled.
+- The UI still allows "reject" after a session is confirmed; it closes the socket but leaves the pin.

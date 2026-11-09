@@ -161,3 +161,133 @@ Android Keystore, or a physical network.
 6. Oversize-length rejection (2 GiB declared) remains unit-test only (`SessionCodecTests`); phase 6
    covers the zero-length case on a live session. The pairing timeout also expired unobserved — no
    phase sat in `awaitingConfirmation` long enough.
+
+### Run P1 — Samsung S24 Ultra against the Mac app over Wi-Fi
+
+**Classification: physical-device network test.** Both real implementations, real Wi-Fi, real
+Keystores. Two pairing runs were needed: the first exposed a defect that had to be fixed before the
+flow could be accepted, so the run is recorded in two parts rather than presented as one clean pass.
+
+| Field | Value |
+|---|---|
+| Date/time | 2026-11-09 16:28–17:12 IST |
+| Code under test | `13a6005` plus the working-tree fixes named below (both committed after the run) |
+| Phone | Samsung SM-S928B (e3q), Android 17 / API 37, build `CP2A.260605.016`, fingerprint `samsung/e3qxins/e3q:17/CP2A.260605.016/S928BXXS6EZJ1:user/release-keys` |
+| Mac | MacBookAir10,1 (M1), macOS 27.0.1 (26A434), Xcode 27.2 |
+| Network | Wi-Fi `192.168.31.0/24`: phone `192.168.31.246`, Mac `192.168.31.109`; listener ports 61135–61139; Bonjour service `DroidBridge-P03-Mac` in `_droidbridge-dev._tcp` |
+| USB connected | **yes** (`adb devices -l` → `usb:1048576X`, `sys.usb.state=mtp,adb`) |
+| USB debugging | **yes** |
+| Wireless debugging | **enabled** (`settings get global adb_wifi_enabled` = 1, `service.adb.tcp.port` = 5555). All driving was over the USB transport. |
+| Phone identity pin | `e0369bd5703afc0ac394184a1cb876b912396363a97dd0c2a6bb3287fafe850d` |
+| Mac identity pins | run A `45c77b066a78f7c939ac6d7bb50d597fff14277517a3b277bc5a46e915cfd48c`; run B `95c71d5ededd1924a2ef6bbaa226b05ebbc977531cac3c97e74ce66327bb326e`; run C (rejected) `ce3724ac8ec73a2721093b1f3863f4f299fac59bd01cd43ea0fc84a17cdfb7c5` |
+| Mac command | `DroidBridge --pair --seconds 1800 --peer-id DroidBridge-P03-Mac [--reset-pin]` |
+| Phone commands | `adb shell am start -n com.droidbridge.experiment.session/.SessionActivity`, then label-addressed `input tap` driven from `uiautomator dump` |
+| Evidence | this file; harness stderr and `adb logcat -s P03Session:*` quoted inline |
+
+#### Part 1 — the first attempt failed, and why
+
+The phone resolved `192.168.31.109:61135` from the picker and dialled, then failed:
+
+```
+P03Session: connecting to 192.168.31.109:61135 expectedPin=(none, first pairing)
+P03Session: connect FAILED: SessionException: TLS handshake failed:
+  SSLHandshakeException: Read error: ssl=0x…: I/O error during system call, Success
+```
+
+The Mac never reached its verify block (`verify:` absent from stderr), so the certificate never
+arrived. The phone's platform log gave the cause:
+
+```
+W/System.err: java.security.InvalidKeyException: Keystore operation failed
+  at android.security.keystore2.AndroidKeyStoreSignatureSpiBase.engineInitSign
+  at com.android.org.conscrypt.CryptoUpcalls.signDigestWithPrivateKey(CryptoUpcalls.java:82)
+  at com.android.org.conscrypt.CryptoUpcalls.ecSignDigestWithPrivateKey(CryptoUpcalls.java:70)
+```
+
+The identity key had been generated with `setDigests(DIGEST_SHA256)` only. Conscrypt signs the TLS
+1.3 CertificateVerify through `NONEwithECDSA` over a pre-computed digest, and Keystore refuses that
+when `DIGEST_NONE` is not permitted. The key could not sign, so no client certificate was sent.
+`DeviceIdentity` now permits `DIGEST_SHA256` **and** `DIGEST_NONE`, and the app was uninstalled and
+reinstalled so a compliant identity was generated. This defect was invisible to `assembleDebug` and
+to every unit test; only a real handshake exposed it.
+
+#### Part 2 — pairing, confirmation and data (pre-fix Mac, post-fix phone)
+
+With the signing fixed, the handshake completed and both sides derived the same code:
+
+| Side | Rendered/printed code | Peer pin observed |
+|---|---|---|
+| Phone | `614 068` (later pairing) / `642 575` (first) | Mac pin |
+| Mac | `CODE 642 575` then `CODE 614 068` | phone pin `e0369bd5…` |
+
+The first successful pairing showed `642 575` on both. Both ends reported `authenticated=false` and
+`application data: locked (confirm the code)` until confirmed. Confirmation then produced:
+
+```
+P03Session: pairing confirmed: peerPin=45c77b06… code=642575 pin persisted=true
+P03: pairing confirmed locally; pin stored for DroidBridge-P03-Mac
+P03: AUTHENTICATED peer-pin=e0369bd5… pin stored
+```
+
+A reconnect with the stored pin on both sides authenticated inside the handshake:
+
+```
+P03Session: handshake complete: protocol=TLSv1.3 peerPin=45c77b06… authenticated=true
+P03: verify: pin matched e0369bd5…
+```
+
+Data crossed in both directions on the confirmed session:
+
+- phone → Mac: `P03Session: sent ping:1:session.ping` → `P03: frame ping:1:session.ping`,
+  `FRAME type=ping seq=1 payload-bytes=12`
+- Mac → phone: `P03: COMMAND ping sent` → `P03Session: received ping:1:hello-from-mac`
+
+The 30 s idle deadline closed sessions twice during the run (`P03: closed: idle timeout after 30s`),
+observed rather than inferred.
+
+#### Part 3 — a security gap found by this run, and its fix
+
+The first device run also exposed a hole in the Mac listener. The verify block captured the expected
+pin **once at listener start**. A listener that began with no pin therefore kept accepting "first
+pairings" after a confirmation, and `connectionReady` then granted `authenticated` merely because a
+pin now existed. A different key presenting itself after the pairing would have been accepted with
+full data access.
+
+The verify block now reads the pin at handshake time, and `connectionReady` independently refuses any
+connection whose pin differs from the stored one. Regression evidence, two loopback identities
+against one listener that confirms the first:
+
+```
+clientA pairs: verify: first pairing … 852 863 → confirm → AUTHENTICATED
+clientB (different key): verify: PIN MISMATCH expected 88ca91… got 0cdefc8b…
+clientB tls alert certificate unknown; connection refused
+```
+
+On the device, the same class of check was exercised from the other side: the Mac was restarted with a
+new (ephemeral) identity and the phone's stored-pin connect was refused:
+
+```
+P03Session: connect FAILED: SessionException: TLS handshake failed: SSLHandshakeException:
+  peer pin mismatch: expected 95c71d5e…, got ce3724ac…
+```
+
+#### What this run does not establish
+
+1. **No Wi-Fi drop/reconnect test.** Reconnection was exercised by closing the session and dialling
+   again, not by dropping the network mid-session. The acceptance criterion about surviving a Wi-Fi
+   drop is still unproven.
+2. **No on-device tamper or oversize input.** The phone UI has no way to corrupt a frame; those paths
+   are covered by loopback (`zero-length`) and unit tests (`oversize`, replay window). Replay was
+   proven on the Mac by loopback, not on the phone.
+3. **Code comparison was done by reading both UIs and logs, not by a person looking at two screens.**
+   The values matched exactly (`642 575`, `614 068`), but the human-factors step is simulated.
+4. **The Mac identity is ephemeral** (ADR-025). Every Mac launch produces a new pin, so the phone
+   must re-pair after a Mac restart, and the run above shows the phone correctly refusing the changed
+   identity instead of silently re-pinning. Persistent Mac identity is a prerequisite for the
+   "reconnect without re-pairing across launches" claim.
+5. **A confirmed session can still be rejected from the UI.** A mis-aimed tap on "Codes don't
+   match — reject pairing" after confirmation closed the socket but left the pin stored. It is not a
+   security hole (the pin had already been confirmed), but the button should be unavailable or should
+   delete the pin once authenticated.
+6. USB was connected and both debugging transports were enabled throughout. This is a development
+   run; the final acceptance run must repeat it with USB disconnected and both debugging modes off.
