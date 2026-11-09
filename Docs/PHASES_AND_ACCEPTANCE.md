@@ -30,7 +30,8 @@ rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protect
 replay (14/14 required items; three plan-only extras remain open). **P02's primary path is
 validated on the S24 Ultra**: picker approval, approved-only rediscovery, 60 s sustained duplex,
 airplane-mode outage recovery, Android process recreation and reboot. One P02 lifecycle test remains
-open: Mac sleep/wake. Mac advertiser/cold restart is measured: a new Mac service instance requires
+open: Mac sleep/wake, **deferred by the owner on 2026-11-09**. P02 is conditionally accepted, not
+claimed fully complete. Mac advertiser/cold restart is measured: a new Mac service instance requires
 one picker re-approval before approved-only reconnect works. Advertising and inbound require
 `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not. **P03** has
 all six acceptance criteria met, including the USB-disconnected run. **P04** is verified on
