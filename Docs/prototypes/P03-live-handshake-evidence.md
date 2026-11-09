@@ -108,4 +108,56 @@ content.
 ## 7. Runs
 
 - 2026-11-09 — the earlier claimed run: **withdrawn**, see §1–§3.
-- Any new run is appended here by the session that performs it.
+- 2026-11-09 — loopback client and Mac harness: **passed**, see Run L1.
+
+### Run L1 — loopback TLS client against the Mac harness
+
+**Classification: loopback test.** One side is the real macOS implementation; the other is a
+throwaway Python client, not the Android app. No phone, no Wi-Fi, no Bonjour. This proves the Mac
+half of the protocol and the Keychain persistence path; it proves nothing about Android, the
+Android Keystore, or a physical network.
+
+| Field | Value |
+|---|---|
+| Date/time | 2026-11-09 15:2x–16:0x IST |
+| Commit under test | `5d1b289` (working tree before the doc commit) |
+| Mac | MacBookAir10,1 (M1), macOS 27.0.1 (26A434), Xcode 27.2 |
+| Network | loopback `127.0.0.1`, ephemeral listener ports 61118–61126 |
+| Phone | none; USB not connected, USB debugging not used, wireless debugging not used |
+| Peer software | Homebrew Python 3.15, OpenSSL 4.1.0, self-signed P-256 client certificate |
+| Negotiated protocol | TLSv1.3, `TLS_AES_256_GCM_SHA384` (reported by the client each phase) |
+| Peer pins | `88ca91378218f18a886d54da3c91ffd25a6df1b5ffbe4942451156668d2fdcba` (expected peer), `0cdefc8b485b8b458c9b75d10d79fcac4a8b743115b79bc14032d6d4ad7a5a5a` (impostor) |
+| Mac pin | changes every run: the harness generates an ephemeral identity (ADR-025 defers storage) |
+| Commands | `DroidBridge --pair --seconds N --peer-id <id> --pin-service <name> [--reset-pin] [--idle-timeout S]`, scripted stdin, and the loopback client |
+| Reproduce | `bash .p03-smoke/run.sh` on the Mac. The driver and P-256 client certificates were local to the run and are deliberately not committed; the script generates them with `openssl ecparam`/`openssl req` and drives the harness over stdin. |
+
+**What each phase showed**
+
+| Phase | Action | Observed |
+|---|---|---|
+| 1 | connect, send a ping before any confirmation | `connection ready … authenticated=false code=769 304`, then `closed: framing/protocol violation: peer sent data before the pairing was confirmed` |
+| 2 | connect, `confirm`, then ping and a duplicate sequence 1 | `pairing confirmed locally; pin stored for loopback-client`, `AUTHENTICATED … pin stored`, `frame ping:1:hello`, then `closed: … replayed control sequence 1 (highest accepted 1)` |
+| 3 | reconnect with the stored pin | `verify: pin matched`, `connection ready … authenticated=true`, ping accepted without any confirmation |
+| 4 | first pairing, `reject` | `closed: pairing rejected by user`; no pin stored |
+| 4b | reconnect after 4 | `verify: first pairing`, `authenticated=false` — the rejection stored nothing |
+| 5 | connect with a different client identity while a pin is stored | `verify: PIN MISMATCH expected 88ca… got 0cde…`, handshake failed, client saw `TLS_ALERT_CERTIFICATE_UNKNOWN`; the stored pin was not replaced |
+| 6 | confirm, then send a zero-length frame header | `closed: framing/protocol violation: zero-length frame: a frame must carry a payload` |
+| 7 | confirm with `--idle-timeout 3`, send one ping, stay silent | `frame ping:1:idle`, then `closed: idle timeout after 3s` |
+
+**What this run does not establish**
+
+1. Android has not been on the other end of any of these phases. Its pairing UI, Keystore-backed
+   pin store and replay/idle handling are compile-checked only.
+2. The pairing code was compared by a script, not by a human reading two screens. Phase 2's code is
+   derived from two SPKIs and matched the derivation both sides run, but the human-comparison step
+   itself is unexercised.
+3. The Mac identity is ephemeral. Every harness launch presents a new key, so an Android device that
+   pinned the previous run would correctly refuse the next one as a changed identity. Cross-launch
+   known-peer sessions therefore need ADR-025's identity storage before they can be tested.
+4. Keychain access from the ad-hoc build did not prompt and both write and read succeeded. That is
+   one machine, one signature; a re-signed build may behave differently and must be re-checked.
+5. The idle deadline was observed with `--idle-timeout 3`, not the 30 s production window; the
+   timing mechanism is proven, the default value is not.
+6. Oversize-length rejection (2 GiB declared) remains unit-test only (`SessionCodecTests`); phase 6
+   covers the zero-length case on a live session. The pairing timeout also expired unobserved — no
+   phase sat in `awaitingConfirmation` long enough.

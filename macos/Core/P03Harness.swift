@@ -9,6 +9,7 @@ import os
 /// stderr, which is the evidence the report cites:
 ///
 ///   P03Harness --pair [--peer-id <id>] [--seconds N] [--pin-service <name>] [--reset-pin]
+///                   [--idle-timeout S] [--pairing-timeout S]
 ///   P03Harness --listen [--expect-pin <hex>] [--seconds N]
 ///   P03Harness --identity
 ///
@@ -93,11 +94,17 @@ enum P03Harness {
             trustMode = .storedPin
         }
 
+        // Overridable so a scripted run can observe timeouts without waiting the production window.
+        let idleTimeout = value(of: "--idle-timeout").flatMap(Double.init) ?? 30
+        let pairingTimeout = value(of: "--pairing-timeout").flatMap(Double.init) ?? 120
+
         let listener = SecureListener(
             identity: identity,
             pinStore: store,
             peerId: peerId,
-            trustMode: trustMode
+            trustMode: trustMode,
+            idleTimeout: idleTimeout,
+            pairingTimeout: pairingTimeout
         )
 
         var sawAuthenticated = false
