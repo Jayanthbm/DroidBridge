@@ -1,12 +1,12 @@
 # P03 — Local transport and pairing
 
-**Status: implemented; verified on loopback and in one physical S24 Ultra pairing run. Final
-USB-disconnected acceptance is outstanding.** Framing, the sequenced control envelope, the short
-authentication code, mutual TLS 1.3 with pin enforcement, pairing confirmation and the Keychain /
-Keystore pin stores are built and tested. A physical pairing on the S24 Ultra produced matching
-codes on both screens and duplex data on a confirmed session (see
-`P03-live-handshake-evidence.md`, Run P1). Four of the six acceptance criteria are met or partially
-met; Wi-Fi-drop recovery and the final USB-disconnected run are not done.
+**Status: implemented; verified on loopback and in two physical S24 Ultra runs (pairing, then Wi-Fi
+drop and reconnect). Final USB-disconnected acceptance is outstanding.** Framing, the sequenced
+control envelope, the short authentication code, mutual TLS 1.3 with pin enforcement, pairing
+confirmation and the Keychain / Keystore pin stores are built and tested. A physical pairing on the
+S24 Ultra produced matching codes on both screens and duplex data on a confirmed session (see
+`P03-live-handshake-evidence.md`, Run P1). Five of the six acceptance criteria are now met; only the
+USB-disconnected run remains.
 
 | Field | Value |
 |---|---|
@@ -97,8 +97,9 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
   Mac launch is a new pin. ADR-025 specifies the production storage (data protection keychain under an
   embedded Developer ID profile) and P15 owns signing and notarisation. Until that lands, a Mac
   restart forces a re-pair. Android is unaffected: `DeviceIdentity` persists in `AndroidKeyStore`.
-- **Wi-Fi drop recovery.** Reconnect with stored pins works, but surviving a mid-session network drop
-  has not been implemented or tested. The idle deadline closes the session; nothing re-establishes it.
+- **Wi-Fi drop recovery is manual, not automatic.** A dropped network closes the session cleanly and
+  reconnecting with the stored pin works without re-pairing, but nothing re-establishes the session
+  on its own: the user rediscovers and redials. Automatic reconnect is not implemented.
 - **`network_security_config.xml`.** ADR-011/024 describe a custom trust anchor there. The
   implementation pins in code instead (`PinnedTrustManager` on Android, the verify block on macOS),
   and no such file exists. The pinning is real; the documented mechanism is not the one built. This
@@ -111,9 +112,9 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
 | Unknown peer rejected | **met** — pin mismatch fails the TLS handshake itself (`verify: PIN MISMATCH`, peer sees `certificate unknown`). Proven on loopback (two identities, one listener) and on the device: the phone refused a restarted Mac's changed pin with `peer pin mismatch: expected 95c71d5e…, got ce3724ac…`. |
 | Wrong code rejected | **met** — `SecureSession` carries `authenticated=false` and locks application data until the user confirms; a wrong code is never accepted because the code is derived from the authenticated pins, so a mismatched pair produces different codes. Confirmation gating observed on device (`application data: locked (confirm the code)`). |
 | Tampered message rejected | **met** — framing rejects malformed, zero-length and oversized frames; the control envelope rejects unknown types, bad versions and replayed sequences; TLS provides integrity. Covered by 47 protocol tests and 37 macOS tests. |
-| Sessions close on network loss | **partial** — the 30 s idle deadline closed sessions twice on the device (`closed: idle timeout after 30s`). A true Wi-Fi drop mid-session was **not** tested. |
+| Sessions close on network loss | **met** — a real Wi-Fi drop was tested on the S24 Ultra (Run P2). With the session authenticated and a ping already delivered, `cmd wifi set-wifi-enabled disabled` took `wlan0` to `NO-CARRIER` with no address and 100% packet loss to the Mac. The next send on the dead socket closed the session: `session closed: send failed: SocketException`, UI `status: session closed`. The Mac side closed on its 30 s idle deadline (`closed: idle timeout after 30s`). Both ends terminate; neither hangs. |
 | No cloud connection | **verified** — local-only app, no cloud SDK, no network writes. |
-| Reconnect after Wi-Fi drop | **partial** — authenticated reconnect with stored pins works (device: `handshake complete: protocol=TLSv1.3 … authenticated=true`), but reconnection was exercised by closing and redialling, not by dropping Wi-Fi mid-session. |
+| Reconnect after Wi-Fi drop | **met** — same run. After `cmd wifi set-wifi-enabled enabled` the phone returned to `192.168.31.246`, the Mac was still listening, and the phone rediscovered it through the picker and reconnected with the stored pin: `handshake complete: protocol=TLSv1.3 … authenticated=true`, Mac `verify: pin matched` / `AUTHENTICATED (stored pin matched; no user action needed)`. No re-pairing, no code comparison. A ping on the new session was delivered (`FRAME type=ping seq=1`). |
 
 ### Known limitations
 

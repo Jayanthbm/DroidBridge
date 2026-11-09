@@ -82,6 +82,17 @@ All notable project changes are recorded here.
 - A restarted Mac with a new identity was refused by the phone (`peer pin mismatch`), which is the
   correct behaviour for a changed peer.
 
+### Verified — P03 Wi-Fi drop and reconnect on the S24 Ultra (2026-11-09)
+- A real network drop was tested, not a close-and-redial: `cmd wifi set-wifi-enabled disabled` took
+  `wlan0` to `NO-CARRIER` with no address and 100% packet loss to the Mac.
+- Both ends terminated. The phone closed on write (`session closed: send failed: SocketException`);
+  the Mac closed on its 30 s idle deadline. Neither hung or kept a dead session marked authenticated.
+- After Wi-Fi was restored the phone rediscovered the Mac and reconnected with the stored pin alone:
+  `authenticated=true`, Mac `AUTHENTICATED (stored pin matched; no user action needed)`. No
+  re-pairing, no code comparison, and a ping on the new session was delivered.
+- Reconnect is manual: nothing re-establishes the session automatically, and the listening side
+  learns of a drop only by its idle deadline. Recorded as a limitation, not a pass.
+
 ### Fixed — P03 defects found only on hardware
 - The Android identity key permitted only SHA-256 digests, so Keystore refused Conscrypt's
   `NONEwithECDSA` CertificateVerify and no client certificate was ever sent. The key now also

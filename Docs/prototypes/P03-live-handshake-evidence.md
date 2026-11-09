@@ -291,3 +291,93 @@ P03Session: connect FAILED: SessionException: TLS handshake failed: SSLHandshake
    delete the pin once authenticated.
 6. USB was connected and both debugging transports were enabled throughout. This is a development
    run; the final acceptance run must repeat it with USB disconnected and both debugging modes off.
+
+### Run P2 — Wi-Fi drop and reconnect on the S24 Ultra, 2026-11-09 18:24–18:30 IST
+
+Purpose: close the "sessions close on network loss" and "reconnect after Wi-Fi drop" criteria with a
+real network drop, not a close-and-redial.
+
+| Field | Value |
+|---|---|
+| Device | Samsung SM-S928B (e3q), Android 17, API 37 |
+| USB connected | yes (adb transport only; the app does not use it) |
+| USB debugging enabled | yes |
+| Wireless debugging enabled | yes |
+| Developer options | enabled |
+| Phone address | 192.168.31.246/24 |
+| Mac address | 192.168.31.109 |
+| Mac harness | `DroidBridge --pair --seconds 1800 --peer-id DroidBridge-P03-Mac`, port 61164 |
+| Phone own pin | `e0369bd5703afc0ac394184a1cb876b912396363a97dd0c2a6bb3287fafe850d` |
+| Mac pin this run | `20153ceeaf13853882583cda866c3b68eae75e19c3d09ff0239c4629302ff812` |
+
+The Mac harness was started fresh, so its ephemeral identity (ADR-025) produced a new pin and the
+phone had no stored pin for it. This run therefore began with a genuine first pairing.
+
+#### Step 1 — pair and authenticate
+
+Phone: `handshake complete: protocol=TLSv1.3 peerPin=20153cee… authenticated=false`, UI
+`status: connected (awaiting code confirmation)`, `application data: locked (confirm the code)`,
+`code: 109 009`. Mac: `CODE 109 009`, `AWAITING_CONFIRMATION`. Codes matched on both sides.
+
+Confirmed on both: Mac `AUTHENTICATED peer-pin=e0369bd5… pin stored`; phone
+`pairing confirmed: peerPin=20153cee… code=109009 pin persisted=true`, UI
+`status: authenticated (pairing confirmed)`.
+
+#### Step 2 — prove the session carries data
+
+Phone `sent ping:1:session.ping`; Mac `FRAME type=ping seq=1 payload-bytes=12`. Baseline established.
+
+#### Step 3 — drop the network
+
+`adb shell cmd wifi set-wifi-enabled disabled` at 18:27:12. Result: `wlan0` went to
+`<NO-CARRIER,BROADCAST,MULTICAST,UP> state DOWN` with no IPv4 address, and
+`ping -c 1 192.168.31.109` returned 100% packet loss. The drop is real, not simulated.
+
+Note: `adb shell svc wifi disable` did **not** work on this build; it returned without changing
+state. `cmd wifi set-wifi-enabled` is the command that takes effect.
+
+#### Step 4 — what each end did
+
+Mac, at the 30 s deadline: `closed: idle timeout after 30s` / `CLOSED idle timeout after 30s`. This
+is the idle deadline firing, not loss detection: the Mac had nothing to send, so it learned of the
+drop only by timing out.
+
+Phone, on the next send at 18:27:59 (Wi-Fi already down): `session closed: send failed:
+SocketException`, then `send failed: SessionException: send failed: SocketException`. UI went to
+`status: session closed`, `application data: no session`.
+
+Both ends terminate. The phone detects the loss on write, the Mac on its idle deadline. Neither
+hangs, and neither silently keeps a dead session marked authenticated.
+
+#### Step 5 — restore and reconnect without re-pairing
+
+`cmd wifi set-wifi-enabled enabled` at 18:28:2x; the phone was back on `192.168.31.246/24` within
+3 s and could reach the Mac again. The Mac harness was still listening on 61164.
+
+Phone rediscovered through the picker (`resolved: 192.168.31.109:61164`) and reconnected with the
+stored pin: `connecting to 192.168.31.109:61164 expectedPin=20153cee…`, then
+`handshake complete: protocol=TLSv1.3 peerPin=20153cee… authenticated=true`. Mac:
+`verify: pin matched e0369bd5…`, `AUTHENTICATED (stored pin matched; no user action needed)`.
+
+No code comparison, no confirmation step: the stored pin alone authenticated the session. A ping on
+the new session was delivered (`FRAME type=ping seq=1 payload-bytes=12`).
+
+#### What this run establishes
+
+- A genuine mid-session Wi-Fi drop closes the session on both ends, with the phone detecting it on
+  write and the Mac on its idle deadline.
+- Reconnecting after the drop needs no re-pairing: the stored pin authenticates the new session and
+  data flows again.
+- The picker grant survives a Wi-Fi cycle; rediscovery worked without re-requesting permission.
+
+#### What this run does not establish
+
+1. **Reconnect is manual.** Nothing re-establishes the session automatically. The user rediscovers
+   and redials. Automatic reconnect is not implemented and is not claimed.
+2. **The Mac learned of the drop only by timeout.** There is no keepalive or loss-detection path on
+   the listening side; a Mac with nothing to send sits until the 30 s deadline. If a session must
+   fail fast on loss, a heartbeat is needed.
+3. **Same-address reconnect only.** The phone came back on the same IP. Reconnect after a DHCP
+   address change was not tested.
+4. USB was connected and both debugging transports were enabled, as in Run P1. The final acceptance
+   run must repeat with USB disconnected and both debugging modes off.

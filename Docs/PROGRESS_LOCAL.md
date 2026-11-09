@@ -1,14 +1,16 @@
 # Local Development Progress
 
 **Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03 implemented and
-verified on loopback plus one physical S24 Ultra pairing run, with final USB-disconnected acceptance
-outstanding.
+verified on loopback plus two physical S24 Ultra runs (pairing, then Wi-Fi drop and reconnect), with
+final USB-disconnected acceptance outstanding.
 **Last updated:** 2026-11-09
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. P01 and P04
 verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is verified on the
 target device** — the picker path works. **P03 now has a physical pairing run on the S24 Ultra**:
 matching codes on both screens, duplex data on a confirmed session, authenticated reconnect with
-stored pins, and a changed Mac identity correctly refused.
+stored pins, and a changed Mac identity correctly refused. **A real Wi-Fi drop was then tested on the
+same device**: both ends closed the session and the phone reconnected with the stored pin without
+re-pairing.
 
 ## Device and environment
 
@@ -361,7 +363,10 @@ Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P1.
 
 **Still open for P03**
 
-- Wi-Fi drop/reconnect mid-session (reconnection was only a close-and-redial).
+- Wi-Fi drop/reconnect is **manual**: the drop closes the session on both ends and reconnecting with
+  the stored pin needs no re-pairing, but nothing re-establishes the session automatically.
+- The listening side learns of a drop only by its 30 s idle deadline; there is no keepalive.
+- Reconnect after a DHCP address change was not tested (the phone returned on the same IP).
 - Mac identity is ephemeral (ADR-025), so a Mac restart forces re-pairing; cross-launch known-peer
   sessions cannot be claimed yet.
 - Human code comparison was simulated by reading both UIs; no person compared two screens.

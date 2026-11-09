@@ -333,6 +333,12 @@ class SessionActivity : ComponentActivity() {
     /** Rejects the pairing: no pin is stored and the session closes. */
     private fun rejectPairing() {
         val s = session ?: run { record("reject ignored: no session"); return }
+        if (s.isAuthenticated) {
+            // The pin is already confirmed and stored; closing the socket here would leave a stored
+            // pin behind a "rejected" label. Use "Forget stored pin" or "Close session" instead.
+            record("reject ignored: session is already authenticated")
+            return
+        }
         record("pairing rejected by user: no pin stored, closing session")
         s.close("pairing rejected by user")
         session = null
