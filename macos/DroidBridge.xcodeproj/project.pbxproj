@@ -14,15 +14,19 @@
 		318651D5A6C2A8021330769A /* MacIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83380E99630102BDBDA54D64 /* MacIdentity.swift */; };
 		36C3BCB3285EE7AB3AE9F00C /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1BCC5937B70DE2A8AC1D55D /* Network.framework */; };
 		373BA350DC174E06EAB118D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45B21693499F9A7C73EA63AB /* AVFoundation.framework */; };
+		4630552D56097E8EB4AE5B0C /* VideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */; };
 		50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */; };
 		5D27F31FAF1BADE14D1705F6 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */; };
 		6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */; };
 		6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */; };
 		6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F3421D00129EB9F67855F /* ControlMessage.swift */; };
 		7C5AA12F868ABF3516AA7365 /* PeerPinStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7422664024570F46C67EDCDD /* PeerPinStore.swift */; };
+		7DB41ADDD235302D82CDFD2A /* p07-test.h264 in Resources */ = {isa = PBXBuildFile; fileRef = D25743DAABD330041FCEA833 /* p07-test.h264 */; };
+		822FACECDF22D3A8BB1B1AA8 /* VideoReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045D97DC485774CFC0878C91 /* VideoReceiver.swift */; };
 		83C66FC81B5DEB3DDF6D82CC /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = B3E021A54F2552181A777380 /* X509 */; };
 		86ADBF953EA0690DC9911617 /* PasteboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */; };
 		8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */; };
+		94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F667686705541706B7C6CAA /* H264AnnexBTests.swift */; };
 		9AD2106B58A6FAD8F3E0DC29 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6E7C447918BA19DECC45CCB /* CoreVideo.framework */; };
 		A6E7470503769BD847923CB6 /* SecureListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE30D7192532CDBFC5F6985 /* SecureListener.swift */; };
 		AEF1881B73B45DC997182CB5 /* PasteboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC3B0CDB750433817E3105 /* PasteboardMonitor.swift */; };
@@ -30,6 +34,7 @@
 		B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */; };
 		B761DDE9E0330B1CE1828DDE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C6E7D435733DFE75E0B09E /* Security.framework */; };
 		C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */; };
+		EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */; };
 		F7E657C2897AC146BED0B17D /* P06Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */; };
 		F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */; };
 		FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */; };
@@ -48,7 +53,10 @@
 
 /* Begin PBXFileReference section */
 		026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCodeTests.swift; sourceTree = "<group>"; };
+		045D97DC485774CFC0878C91 /* VideoReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReceiver.swift; sourceTree = "<group>"; };
 		062980F55EED673BE05F608F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		0F667686705541706B7C6CAA /* H264AnnexBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexBTests.swift; sourceTree = "<group>"; };
+		2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
 		2EE30D7192532CDBFC5F6985 /* SecureListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureListener.swift; sourceTree = "<group>"; };
 		31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertiser.swift; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,6 +80,8 @@
 		BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCodecTests.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
+		D25743DAABD330041FCEA833 /* p07-test.h264 */ = {isa = PBXFileReference; path = "p07-test.h264"; sourceTree = "<group>"; };
+		D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexB.swift; sourceTree = "<group>"; };
 		EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardView.swift; sourceTree = "<group>"; };
 		EC83A3AC94D6A38CA642921B /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
 		EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummaryTests.swift; sourceTree = "<group>"; };
@@ -134,6 +144,14 @@
 			path = Pasteboard;
 			sourceTree = "<group>";
 		};
+		A3FB38A3F769F1F8EFBBC78F /* Video */ = {
+			isa = PBXGroup;
+			children = (
+				2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */,
+			);
+			path = Video;
+			sourceTree = "<group>";
+		};
 		B2E86693E8C201B93F0509D7 /* Advertisement */ = {
 			isa = PBXGroup;
 			children = (
@@ -147,6 +165,7 @@
 			children = (
 				3F6F3421D00129EB9F67855F /* ControlMessage.swift */,
 				9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */,
+				D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */,
 				83380E99630102BDBDA54D64 /* MacIdentity.swift */,
 				86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */,
 				8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */,
@@ -157,6 +176,7 @@
 				31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */,
 				3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */,
 				9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */,
+				045D97DC485774CFC0878C91 /* VideoReceiver.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -176,6 +196,7 @@
 				3D4AAD8DC2544209B463BB9B /* App */,
 				C23F2A8F1565FAC66C83902D /* Core */,
 				E92BAD0F4A15A8180F9E13DD /* Features */,
+				E72083E8893C174D02FB722F /* Resources */,
 				E3FC39B01A3141DF69D5817B /* Tests */,
 				5B6E9FA92BC008B364C721BF /* Frameworks */,
 				CEF9244ED7DC96035E75AEE0 /* Products */,
@@ -186,11 +207,20 @@
 			isa = PBXGroup;
 			children = (
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
+				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
 				425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */,
 				BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */,
 				026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		E72083E8893C174D02FB722F /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D25743DAABD330041FCEA833 /* p07-test.h264 */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		E92BAD0F4A15A8180F9E13DD /* Features */ = {
@@ -199,6 +229,7 @@
 				B2E86693E8C201B93F0509D7 /* Advertisement */,
 				0646B7753545D7D772AB7A02 /* Dashboard */,
 				A3238806DE0DA7297769B531 /* Pasteboard */,
+				A3FB38A3F769F1F8EFBBC78F /* Video */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -211,6 +242,7 @@
 			buildConfigurationList = C2988F0B8C63BD738EED8A76 /* Build configuration list for PBXNativeTarget "DroidBridge" */;
 			buildPhases = (
 				D04B7EA71C5F92EA4EE74830 /* Sources */,
+				679997025E3439F83B043A78 /* Resources */,
 				DBC3FFDD2EF4BE26566F7011 /* Frameworks */,
 			);
 			buildRules = (
@@ -285,12 +317,24 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		679997025E3439F83B043A78 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7DB41ADDD235302D82CDFD2A /* p07-test.h264 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		5F13DF4AA37973F1563BC22A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
+				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
 				C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */,
 				F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */,
 				8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */,
@@ -306,6 +350,7 @@
 				FEA762FDC8FE386D2BBCA19B /* DashboardView.swift in Sources */,
 				6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */,
 				6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */,
+				EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */,
 				318651D5A6C2A8021330769A /* MacIdentity.swift in Sources */,
 				14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */,
 				F7E657C2897AC146BED0B17D /* P06Harness.swift in Sources */,
@@ -317,6 +362,8 @@
 				FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */,
 				B43C8476EEB1180D97D0F786 /* SessionFraming.swift in Sources */,
 				B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */,
+				822FACECDF22D3A8BB1B1AA8 /* VideoReceiver.swift in Sources */,
+				4630552D56097E8EB4AE5B0C /* VideoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

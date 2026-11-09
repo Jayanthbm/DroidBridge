@@ -16,8 +16,22 @@ struct DroidBridgeApp: App {
         selfWriteAfter: CommandLine.arguments.contains("--p06-self-write") ? 5 : nil
     )
 
-    /// Open the P06 tab directly for a scripted or manual P06 run.
-    @State private var selectedTab: Int = CommandLine.arguments.contains("--p06-monitor") ? 2 : 0
+    /// P07 receiver. The fixture is bundled; --p07-stream can point at an external Annex-B file.
+    @StateObject private var video = VideoReceiverModel(
+        autoPlay: CommandLine.arguments.contains("--p07-autoplay"),
+        streamPath: Self.argumentValue("--p07-stream")
+    )
+
+    /// Open a prototype tab directly for a scripted or manual run.
+    @State private var selectedTab: Int = CommandLine.arguments.contains("--p06-monitor")
+        ? 2
+        : (CommandLine.arguments.contains("--p07") ? 3 : 0)
+
+    private static func argumentValue(_ flag: String) -> String? {
+        guard let index = CommandLine.arguments.firstIndex(of: flag),
+              index + 1 < CommandLine.arguments.count else { return nil }
+        return CommandLine.arguments[index + 1]
+    }
 
     init() {
         // P03 headless harness. Handled before SwiftUI starts so a scripted run gets a listener
@@ -50,6 +64,9 @@ struct DroidBridgeApp: App {
                 PasteboardView(model: pasteboard)
                     .tabItem { Label("P06 Pasteboard", systemImage: "doc.on.clipboard") }
                     .tag(2)
+                VideoView(model: video)
+                    .tabItem { Label("P07 Video", systemImage: "play.rectangle") }
+                    .tag(3)
             }
             .onAppear {
                 // Force the monitor to start with the window, independent of SwiftUI's lazy tab

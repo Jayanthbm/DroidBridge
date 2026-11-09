@@ -47,6 +47,7 @@ targets:
       - path: App
       - path: Core
       - path: Features
+      - path: Resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.macos

@@ -31,7 +31,9 @@ replay (14/14 required items; three plan-only extras remain open). **P05 is comp
 both, including the Android 17 "Copied." confirmation and the `ACCESS_LOCAL_NETWORK` requirement
 outside the picker; active-mirroring-FGS integration is deferred to P08. **P06 is in progress** — the
 allowed state and write-suppression pass, but macOS 27.0.1 reports `alwaysAllow`, so the deny/ask UX
-still needs a signed P15 build or another macOS version. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
+still needs a signed P15 build or another macOS version. **P07 is in progress** — parser, conversion
+tests, live viewer and flush/recovery pass; backpressure, latency and `preventsCapture` verification
+remain. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
 sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
 advertiser/cold restart is measured: a new Mac service instance requires one picker re-approval;

@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P05 accepted; P06 in progress; P07–P15 pending
+**Current position:** Phase 0 complete; P00–P05 accepted; P06 and P07 in progress; P08–P15 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -38,7 +38,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P04** Clipboard Android→Mac | **Completed** | Yes — full matrix done | Partial — no API 33 sensitive row | 0 | macOS side is P05/P06 |
 | **P05** Clipboard Mac→Android | **Completed** (Android 12 + 17) | Yes — done | Yes — Android 12 matrix done | 0 | Active-mirroring-FGS integration deferred to P08; 15/30/60-min auto-clear not run. Android 17 needs `ACCESS_LOCAL_NETWORK` outside the picker |
 | **P06** macOS pasteboard prompt | **In progress** — allowed state + self-write suppression pass; deny/ask states unavailable | **No** — Mac-side | Not needed; phone only for round-trip loop test | **0.5–1 day remaining** | macOS 27.0.1 alwaysAllow; `tccutil` reset did not induce a prompt. Deny/ask UX needs a signed P15 build or another macOS version |
-| **P07** Mac video receiver | **Pending** | **No** — Mac-side generated H.264 | Not needed | **2–3 days** | Independent of Android runtime; uses P01 framing; can start immediately |
+| **P07** Mac video receiver | **In progress** — parser/tests/viewer/recovery pass; backpressure/latency/preventsCapture pending | **No** — Mac-side generated H.264 | Not needed | **1–2 days remaining** | Independent of Android runtime; fixture decode reached readyForDisplay/rendering |
 | **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
 | **P09** Remote input decision | **Pending** | **Yes** | Second data point only | **1–2 days** | Depends on a live mirror session (P08); expected NO-GO confirmation |
 | **P10** Secure screen/protection | **Pending** | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work can start after P01 |
@@ -56,14 +56,16 @@ Completed prototype evidence:
 [P03 live-handshake evidence](Docs/prototypes/P03-live-handshake-evidence.md) ·
 [P04](Docs/prototypes/P04-clipboard-android-to-mac.md) ·
 [P05](Docs/prototypes/P05-clipboard-mac-to-android.md) ·
-[P06](Docs/prototypes/P06-macos-pasteboard.md)
+[P06](Docs/prototypes/P06-macos-pasteboard.md) ·
+[P07](Docs/prototypes/P07-mac-video-receiver.md)
 
 ### Phase 1 totals
 
 - **Accepted:** P00, P01, P02, P03, P04, P05 (6 of 16).
-- **In progress:** P06 — allowed state and self-write suppression pass, deny/ask states unavailable.
-- **Pending:** P07–P15 (9 prototypes; P12 approval-gated).
-- **Remaining effort excluding P12:** roughly **13–25 engineer-days**, including P06's remaining
+- **In progress:** P06 — allowed state and self-write suppression pass, deny/ask states unavailable;
+  P07 — parser/tests/viewer/recovery pass, backpressure/latency/preventsCapture pending.
+- **Pending:** P08–P15 (8 prototypes; P12 approval-gated).
+- **Remaining effort excluding P12:** roughly **12–24 engineer-days**, including P06/P07 remaining
   rows.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
@@ -72,7 +74,7 @@ Completed prototype evidence:
 ### What can start without the S24 Ultra
 
 - **P06** remaining deny/ask-state UX work (blocked on a signed build or another macOS version).
-- **P07** Mac H.264 receiver with a generated stream.
+- **P07** remaining backpressure/latency/preventsCapture measurements (Mac-only).
 - **P11** macOS local-network permission/TCC.
 - **P15 preparation** — sandbox/signing steps that do not need the Apple membership.
 - Documentation and automated tests.
