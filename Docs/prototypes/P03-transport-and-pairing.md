@@ -90,13 +90,16 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
 
 ## Not built, and why
 
-- **TLS 1.3 with pinned certificates.** Needs the identity generation and the Android
-  `network_security_config.xml` anchor (ADR-011, ADR-024), and the handshake cannot be exercised
-  without a working peer — which P02 blocks.
-- **Discovery wiring.** Depends on the winning P02 path, which is unresolved.
-- **Reconnect after Wi-Fi drop.** Needs a live session.
-- **Rate limiting, idle timeout, replay protection.** Specified in NETWORK_PROTOCOL §4, not
+- **TLS 1.3 with pinned certificates.** Requires the identity generation and the Android
+  `network_security_config.xml` anchor (ADR-011, ADR-024). The idle/timeout/replay layer below is
+  still to be implemented.
+- **Discovery wiring.** Depends on the winning P02 path, which is resolved in P02 (the API 37
+  picker path is the accepted flow on Android 17).
+- **Reconnect after Wi-Fi drop.** Requires a live session.
+- **Rate limiting, idle timeout, replay protection.** Specified in NETWORK_PROTOCOL §4, not yet
   implemented.
+- **Application idle timeout.** The TLS layer carries a `timeoutMs` socket timeout, but there is no
+  application-level idle/timeout; that is a deliberate open decision for the NN.
 
 ## P03 acceptance criteria — in-progress
 
