@@ -21,13 +21,16 @@
 		6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F3421D00129EB9F67855F /* ControlMessage.swift */; };
 		7C5AA12F868ABF3516AA7365 /* PeerPinStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7422664024570F46C67EDCDD /* PeerPinStore.swift */; };
 		83C66FC81B5DEB3DDF6D82CC /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = B3E021A54F2552181A777380 /* X509 */; };
+		86ADBF953EA0690DC9911617 /* PasteboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */; };
 		8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */; };
 		9AD2106B58A6FAD8F3E0DC29 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6E7C447918BA19DECC45CCB /* CoreVideo.framework */; };
 		A6E7470503769BD847923CB6 /* SecureListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EE30D7192532CDBFC5F6985 /* SecureListener.swift */; };
+		AEF1881B73B45DC997182CB5 /* PasteboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37EC3B0CDB750433817E3105 /* PasteboardMonitor.swift */; };
 		B43C8476EEB1180D97D0F786 /* SessionFraming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */; };
 		B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */; };
 		B761DDE9E0330B1CE1828DDE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C6E7D435733DFE75E0B09E /* Security.framework */; };
 		C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */; };
+		F7E657C2897AC146BED0B17D /* P06Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */; };
 		F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */; };
 		FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */; };
 		FEA762FDC8FE386D2BBCA19B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A277847708B2692DCD474697 /* DashboardView.swift */; };
@@ -50,6 +53,7 @@
 		31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertiser.swift; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		36C6E7D435733DFE75E0B09E /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		37EC3B0CDB750433817E3105 /* PasteboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardMonitor.swift; sourceTree = "<group>"; };
 		3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFraming.swift; sourceTree = "<group>"; };
 		3F6F3421D00129EB9F67855F /* ControlMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlMessage.swift; sourceTree = "<group>"; };
 		425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertisementTests.swift; sourceTree = "<group>"; };
@@ -59,6 +63,7 @@
 		83380E99630102BDBDA54D64 /* MacIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacIdentity.swift; sourceTree = "<group>"; };
 		8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertisement.swift; sourceTree = "<group>"; };
 		86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P03Harness.swift; sourceTree = "<group>"; };
+		8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P06Harness.swift; sourceTree = "<group>"; };
 		89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
 		9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DroidBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummary.swift; sourceTree = "<group>"; };
@@ -67,6 +72,7 @@
 		BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCodecTests.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
+		EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardView.swift; sourceTree = "<group>"; };
 		EC83A3AC94D6A38CA642921B /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
 		EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummaryTests.swift; sourceTree = "<group>"; };
 		F6E7C447918BA19DECC45CCB /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
@@ -120,6 +126,14 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		A3238806DE0DA7297769B531 /* Pasteboard */ = {
+			isa = PBXGroup;
+			children = (
+				EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */,
+			);
+			path = Pasteboard;
+			sourceTree = "<group>";
+		};
 		B2E86693E8C201B93F0509D7 /* Advertisement */ = {
 			isa = PBXGroup;
 			children = (
@@ -135,6 +149,8 @@
 				9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */,
 				83380E99630102BDBDA54D64 /* MacIdentity.swift */,
 				86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */,
+				8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */,
+				37EC3B0CDB750433817E3105 /* PasteboardMonitor.swift */,
 				7422664024570F46C67EDCDD /* PeerPinStore.swift */,
 				2EE30D7192532CDBFC5F6985 /* SecureListener.swift */,
 				8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */,
@@ -182,6 +198,7 @@
 			children = (
 				B2E86693E8C201B93F0509D7 /* Advertisement */,
 				0646B7753545D7D772AB7A02 /* Dashboard */,
+				A3238806DE0DA7297769B531 /* Pasteboard */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -291,6 +308,9 @@
 				6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */,
 				318651D5A6C2A8021330769A /* MacIdentity.swift in Sources */,
 				14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */,
+				F7E657C2897AC146BED0B17D /* P06Harness.swift in Sources */,
+				AEF1881B73B45DC997182CB5 /* PasteboardMonitor.swift in Sources */,
+				86ADBF953EA0690DC9911617 /* PasteboardView.swift in Sources */,
 				7C5AA12F868ABF3516AA7365 /* PeerPinStore.swift in Sources */,
 				A6E7470503769BD847923CB6 /* SecureListener.swift in Sources */,
 				2EA838E7F8E807B48F061EDD /* ServiceAdvertisement.swift in Sources */,
@@ -314,15 +334,20 @@
 		56F9CFAA3D61C8E41CAA6486 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.DroidBridge;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos;
+				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -430,14 +455,19 @@
 		CD176FED7089848A669A00A9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.DroidBridge;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos;
+				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
 			};
 			name = Debug;

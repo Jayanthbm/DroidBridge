@@ -12,7 +12,9 @@ validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service,
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and consent-token
 replay were exercised. P04 is verified on both Android 12 and Android 17. **P05 is in progress:**
 the Android 12 Mac→Android clipboard matrix passes; the Android 13+ preview/sensitive and active-
-mirroring-FGS rows await the S24 Ultra.
+mirroring-FGS rows await the S24 Ultra. **P06 is in progress:** macOS 27.0.1 reports
+`accessBehavior=alwaysAllow`, no prompt appears, and self-write suppression works; the deny/ask
+states need a signed P15 build or another macOS version.
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -531,3 +533,24 @@ Findings: background clipboard **writes** are allowed while reads remain focus-g
 DroidBridge must enforce the 100 KiB cap and hash over UTF-8 bytes, not `String.length`; duplicate
 suppression works at the receiver but end-to-end loop prevention still needs P06/origin IDs; no
 content is logged or persisted. P05 remains in progress until the S24 rows run.
+
+
+## P06 — macOS pasteboard monitoring (partial, 2026-11-09)
+
+The P06 console ran on macOS 27.0.1 (26A434) with the bundled, ad-hoc signed, sandboxed app. It polls
+`NSPasteboard.general.changeCount` at 500 ms and reads only on a change.
+
+- Every run started with `accessBehavior=alwaysAllow`; **no access prompt appeared** for polling or
+  a real `string(forType:)` read, foreground or background.
+- `tccutil reset Pasteboard com.droidbridge.macos` and `tccutil reset All` both reported success,
+  but the behavior stayed `alwaysAllow`.
+- External `pbcopy` was detected and read; the app's own write was suppressed
+  (`selfWrite=true suppressed=true`) so it cannot echo back.
+- Logs contain length and SHA-256 prefix only — no clipboard content.
+- A configuration defect was found and fixed: `macos/project.yml` had duplicate `settings:` keys, so
+  the target's bundle ID/product/Info.plist settings were discarded and the app built as
+  `com.droidbridge.DroidBridge`. The blocks are merged; the app now builds as
+  `com.droidbridge.macos`.
+- P06 is partial: the required deny/ask UX has no evidence because those states could not be
+  induced on this OS/signing combination. The core question — can DroidBridge monitor the Mac
+  pasteboard automatically? — is answered **yes on this macOS 27.0.1/ad-hoc configuration**.
