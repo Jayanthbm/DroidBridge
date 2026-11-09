@@ -1,8 +1,8 @@
 # Local Development Progress
 
 **Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03 implemented and
-verified on loopback plus two physical S24 Ultra runs (pairing, then Wi-Fi drop and reconnect), with
-final USB-disconnected acceptance outstanding.
+verified on loopback plus three physical S24 Ultra runs (pairing, Wi-Fi drop and reconnect, and the
+final USB-disconnected acceptance run). All six P03 acceptance criteria are met.
 **Last updated:** 2026-11-09
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. P01 and P04
 verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is verified on the
@@ -10,7 +10,8 @@ target device** — the picker path works. **P03 now has a physical pairing run 
 matching codes on both screens, duplex data on a confirmed session, authenticated reconnect with
 stored pins, and a changed Mac identity correctly refused. **A real Wi-Fi drop was then tested on the
 same device**: both ends closed the session and the phone reconnected with the stored pin without
-re-pairing.
+re-pairing. **The final acceptance run passed with USB disconnected and USB debugging, wireless
+debugging and Developer Options all off.**
 
 ## Device and environment
 
@@ -365,11 +366,35 @@ Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P1.
 
 - Wi-Fi drop/reconnect is **manual**: the drop closes the session on both ends and reconnecting with
   the stored pin needs no re-pairing, but nothing re-establishes the session automatically.
-- The listening side learns of a drop only by its 30 s idle deadline; there is no keepalive.
+- The listening side learns of a drop only by its idle deadline, and a 30 s deadline drops a session
+  a user pauses in. A production session needs a keepalive or a longer deadline.
 - Reconnect after a DHCP address change was not tested (the phone returned on the same IP).
 - Mac identity is ephemeral (ADR-025), so a Mac restart forces re-pairing; cross-launch known-peer
   sessions cannot be claimed yet.
-- Human code comparison was simulated by reading both UIs; no person compared two screens.
 - On-device tamper/replay/oversize input has no UI; those paths remain loopback/unit-test evidence.
-- Final acceptance must repeat the run with USB disconnected and both debugging modes disabled.
-- The UI still allows "reject" after a session is confirmed; it closes the socket but leaves the pin.
+- The acceptance run used `P03Harness --pair` for the Mac side; the GUI app's pairing path is not
+  exercised yet.
+
+## P03 — final acceptance run, USB disconnected 2026-11-09
+
+The acceptance run `PHASES_AND_ACCEPTANCE.md` requires, and the first one with no development
+transport available.
+
+- USB disconnected, USB debugging off, wireless debugging off, Developer Options off. Verified from
+  the Mac: `adb devices` listed nothing and no adb-over-TCP device existed for the whole run.
+- Phone UI driven by the owner on the device; Mac side by `P03Harness --pair`. First run where the
+  phone was operated by a person rather than by `adb shell input tap`.
+- Both screens showed **`996 498`**, compared by the owner. Mac log:
+  `verify: pin matched e0369bd5…`, `authenticated=true code=996 498`, then
+  `FRAME type=ping seq=1 payload-bytes=12`.
+- A TLS 1.3 mutually authenticated session carried application data with no cable and no debugging.
+
+Two things this run exposed, both recorded rather than papered over:
+
+1. The first attempt authenticated and was then closed by the 30 s idle deadline before the ping was
+   sent. A user who pauses half a minute loses the session; a production session needs a keepalive or
+   a longer deadline.
+2. Restarting the harness to get a longer deadline minted a new Mac identity (ADR-025), forcing a
+   second re-pair. Persistent Mac identity is a P15 prerequisite, not a P03 defect.
+
+Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P3.

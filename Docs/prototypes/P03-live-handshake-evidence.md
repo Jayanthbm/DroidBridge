@@ -381,3 +381,77 @@ the new session was delivered (`FRAME type=ping seq=1 payload-bytes=12`).
    address change was not tested.
 4. USB was connected and both debugging transports were enabled, as in Run P1. The final acceptance
    run must repeat with USB disconnected and both debugging modes off.
+
+### Run P3 — final acceptance, USB disconnected and Developer Options off, 2026-11-09 19:03–19:11 IST
+
+Purpose: the acceptance run required by `PHASES_AND_ACCEPTANCE.md`. Every previous device run had
+USB connected and both debugging transports enabled. This one has neither.
+
+| Field | Value |
+|---|---|
+| Device | Samsung SM-S928B (e3q), Android 17, API 37 |
+| USB connected | **no** — `adb devices` returned an empty list throughout the run |
+| USB debugging enabled | **no** |
+| Wireless debugging enabled | **no** |
+| Developer options | **no** — disabled by the owner before the run |
+| Phone address | 192.168.31.246/24 |
+| Mac address | 192.168.31.109 |
+| Mac harness | `DroidBridge --pair --seconds 3600 --idle-timeout 900 --peer-id DroidBridge-P03-Mac`, port 61166 |
+| Phone own pin | `e0369bd5703afc0ac394184a1cb876b912396363a97dd0c2a6bb3287fafe850d` |
+| Mac pin this run | `7282ebcb38bcd4a4fd596f2b84dd06c5fae73d5d1fa336504bf11d647b8d2ad8` |
+
+Because adb was unavailable, the phone side was driven by the owner on the device and reported back
+verbally; the Mac side was driven by the harness. This is the first run where the phone UI was
+operated by a person rather than by `adb shell input tap`.
+
+#### Sequence
+
+1. Owner disconnected USB and disabled USB debugging, wireless debugging and Developer Options.
+   Verified from the Mac: `adb devices` listed no devices, and no adb-over-TCP device existed.
+2. Mac harness started fresh, minting a new ephemeral identity (ADR-025) with pin `7282ebcb…`.
+3. Owner opened the session app, granted `ACCESS_LOCAL_NETWORK`, forgot the stored pin, discovered
+   through the system picker and selected `DroidBridge-P03-Mac`.
+4. A first attempt authenticated (`code=229 154`) but the session hit the 30 s idle deadline before
+   the ping was sent. No data crossed in that attempt; it is not counted as evidence.
+5. Harness restarted with `--idle-timeout 900` to give the owner time to operate the phone. This
+   minted yet another identity, which is the ADR-025 limitation again.
+6. Owner forgot the pin, rediscovered and re-paired. Both screens showed **`996 498`**, compared by
+   the owner looking at the phone and the operator reading the Mac log.
+7. Owner tapped "Codes match — confirm pairing", then "Send session.ping".
+
+#### Result
+
+Mac log, verbatim:
+
+```
+P03: verify: pin matched e0369bd5703afc0ac394184a1cb876b912396363a97dd0c2a6bb3287fafe850d
+P03: connection ready peer-pin=e0369bd5… authenticated=true code=996 498
+P03: CODE 996 498
+P03: AUTHENTICATED (stored pin matched; no user action needed)
+P03: frame ping:1:session.ping
+P03: FRAME type=ping seq=1 payload-bytes=12
+```
+
+A TLS 1.3 mutually authenticated session was established and carried application data with **no USB
+cable, no USB debugging, no wireless debugging and no Developer Options**. The runtime does not
+depend on any development transport.
+
+#### What this run establishes
+
+- The acceptance condition is met: the prototype works on a device in its normal, non-developer
+  state, with no development transport available.
+- The short authentication code was compared by a person across two screens (`996 498`). This is the
+  first run where that human-factors step was real rather than simulated.
+- Mutual pinning held: the Mac verified the phone's stored pin and the phone verified the Mac's.
+
+#### What this run does not establish
+
+1. **The Mac side was still a harness, not the shipping app.** The `--pair` mode of `P03Harness` was
+   used. The GUI app's pairing path was not exercised in this run.
+2. **The Mac harness ran with a terminal attached.** It is a command-line mode of the app bundle,
+   not the menu-bar app a user would run.
+3. **Re-pairing was required twice** because the Mac identity is ephemeral (ADR-025). A user would
+   face the same re-pairing after every Mac restart until persistent identity lands in P15.
+4. **The first attempt was lost to the 30 s idle deadline.** A production session needs a keepalive
+   or a longer deadline; a user who pauses for half a minute loses the session.
+5. **No tamper, replay or oversize input on device.** Those remain loopback and unit-test evidence.

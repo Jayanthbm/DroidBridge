@@ -93,6 +93,18 @@ All notable project changes are recorded here.
 - Reconnect is manual: nothing re-establishes the session automatically, and the listening side
   learns of a drop only by its idle deadline. Recorded as a limitation, not a pass.
 
+### Verified — P03 final acceptance, USB disconnected (2026-11-09)
+- The acceptance run required by `PHASES_AND_ACCEPTANCE.md` passed with **no development transport
+  available**: USB disconnected, USB debugging off, wireless debugging off, Developer Options off.
+  `adb devices` listed nothing for the whole run.
+- A TLS 1.3 mutually authenticated session carried application data: both screens showed `996 498`,
+  compared by the owner, then `FRAME type=ping seq=1 payload-bytes=12` on the Mac.
+- First run where the phone UI was operated by a person rather than by `adb shell input tap`, so the
+  two-screen code comparison is real evidence rather than a simulation.
+- Two findings recorded, not papered over: a 30 s idle deadline drops a session a user pauses in, and
+  restarting the harness to extend that deadline minted a new Mac identity (ADR-025), forcing a
+  second re-pair.
+
 ### Fixed — P03 defects found only on hardware
 - The Android identity key permitted only SHA-256 digests, so Keystore refused Conscrypt's
   `NONEwithECDSA` CertificateVerify and no client certificate was ever sent. The key now also

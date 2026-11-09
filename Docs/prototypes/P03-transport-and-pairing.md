@@ -1,12 +1,14 @@
 # P03 — Local transport and pairing
 
-**Status: implemented; verified on loopback and in two physical S24 Ultra runs (pairing, then Wi-Fi
-drop and reconnect). Final USB-disconnected acceptance is outstanding.** Framing, the sequenced
-control envelope, the short authentication code, mutual TLS 1.3 with pin enforcement, pairing
-confirmation and the Keychain / Keystore pin stores are built and tested. A physical pairing on the
-S24 Ultra produced matching codes on both screens and duplex data on a confirmed session (see
-`P03-live-handshake-evidence.md`, Run P1). Five of the six acceptance criteria are now met; only the
-USB-disconnected run remains.
+**Status: implemented and verified on loopback and in three physical S24 Ultra runs (pairing, Wi-Fi
+drop and reconnect, and the final USB-disconnected acceptance run).** Framing, the sequenced control
+envelope, the short authentication code, mutual TLS 1.3 with pin enforcement, pairing confirmation and
+the Keychain / Keystore pin stores are built and tested. A physical pairing on the S24 Ultra produced
+matching codes on both screens and duplex data on a confirmed session (see
+`P03-live-handshake-evidence.md`, Run P1). The final acceptance run (Run P3) repeated it with the USB
+cable out and USB debugging, wireless debugging and Developer Options all off. All six acceptance
+criteria are met. The remaining items are limitations, not open criteria: automatic reconnect,
+persistent Mac identity (ADR-025/P15) and the `network_security_config.xml` divergence.
 
 | Field | Value |
 |---|---|
@@ -122,15 +124,19 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
    after a Mac restart. The device run shows the phone correctly *refusing* the changed identity
    rather than silently re-pinning, which is the safe behaviour, but persistent Mac identity is a
    prerequisite for "reconnect without re-pairing across launches".
-2. **A confirmed session can still be rejected from the UI.** A mis-aimed tap on "Codes don't match"
-   after confirmation closes the socket but leaves the pin stored. Not a security hole, but the
-   button should be unavailable once authenticated, or should delete the pin.
-3. **Code comparison was simulated** by reading both UIs and logs, not by a person looking at two
-   screens. The values matched exactly (`642 575`, `614 068`).
+2. **Reject is now gated on unauthenticated state.** A tap on "Codes don't match" after confirmation
+   used to close the socket while leaving the pin stored behind a "rejected" label; `rejectPairing()`
+   now refuses once authenticated.
+3. **Code comparison is real.** Run P3 had the owner compare `996 498` across the phone and the Mac
+   log. Earlier runs simulated it by reading both UIs.
 4. **No on-device tamper or oversize input.** The phone UI cannot corrupt a frame; those paths are
    covered by loopback and unit tests only.
-5. **USB was connected and both debugging transports were enabled** throughout the physical run.
-   The final acceptance run must repeat it with USB disconnected and both debugging modes off.
+5. **The final acceptance run used the harness, not the shipping app.** `P03Harness --pair` drove the
+   Mac side; the GUI pairing path was not exercised. Run P3 had USB disconnected and USB debugging,
+   wireless debugging and Developer Options all off.
+6. **A 30 s idle deadline drops a session a user pauses in.** The first attempt in Run P3
+   authenticated and was then closed by the deadline before the ping was sent. A production session
+   needs a keepalive or a longer deadline.
 
 ## Evidence
 
@@ -142,5 +148,10 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
   and oversized frames behave as specified. See `P03-live-handshake-evidence.md` Run L1.
 - Physical S24 Ultra: pairing with matching codes on both screens, duplex data on a confirmed
   session, authenticated reconnect with stored pins, idle timeout observed. See Run P1.
-- **Not yet done:** Wi-Fi-drop recovery, on-device tamper/oversize input, a real two-screen code
-  comparison by a person, and the final USB-disconnected / Developer-Options-disabled acceptance run.
+- Wi-Fi drop: both ends closed on a real `NO-CARRIER` drop, and the phone reconnected with the stored
+  pin without re-pairing. See Run P2.
+- **Final acceptance:** TLS 1.3 mutually authenticated session carrying application data with the USB
+  cable out and USB debugging, wireless debugging and Developer Options all off, and `996 498`
+  compared by a person across two screens. See Run P3.
+- **Not yet done:** on-device tamper/oversize input (no UI path exists; covered by loopback and unit
+  tests), and the GUI app's own pairing path.
