@@ -37,6 +37,16 @@
         </activity>
 
         <!--
+          A white comparison surface for the FLAG_SECURE test. Not exported: only the experiment
+          activity opens it, and exporting a test surface would widen the debug app's attack
+          surface for no benefit.
+        -->
+        <activity
+            android:name=".ContentTestActivity"
+            android:exported="false"
+            android:label="P01 content test" />
+
+        <!--
           The projection service. `stopWithTask="false"` is deliberate: the session must survive
           the activity going to the background, which is the whole point of a foreground service.
           The service stops itself when MediaProjection reports onStop.

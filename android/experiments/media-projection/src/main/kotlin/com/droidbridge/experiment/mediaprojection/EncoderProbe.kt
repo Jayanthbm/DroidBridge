@@ -153,7 +153,7 @@ object EncoderProbe {
             colorFormatNames = caps.colorFormats.map { colorFormatName(it) },
             supportedTypes = chosen.supportedTypes.toList(),
             profiles = profileNames,
-            levels = emptyList(),
+            levels = caps.profileLevels.map { levelName(it.level) }.distinct(),
             sizeResults = sizeResults,
             bitrateRange = "${video.bitrateRange.lower}-${video.bitrateRange.upper}",
             widthRange = "${video.supportedWidths.lower}-${video.supportedWidths.upper}",
@@ -175,7 +175,6 @@ object EncoderProbe {
         MediaCodecInfo.CodecProfileLevel.AVCProfileHigh10 -> "High10"
         MediaCodecInfo.CodecProfileLevel.AVCProfileHigh422 -> "High422"
         MediaCodecInfo.CodecProfileLevel.AVCProfileHigh444 -> "High444"
-        MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedBaseline -> "ConstrainedBaseline"
         MediaCodecInfo.CodecProfileLevel.AVCProfileConstrainedHigh -> "ConstrainedHigh"
         else -> "profile($profile)"
     }
