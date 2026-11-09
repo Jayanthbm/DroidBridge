@@ -182,7 +182,6 @@ public final class SecureListener {
         // anonymous and the pin would only protect one direction.
         sec_protocol_options_set_peer_authentication_required(tls.securityProtocolOptions, true)
 
-        let expectedPin = resolvedPin
         sec_protocol_options_set_verify_block(
             tls.securityProtocolOptions,
             { [weak self] _, secTrust, complete in
@@ -190,6 +189,13 @@ public final class SecureListener {
                     complete(false)
                     return
                 }
+
+                // Read the pin at handshake time, not the value captured when the listener started.
+                // A listener that starts with no pin and is confirmed later must not keep accepting
+                // "first pairings" for the rest of its life: the first connection after the pairing
+                // would otherwise be treated as unknown and then granted data access, because the
+                // pin now exists. The S24 Ultra run reproduced exactly that gap.
+                let expectedPin = self.locked { self.expectedPin }
 
                 // sec_trust_copy_ref returns a non-optional SecTrustRef.
                 let trust = sec_trust_copy_ref(secTrust).takeUnretainedValue()
@@ -428,7 +434,16 @@ public final class SecureListener {
         }
 
         let code = ShortAuthenticationCode.derive(identity.sasIdentityBytes, verdict.spki)
-        let authenticated = locked { expectedPin != nil }
+
+        // Second layer, independent of the verify block: never grant data access to a key that is
+        // not the pinned one. If a future change makes the handshake accept a different identity,
+        // this still closes before a frame is accepted.
+        let storedPin = locked { expectedPin }
+        if let storedPin, storedPin != verdict.pin {
+            close(connection, reason: "peer identity changed: pin mismatch")
+            return
+        }
+        let authenticated = storedPin != nil
 
         locked {
             peerPinValue = verdict.pin

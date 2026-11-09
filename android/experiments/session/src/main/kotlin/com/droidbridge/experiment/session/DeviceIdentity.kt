@@ -79,7 +79,12 @@ class DeviceIdentity private constructor(
                 KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY,
             )
                 .setAlgorithmParameterSpec(java.security.spec.ECGenParameterSpec("secp256r1"))
-                .setDigests(KeyProperties.DIGEST_SHA256)
+                // DIGEST_NONE is required, not incidental. The platform TLS stack signs the TLS 1.3
+                // CertificateVerify through `NONEwithECDSA` over an already-computed digest; a key
+                // that permits only SHA-256 makes that call fail with "Keystore operation failed"
+                // and the handshake dies after the server has requested a client certificate. This
+                // was found on the S24 Ultra, not by any build or unit test.
+                .setDigests(KeyProperties.DIGEST_SHA256, KeyProperties.DIGEST_NONE)
                 // ECDSA needs no padding parameter; naming the signature padding would be wrong
                 // here and the Keystore rejects it for EC keys.
                 .setUserAuthenticationRequired(false)
