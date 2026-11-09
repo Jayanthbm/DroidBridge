@@ -1,13 +1,20 @@
-# P02 — LAN discovery: the API 37 picker path
+# P02 — Android 17 local networking: the picker path
 
-**Status: verified on the target device.** The Android 17 system picker appears, lists the Mac, and
-hands back a peer that resolves and connects. The Mac's own listener accepts the connection and
-echoes bytes. This was the prototype that could not run on the OnePlus; it runs here.
+**Status: the picker path, sustained duplex and network recovery are validated on the target
+device — Samsung Galaxy S24 Ultra, Android 17 / API 37, One UI 9.0 (2026-11-09). Two lifecycle
+tests remain open: Mac sleep/wake and a Mac advertiser restart.** Router restart, a Mac IP change,
+guest-Wi-Fi client isolation and a Mac interface change could not be exercised in this environment
+and are recorded as unavailable rather than guessed at.
+
+The first S24 Ultra run established first contact (picker, `resolveService`, TCP connect, 26-byte
+echo, approved-only rediscovery). This run adds the parts that were missing: a 60-second sustained
+duplex test, a real network-loss recovery test, process recreation, reboot, inbound connections,
+and an investigation of `ACCESS_LOCAL_NETWORK` enforcement.
 
 | Field | Value |
 |---|---|
 | Date | 2026-11-09 |
-| Device | Samsung Galaxy S24 Ultra, **SM-S928B** (`e3q`) |
+| Device | Samsung Galaxy S24 Ultra, **SM-S928B** (`e3q`, `e3qxins`) |
 | Android version | **17** |
 | API level | **37** |
 | One UI | **9.0** (`ro.build.version.oneui=90000`) |
@@ -15,156 +22,277 @@ echoes bytes. This was the prototype that could not run on the OnePlus; it runs 
 | Security patch | 2026-10-05 |
 | Verified boot | `green` |
 | Build type | `user` |
-| USB connected | yes |
-| USB debugging enabled | yes |
+| USB connected | **yes** for the sessions recorded here |
+| USB debugging enabled | **yes** |
 | Wireless debugging enabled | **no** |
 | Device lock state | unlocked (`deviceLocked=0`) |
 | Wi-Fi | `wlan0` 192.168.31.246/24 |
 | Bluetooth | on (not used by this prototype) |
-| Mac | 192.168.31.109, macOS 27.0.1, arm64 |
-| Experiment app | `com.droidbridge.experiment.discovery` 0.1.0 |
+| Mac | MacBookAir10,1, 192.168.31.109, macOS 27.0.1, arm64 |
+| Mac advertiser | `_droidbridge-dev._tcp`, name `DroidBridge`, port 61169 (ephemeral) |
+| Experiment app | `com.droidbridge.experiment.discovery` 0.1.0, `minSdk=37` |
 
-## The result
+The final wireless-only, debugging-disabled gate was **not re-run for P02**. The project-level
+USB-disconnected run in `PROGRESS_LOCAL.md` / `P03-live-handshake-evidence.md` §7 Run P3 is P03
+evidence. This report records USB state honestly rather than borrowing it.
 
-The picker path works end to end. The sequence, in order:
+## The picker path still works
 
-| Step | Observation |
-|---|---|
-| Build `DiscoveryRequest` with `FLAG_SHOW_PICKER` | `flags=2`, built without throwing |
-| `discoverServices(request, executor, listener)` | returned without throwing |
-| `onDiscoveryStarted` | fired — picker becomes visible |
-| System picker | **`NsdPickerActivity`**: "Choose a device to connect" / "P02 discovery wants to connect to a device on your local network" |
-| Peers listed | `ControlTest2` (a stale leftover) and `DroidBridge-P02-Mac` (published by this run) |
-| User selects `DroidBridge-P02-Mac` | `onServiceFound: name='DroidBridge-P02-Mac' type='_droidbridge-dev._tcp.' host=null port=0` |
-| `resolveService` | `onServiceResolved: host=192.168.31.109 port=47999` |
-| TCP connect from the phone | Mac logged `inbound connection from 192.168.31.246` → `connection ready` |
-| Duplex echo | 26 bytes sent, echoed verbatim, received back on the phone |
+The app was reinstalled for this run, which reset its runtime permission to **NOT GRANTED**. With
+that clean state, **picker discovery was started without requesting the permission**:
+
+```
+pick … topResumedActivity=com.google.android.connectivity.resources/.NsdPickerActivity
+     "Choose a device to connect"
+     "P02 discovery wants to connect to a device on your local network"
+     listed peers: DroidBridge, DroidBridge-P03-Mac (stale advertiser from the P03 run)
+```
+
+Selecting `DroidBridge` produced:
+
+```
+onServiceFound: name='DroidBridge' type='_droidbridge-dev._tcp.' host=null hostAddresses=[] port=0
+onServiceResolved: host=192.168.31.109 port=61169
+```
+
+The empty address in `onServiceFound` is by design: the picker grants the peer, and resolution is a
+separate step. A design that assumed `onServiceFound` gives a connectable endpoint would fail at
+the first connection attempt.
 
 **The picker is real, it is the OS's own UI (`com.google.android.connectivity.resources`), and it
-mediates peer selection.** That is the single most important P02 finding, and it is now measured
-rather than assumed.
+mediates peer selection.** That remains the single most important P02 finding.
 
-### `onServiceFound` carries no address — and that is by design
+## A — sustained duplex (60 s)
 
-The service record arrives with `host=null port=0`. This is not a bug: the picker grants the peer,
-and resolving is a separate step that yields the address. A design that assumed `onServiceFound`
-gives a connectable endpoint would fail at the first connection attempt. The two-step
-discover-then-resolve flow is mandatory, and the experiment records them as separate events for
-exactly this reason.
+The Mac's `ServiceAdvertiser` echoes every byte verbatim. `EchoClient` sends
+`P02 <seq> <sendNanos>` every 250 ms and compares the echoed line exactly, so the reply proves the
+return path on the same socket. It records round-trip latency from the phone's own monotonic clock.
 
-### `FLAG_USER_APPROVED_ONLY` works, and this is the product-critical flag
-
-After the user approved `DroidBridge-P02-Mac` once through the picker, a later run with
-`FLAG_USER_APPROVED_ONLY` found the same peer **with no picker shown at all**:
-
-```
-start: requesting discovery with FLAG_USER_APPROVED_ONLY
-approved-only discoverServices returned without throwing
-approved-only onDiscoveryStarted: _droidbridge-dev._tcp
-approved-only onServiceFound: 'DroidBridge-P02-Mac' port=0
-```
-
-That is the difference between a usable reconnect and asking the user to re-approve on every launch.
-Approve once, reconnect silently thereafter.
-
-## The correction that matters most: the Mac was never blocked
-
-The previous session concluded that Bonjour and inbound connections were blocked at the host level
-by Little Snitch, and that a minimal non-sandboxed control binary failed identically. **That
-conclusion was wrong, and the record is corrected here.**
-
-What was actually measured this session, with no changes to Little Snitch, the firewall, or any VPN
-configuration:
-
-| Test | Result |
+| Measurement | Value |
 |---|---|
-| Phone → Mac, plain Python TCP listener on 47999 | **connected** (`CONNECTED from ('192.168.31.246', 54230)`) |
-| Phone → Mac, the real `DroidBridge.app` listener on 61113 | **connected** (`connection ready: 192.168.31.246:56584`) |
-| Phone → Mac, duplex echo through the app | **26 bytes round-tripped verbatim** |
-| Mac advertises `_droidbridge-dev._tcp` via `NWListener` | **`advertising ... port=61113`**, and the phone's picker listed it |
-| Mac advertises via `dns-sd -R` | registered and active, listed in the picker |
+| Duration | 60,196 ms |
+| Sent | **198** |
+| Received | **198** |
+| Mismatches | **0** |
+| Errors | **0** |
+| Connect failures | **0** |
+| TCP connections | **1** |
+| RTT minimum | **8,019 µs** (8.0 ms) |
+| RTT maximum | **327,197 µs** (327 ms) |
+| RTT average | **51,618 µs** (51.6 ms) |
 
-So the host is not blocking anything, Bonjour publication works, and the app's listener works. The
-earlier diagnosis was an inference from a failing test, not a measurement of the host, and it sent
-the previous session looking at Little Snitch when the answer was elsewhere. Nothing in this session
-required disabling a security control, which is the strongest evidence that none was in the way.
+The Mac side logged `inbound connection from 192.168.31.246`, `connection ready`, repeated echoes,
+and `peer closed connection` at the end. The connection was stable for the full minute; the latency
+spikes are consistent with the debug build, ADB polling and the Mac's echo loop rather than
+disconnects.
 
-The likely explanation for the earlier failure is the one thing that differs between then and now:
-the test is being run against a device on the same subnet with a resolved address, and the earlier
-attempts used a `nc` invocation that connected but never reached `.ready` because the peer sent no
-data and the connection was torn down by the timeout. That is a test-harness artifact, not a network
-block. It is recorded as the probable cause, not as a proven one.
+## B — network change and recovery
 
-## The permission finding, stated precisely
+### Real sustained loss (airplane mode)
 
-`ACCESS_LOCAL_NETWORK` is a runtime permission on API 37, and it is requested and granted normally:
+`cmd wifi set-wifi-enabled disabled` is not sufficient on this firmware: it disables Wi-Fi for
+about two seconds and the device re-enables it (`wifi_on` returned to 1). That produced a useful
+*transient* recovery result (575/574 messages, 1 error, 2 connections), but not a sustained outage.
+Airplane mode was used for the real test:
 
-- Before the request: `ACCESS_LOCAL_NETWORK: NOT GRANTED`.
-- After the request: `ACCESS_LOCAL_NETWORK: GRANTED`, and the picker path works.
+```bash
+adb shell cmd connectivity airplane-mode enable
+adb shell cmd connectivity airplane-mode disable
+```
 
-What was **not** established is that the permission is enforced for this API surface. After
-`pm revoke`, the state reads `granted=false` while `discoverServices` still returns without throwing,
-the picker still appears, resolve still returns `192.168.31.109:47999`, and
-`FLAG_USER_APPROVED_ONLY` still finds the peer. A fresh install that had never been approved found
-nothing on the approved-only path, which is consistent with the picker grant being the real gate
-rather than the permission.
+During a 180-second echo run, airplane mode was enabled at ~12 s, held for ~30 s, then disabled.
 
-**Honest conclusion:** the picker grant is what mediates access, and the permission's enforcement
-could not be demonstrated on this build. This is recorded as an open question rather than a claim
-either way, because the difference matters: if the permission is not enforced, a production app must
-not rely on it as a security boundary, and the picker grant becomes the only real control. Resolving
-it needs a test that distinguishes "the OS exempts this call" from "the revoke did not take effect
-for an already-running process", which is a separate experiment.
+| Measurement | Value |
+|---|---|
+| Duration | 180,233 ms |
+| Sent / received | **475 / 474** |
+| Mismatches | **0** |
+| Errors | **1** |
+| Connect failures | **2** |
+| TCP connections | **2** |
+| RTT min / max / avg | 6,157 µs / 249,066 µs / 30,378 µs |
 
-**Product consequence, which is not in doubt either way:** DroidBridge must keep the picker as the
-consent mechanism. It is the OS-mediated control, it is visible to the user, and it is what the
-approved-only flag keys off. `ACCESS_LOCAL_NETWORK` is declared because the API requires it, not
-because it can be trusted to gate anything.
+The recovery sequence in the logs:
+
+```
+19:58:05  ECHO disconnected: SocketException: Software caused connection abort
+19:58:05  reconnect: approved-only rediscovery started
+19:58:25  reconnect: no approved peer within 20000ms
+19:58:27  reconnect: approved-only rediscovery started
+19:58:44  approved-only onServiceFound: 'DroidBridge'
+19:58:44  resolve-blocking resolved: host=192.168.31.109 port=61169
+19:58:44  reconnect: endpoint=192.168.31.109:61169
+```
+
+`FLAG_USER_APPROVED_ONLY` found the Mac again **with no picker**, and the app reconnected without
+re-approval. This is the recovery path the product needs; the outage was observed, not simulated.
+
+### What is not tested
+
+- **Mac IP address change:** not practical without administrator control of the Mac's network
+  configuration. The code re-resolves through NSD instead of caching an IP, and the Mac service
+  restart test (below) exercises re-resolution, but a real DHCP address change was not observed.
+- **Router restart:** not performed (shared network; would disrupt the owner's environment).
+- **Guest Wi-Fi / client isolation:** no guest network was available to test.
+- **Mac interface change** (Ethernet/Wi-Fi switch): not available on this Mac setup.
+
+## C — device and service lifecycle
+
+### Android process recreation — passed
+
+`adb shell am force-stop` then relaunch. New process, permission still **NOT GRANTED**:
+
+```
+approved-only onServiceFound: 'DroidBridge' port=0
+onServiceResolved: host=192.168.31.109 port=61169
+ECHO connected to 192.168.31.109:61169
+ECHO progress sent=1 received=1 … rttLastUs=10264
+```
+
+No picker was shown. The approval survives process death.
+
+### Android reboot — passed
+
+`adb reboot`, wait for `sys.boot_completed=1`, then relaunch. New process:
+
+```
+approved-only onServiceFound: 'DroidBridge' port=0
+onServiceResolved: host=192.168.31.109 port=61169
+ECHO connected … rttLastUs=11374
+ECHO progress sent=20 received=20 … mismatches=0 errors=0
+```
+
+No picker. The approval survives reboot, and discovery after boot is fast.
+
+### Mac advertiser restart — **not completed**
+
+The Mac advertiser was killed during a 180-second echo to force a new ephemeral port, but the
+relaunch step was interrupted before it ran (the owner needed the phone). The kill half was
+observed; the recovery half is not claimed. **Remaining test:** restart
+`DroidBridge.app/Contents/MacOS/DroidBridge --advertise-on-launch`, confirm a new port is
+advertised, and confirm the phone re-resolves and reconnects without a picker.
+
+### Mac sleep/wake — **not completed**
+
+The owner was asked to put the Mac to sleep for ~10 seconds during a 180-second echo. The echo
+continued uninterrupted (587/587 messages, 0 errors, 1 connection) and `pmset -g log` recorded **no
+sleep event**, so the Mac did not actually sleep. This is recorded as an attempted-but-not-achieved
+test, not a pass. A retry needs a real system sleep (Apple menu → Sleep or a lid close that sleeps
+the machine), verified via `pmset -g log`.
+
+## D — inbound connection behavior (U1)
+
+The experiment added a `ServerSocket` that echoes lines, plus an option to advertise it with
+`AdvertisingRequest`. The Mac connects with a normal TCP client; no hidden API is involved.
+
+| State | Result |
+|---|---|
+| Clean boot, `ACCESS_LOCAL_NETWORK` **not granted** | listener bound on port 43257, but the Mac's connect **timed out**; no accept logged |
+| After granting the permission | Mac connected, sent `granted-inbound`, received it verbatim; Android logged `INBOUND accepted from 192.168.31.109` |
+| `pm revoke` without reboot | inbound still connected (3/3 attempts); the kernel/network allow state had not been withdrawn |
+| After a reboot, permission still denied | inbound was blocked again |
+
+So inbound works, but it is **gated by `ACCESS_LOCAL_NETWORK`**, and revocation does not take
+effect until a reboot on this build. That makes the permission a real control for listening
+sockets, but not one that can be relied on to revoke access immediately.
+
+**Architecture note:** this does not change ADR-010. Android still dials out as the primary path;
+the inbound result documents that a Mac-initiated reconnect is technically possible only when the
+permission is held, and would add a listening surface the product does not currently need.
+
+## E — permission behavior, stated precisely
+
+| Question | Measured answer |
+|---|---|
+| Is `ACCESS_LOCAL_NETWORK` required for the picker path? | **No.** Picker appeared, listed the Mac, resolved and connected with the permission NOT granted. |
+| Is it required for approved-only rediscovery? | **No.** Process recreation and reboot both rediscovered without it. |
+| Is it required for outbound TCP to a picker-approved peer? | **No.** The 60 s echo ran with it NOT granted. |
+| Is it required for Android NSD advertising? | **Yes.** Without it: `SecurityException: Missing local network permission`. With it: `ADVERTISE registered name='DroidBridge-Android-P02'`. |
+| Is it required for inbound connections? | **Yes**, on a clean boot. Inbound was blocked without it and worked after grant. Revocation was not applied until reboot. |
+| Does `checkPermissionForService()` report the picker grant? | **No reliable answer on this build.** It returned `SERVICE_PERMISSION_DENIED` both before and after the runtime permission was granted, while discovery/approved-only/connect all worked. It cannot be used as the sole grant indicator. |
+
+The permission prompt text was recorded:
+
+> Allow P02 discovery to find, connect to and determine the relative position of nearby devices?
+
+**Product consequence:** keep the system picker and its user approval as the visible consent
+mechanism. Do not rely on `ACCESS_LOCAL_NETWORK` as the only security boundary, and do not assume
+that revoking it takes effect for a running process. Advertising and listening need it; the
+picker path does not.
+
+## F — network environment
+
+Performed: airplane-mode loss/recovery, transient Wi-Fi toggle, same-subnet verification, Mac
+service advertisement. Not performed/available: guest Wi-Fi and client isolation, router reboot,
+Mac interface change, Mac DHCP address change. These are listed as unavailable, not passed.
 
 ## What was built
 
 `android/experiments/discovery/` — a separate installable app, own `applicationId`, never depended
 on by `:app`, so `ACCESS_LOCAL_NETWORK` cannot reach the production manifest. This is the AGENTS.md
-isolation rule made structural rather than a convention.
+isolation rule made structural rather than a convention. The module now declares `minSdk=37`
+because `DiscoveryRequest`, `AdvertisingRequest` and the permission only exist from API 37; that is
+honest, not a compatibility fallback.
 
-`DiscoveryProbe` runs one measurement per action and logs a single greppable line per event. Three
-states are kept distinct because they are three different product problems: permission refused,
-picker shown, peer discovered. A run that reaches "picker shown" but never "discovered" is a real
-and reportable outcome, and collapsing the states would hide it.
+New and changed pieces:
 
-Error codes are translated to their `NsdManager` constant names. A report that says `errorCode=3`
-makes the next person look it up; `FAILURE_ALREADY_ACTIVE` does not.
+- `DiscoveryProbe`: stops a previous discovery before starting a new one (the first run could hit
+  `FAILURE_ALREADY_ACTIVE`), uses `hostAddresses` instead of the deprecated `host`, and adds
+  blocking resolve, approved-only rediscovery, and `checkPermissionForService`.
+- `EchoClient`: sustained ping-pong duplex, RTT statistics, disconnection detection and
+  approved-only re-discovery. Runs on its own thread; never blocks the UI.
+- `InboundProbe`: `ServerSocket` echo listener, Wi-Fi address detection, and
+  `AdvertisingRequest` registration for the permission experiment.
+- `EchoPayload`: the wire framing kept pure so it can be unit-tested.
+- UI: 60 s / 180 s echo controls, inbound/advertise controls, live counters, permission refresh,
+  and a log panel.
+- Manifest/resources: API 37 `minSdk`, icon, data-extraction rules, no redundant labels.
+- `scripts/verify-all.sh` now includes the discovery experiment, so CI cannot silently skip P02.
 
-## Not yet done
+## Automated tests
 
-- **60-second sustained duplex.** The echo was verified (26 bytes round-tripped), but not held open
-  for a full minute with continuous traffic. The transport that will actually do this is P03's TLS
-  session, so the sustained test belongs there rather than in a `nc` harness.
-- **Wi-Fi change, address change, reboot.** Not exercised. These need the session layer to be
-  meaningful.
-- **Mac → Android inbound under the picker grant.** Not tested. The experiment is Android-dials-out
-  only, which is Path A per ADR-010.
-- **`AdvertisingRequest` (Android advertising).** The API exists (`AdvertisingRequest.Builder`) but
-  was not exercised; Path A does not need it.
+`EchoPayloadTest` (7 tests) asserts the payload format, exact-echo matching, sequence/timestamp
+mismatch rejection, null/truncated replies, and malformed parsing. These are framing tests; they
+are **not** a substitute for the physical socket results above. The discovery module builds and
+lints clean (`minSdk=37`, `warningsAsErrors`); the full verification gate is recorded in
+`PROGRESS_LOCAL.md`.
+
+## Acceptance status
+
+| Item | Status |
+|---|---|
+| Picker path and resolve | Pass (S24 Ultra) |
+| 60 s sustained duplex | Pass |
+| Wi-Fi/airplane loss and recovery without re-approval | Pass |
+| Android process recreation | Pass |
+| Android reboot | Pass |
+| Mac sleep/wake | **Open — attempt did not sleep the Mac** |
+| Mac advertiser restart | **Open — kill observed, relaunch not run** |
+| Mac IP change / router restart / guest Wi-Fi / interface change | Not available in this environment |
+| Inbound under picker approval | Investigated; works only with `ACCESS_LOCAL_NETWORK`, revocation delayed to reboot |
+| Permission enforcement | Investigated; picker path exempt, advertising/inbound gated |
+
+P02 is not closed while the two Mac lifecycle tests are open. The primary product path — picker
+approval, approved-only reconnect, sustained duplex, recovery after a real outage, process
+recreation and reboot — is validated.
 
 ## Reproducing
 
 ```bash
 cd android
-./gradlew :experiments:discovery:assembleDebug
+./gradlew :experiments:discovery:assembleDebug \
+          :experiments:discovery:testDebugUnitTest \
+          :experiments:discovery:lintDebug
 adb install -r experiments/discovery/build/outputs/apk/debug/discovery-debug.apk
 adb shell am start -n com.droidbridge.experiment.discovery/.DiscoveryActivity
 
-# On the Mac, publish a peer the picker can list:
-dns-sd -R "DroidBridge-P02-Mac" "_droidbridge-dev._tcp" local 47999
+# On the Mac:
+macos/build/Build/Products/Debug/DroidBridge.app/Contents/MacOS/DroidBridge --advertise-on-launch
 
-# Or run the real advertiser:
-./macos/build/Build/Products/Debug/DroidBridge.app/Contents/MacOS/DroidBridge --advertise-on-launch
-
-# Then in the app: grant the permission, "Discover with picker", select the Mac, "Resolve last found".
-adb logcat -d -s P02Discovery
+# Then in the app: grant the permission if testing advertising/inbound, discover with the picker,
+# select DroidBridge, resolve, and start Echo 60s or Echo 180s (recovery).
+adb logcat -d -s P02Discovery P02Echo P02Inbound
 ```
 
-Note: on this One UI build the notification shade repeatedly steals input focus during scripted
-runs. A `KEYCODE_POWER` off/on cycle reliably restores the activity. This is a test-harness
-annoyance, not an app defect.
+Evidence tags: `P02Discovery` (picker, approved-only, resolve, reconnect), `P02Echo`
+(`ECHO progress`, `ECHO_SUMMARY`, disconnect/reconnect), `P02Inbound` (`INBOUND`, `ADVERTISE`).

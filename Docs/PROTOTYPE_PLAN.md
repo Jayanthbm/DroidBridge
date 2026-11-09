@@ -2,7 +2,12 @@
 
 All prototypes are small, isolated and disposable. They should be implemented before production modules. Use USB/ADB only for development installation and diagnostics; every prototype must have a final wireless-only test.
 
-**Research pass 2026-11-08:** the instructions below were expanded for the uncertainties identified in `RESEARCH_AND_FEASIBILITY.md` §3 (U1–U17). Nothing here has been run. A prototype is only "complete" when its report contains real evidence.
+**Research pass 2026-11-08:** the instructions below were expanded for the uncertainties identified in `RESEARCH_AND_FEASIBILITY.md` §3 (U1–U17). A prototype is only "complete" when its report contains real evidence.
+
+**Status 2026-11-09:** P00–P04 now have device evidence; see `PROGRESS_LOCAL.md` and the per-prototype
+reports. P01 is validated on the S24 Ultra (Android 17), and P02's picker path, 60 s duplex,
+network-loss recovery, process recreation and reboot are validated; P02's Mac sleep/wake and Mac
+advertiser restart remain open. P05 and later have not been started.
 
 ## Rules that apply to every prototype
 

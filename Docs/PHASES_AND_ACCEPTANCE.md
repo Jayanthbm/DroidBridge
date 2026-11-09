@@ -24,7 +24,16 @@ no crash or ANR. Audits in `PERMISSIONS_MATRIX.md` §6. Reports in `Docs/prototy
 (the phone was PIN-locked).
 
 ## Phase 1 — Feasibility prototypes (next)
-**Status:** In progress — P00 done; P00 VERIFIED (both devices); P01 VERIFIED (Android 12 + Android 17); P02 VERIFIED on the S24 Ultra (picker path, approved-only rediscovery, duplex echo); P04 VERIFIED (Android 12 + Android 17); P03 protocol layer done, live session is the next prototype
+**Status:** In progress — P00, P01, P02, P03 and P04 have device evidence. **P01 is validated on
+Android 12 and on Android 17 / S24 Ultra**: consent, foreground service, surface-fed H.264,
+rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and token
+replay (14/14 required items; three plan-only extras remain open). **P02's primary path is
+validated on the S24 Ultra**: picker approval, approved-only rediscovery, 60 s sustained duplex,
+airplane-mode outage recovery, Android process recreation and reboot. Two P02 lifecycle tests
+remain open: Mac sleep/wake and Mac advertiser restart. Advertising and inbound require
+`ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not. **P03** has
+all six acceptance criteria met, including the USB-disconnected run. **P04** is verified on
+Android 12 and Android 17.
 Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P15 and its per-prototype order/dependencies.
 - Execute each applicable isolated prototype on the required platform/device.
 - Record evidence header, exact steps, positive and negative results, logs and limitations.

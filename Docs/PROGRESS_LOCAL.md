@@ -1,17 +1,30 @@
 # Local Development Progress
 
-**Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03 implemented and
-verified on loopback plus three physical S24 Ultra runs (pairing, Wi-Fi drop and reconnect, and the
-final USB-disconnected acceptance run). All six P03 acceptance criteria are met.
+**Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified on the target
+device; P03 implemented and verified on loopback plus three physical S24 Ultra runs (pairing, Wi-Fi
+drop and reconnect, and the final USB-disconnected acceptance run). All six P03 acceptance criteria
+are met.
+
 **Last updated:** 2026-11-09
-**Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. P01 and P04
-verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is verified on the
-target device** — the picker path works. **P03 now has a physical pairing run on the S24 Ultra**:
-matching codes on both screens, duplex data on a confirmed session, authenticated reconnect with
-stored pins, and a changed Mac identity correctly refused. **A real Wi-Fi drop was then tested on the
-same device**: both ends closed the session and the phone reconnected with the stored pin without
-re-pairing. **The final acceptance run passed with USB disconnected and USB debugging, wireless
-debugging and Developer Options all off.**
+
+**Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. **P01 is
+validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service, surface-fed H.264,
+rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and consent-token
+replay were exercised. P04 is verified on both Android 12 and Android 17.
+
+**P02 is validated on the target device for the primary path:** picker approval, approved-only
+rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
+airplane-mode outage without re-approval, Android process recreation and Android reboot. Two P02
+lifecycle tests remain open: **Mac sleep/wake** (the attempted sleep did not produce a system sleep
+event) and **Mac advertiser restart** (kill observed, relaunch not completed). Advertising and
+inbound need `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not.
+That permission's revocation was not applied to a running process until reboot.
+
+**P03** has matching codes on both screens, duplex data on a confirmed session, authenticated
+reconnect with stored pins, and a changed Mac identity correctly refused. A real Wi-Fi drop closed
+the session on both ends and the phone reconnected with the stored pin without re-pairing. The
+final acceptance run passed with USB disconnected and USB debugging, wireless debugging and
+Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02 re-run.
 
 ## Device and environment
 
@@ -107,11 +120,12 @@ debugging and Developer Options all off.**
 - [x] Add `.gitignore` (Gradle, Android, Xcode, IDE, secrets).
 - [x] Add CI/build scripts.
 - [x] Capture exact host toolchain and temporary-device details (P00 host half).
-- [ ] Capture S24 Ultra build/API details (P00 device half) — needs the target device attached.
-- [ ] Run P01 MediaProjection prototype.
-- [ ] Run P02 Android 17 LAN strategy prototype (picker vs runtime permission).
-- [ ] Run P03 pairing/transport prototype.
-- [ ] Run P04/P05 clipboard prototypes.
+- [x] Capture S24 Ultra build/API details (P00 device half).
+- [x] Run P01 MediaProjection prototype (Android 12 and Android 17).
+- [x] Run P02 Android 17 LAN strategy prototype (picker path, sustained duplex, recovery).
+- [x] Run P03 pairing/transport prototype.
+- [x] Run P04 clipboard prototype (Android 12 + Android 17).
+- [ ] Run the remaining P05 clipboard prototype.
 - [ ] Run P06 macOS pasteboard prompt prototype.
 - [ ] Run P07/P08 video receiver and end-to-end stream prototypes.
 - [ ] Run P09 remote-input confirmation experiment.
@@ -121,13 +135,13 @@ debugging and Developer Options all off.**
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
 - [ ] Run P15 sandboxed, signed and notarised distribution prototype (entitlements, TCC, keychain after re-signing).
 - [ ] Confirm Apple Developer Program membership and Account Holder access for the Developer ID certificate.
-- [ ] Verify the owner-reported Android 17 / One UI 9 version on the device.
+- [x] Verify the owner-reported Android 17 / One UI 9 version on the device.
 
 ## Current blockers
 
 - **Full remote input is NO-GO** under the current constraints (research conclusion, not a device test): no public injection API, Knox is signature/managed-device gated, macOS cannot publish a HID peripheral.
 - **Automatic background clipboard sync is not a release claim.** Android requires focus/IME for reads; macOS 15.4+ can prompt or deny programmatic pasteboard access.
-- **Android 17 LAN path must be proven on the target firmware.** The design depends on the NSD picker granting a usable duplex session with the Mac as the listener (U1). If P02 disproves it, `ACCESS_LOCAL_NETWORK` becomes mandatory and the owner must accept that permission.
+- **Android 17 LAN path is resolved for the primary design.** P02 proved the picker path on the S24 Ultra: approval, resolve, connect, 60 s duplex and approved-only recovery all work. Discovery, approved-only discovery and outbound TCP work **without** `ACCESS_LOCAL_NETWORK`; advertising and inbound listening require it. Revoking it does not take effect for a running process until reboot. The product must keep the picker as its consent mechanism and must not treat the permission as the sole boundary. The two open P02 items are Mac sleep/wake and Mac advertiser restart.
 - **Mac-as-Bluetooth-HID-peripheral is not proven and is expected to fail** (`CBError.uuidNotAllowed`); P09 exists to record the evidence.
 - **Background clipboard sync is best-effort, not guaranteed.** The `connectedDevice` foreground service keeps the session alive in normal use, but Doze suspends network access device-wide, so the design is reconnect-on-resume rather than an always-on promise. Whether a socket survives a full night is unproven (U11).
 - **The macOS app cannot be released without a paid Apple Developer Program membership.** Notarisation requires a Developer ID certificate, only the Account Holder can create one, and an unnotarised app is blocked by Gatekeeper on current macOS (R-27). This is an external dependency on the owner, not a technical uncertainty, and it blocks Phase 9 rather than Phase 0.
@@ -138,37 +152,51 @@ debugging and Developer Options all off.**
   `testDebugUnitTest`, `lintDebug` all pass; macOS Debug + Release builds and 4/4 unit tests pass;
   clean-checkout rebuild of all three passes; APK installed and launched on OnePlus Nord CE
   (Android 12 / API 31), `ResumedActivity` held, 0 crash entries, 0 ANRs.
-- **Not captured:** a device screenshot. The phone was PIN-locked, so `screencap` produced empty
-  output and `uiautomator` dumped the keyguard. Unlocking needs the owner's PIN.
-- No feasibility prototype has been executed. Every statement in the research documents remains
-  documentation-based.
+- **Not captured (Phase 0):** a device screenshot. The phone was PIN-locked, so `screencap`
+  produced empty output and `uiautomator` dumped the keyguard.
+- **2026-11-09 (P01, S24 Ultra):** encoder `c2.qti.avc.encoder`; 3120×1440, 2560×1440, 1920×1080 and
+  1280×720 all accepted at 30 fps; output 1280×720 Baseline/level 3.1 VBR with SPS 21 / PPS 8; a
+  189 s session produced 12,610 frames / 32,960,629 bytes / 211 keyframes at a 1,392 kbps mean with
+  0 crashes; rotation produced `onCapturedContentResize` 1080×2340 ↔ 2340×1080 and `resize()` was
+  accepted; lock fired `onStop()`; 20/20 start-stop cycles completed with 2,005 frames and 0
+  crashes in the same process; FLAG_SECURE content measured luma 0 versus 159 for normal content.
+- **2026-11-09 (P02, S24 Ultra):** 60 s duplex 198/198 messages, 0 mismatches, 0 errors; airplane
+  outage recovery 475/474 with approved-only rediscovery and no picker; process recreation and
+  reboot both rediscovered and connected; inbound requires `ACCESS_LOCAL_NETWORK` on a clean boot,
+  while advertising throws `Missing local network permission` without it.
+- **2026-11-09 (verification):** `JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+  ./scripts/verify-all.sh` passed end to end: **78/78 shared-protocol tests**, Android `:app` plus
+  the media-projection, discovery and clipboard experiments assembled, unit-tested and linted, and
+  **37/37 macOS tests** passed. The JDK 17 override is required because the shared-protocol Gradle
+  8.10.2 wrapper cannot run on the default Homebrew JDK 27 (it fails with a bare version string).
+  This is an environment fact to document in the reproduction steps, not a code defect.
+- P00–P04 now have device evidence. P05 onward remain unrun; no later prototype has been started.
 
 ## USB / debugging state
 
 - **Phase 0 device session (2026-11-09):** USB connected **yes**; USB debugging enabled **yes**;
-  wireless debugging enabled **no**. Development session only — nothing in the product requires
-  USB or debugging at runtime, and no runtime behaviour was tested with USB disconnected because no
-  runtime behaviour exists yet.
+  wireless debugging enabled **no**. Development session only.
+- **P01/P02 validation sessions (2026-11-09):** USB connected **yes**; USB debugging enabled
+  **yes**; wireless debugging enabled **no**; Developer Options enabled. The APKs were installed
+  over ADB and the device UI was driven over ADB for the automated runs. The final wireless-only
+  gate was not re-run for P01/P02; the documented USB-disconnected run belongs to P03. This is
+  recorded so the P01/P02 evidence is not presented as wireless-only evidence.
 
 ## Workflow from here
 
-1. Phase 0 is complete and pushed.
-2. Phase 1 — begin with P01 (Android MediaProjection capture) on the OnePlus. P00's device half
-   (S24 Ultra baseline) stays pending until that device is attached.
-3. Each prototype gets a written evidence report under `Docs/prototypes/` and a focused commit.
-4. Do not begin dependent production features until their prototype gates pass. Stop only for
-   genuine blockers or owner decisions listed in `AGENTS.md`.
+1. P01 is validated on the S24 Ultra; its remaining items are plan-only extras (screen-sharing chip,
+   `KEY_LATENCY`, still-screen repeat-frame comparison, `flush()` without `start()`).
+2. P02's primary path is validated. Close the two open lifecycle tests: Mac sleep/wake with a
+   verified `pmset` sleep event, and Mac advertiser restart with re-resolution to a new port.
+3. Update the detailed reports with the final results, review the diff, commit and push to
+   `development`.
+4. Do not begin P05 or later until P01/P02 are closed and the owner agrees. The Android 12 backup
+   device cannot help P02 because the API is 37-only; P01 already has Android 12 evidence.
 
 ## Next task
 
-Phase 1, prototype **P01 — Android MediaProjection capture** on the OnePlus Nord CE: consent UI,
-a `mediaProjection` foreground service, a `VirtualDisplay`, and a surface-fed `MediaCodec` H.264
-encoder, with the framing converted by `shared/protocol` and verified against the real encoder
-output. Isolated experiment module, no production feature code.
-
-Two things the owner can unblock that are not blockers for P01:
-- Unlock the phone during a session so a device screenshot can be captured.
-- Attach the S24 Ultra when available, to complete the P00 device baseline.
+Close P02's **Mac sleep/wake** and **Mac advertiser restart** tests, then finish the documentation
+reconciliation and push. No later prototype is in scope.
 
 
 ## Agent handoff status (2026-11-08)
@@ -246,9 +274,9 @@ run 2026-11-09" below. This section is kept as the record of the protocol-only m
 
 Report: `Docs/prototypes/P03-transport-and-pairing.md`.
 
-### P01 capture — VERIFIED on device (2026-11-09)
+### P01 capture — first verified on the OnePlus (Android 12)
 
-The device was unlocked and consent granted, so the full pipeline ran for the first time:
+The OnePlus was unlocked and consent granted, so the full pipeline ran for the first time:
 
 **124 frames, 359,092 bytes, 3 keyframes**, negotiated `video/avc` 1280x720, SPS 21 bytes, PPS 8
 bytes, foreground service `isForeground=true`, 0 crashes. Frames kept arriving on a still screen,
@@ -292,10 +320,11 @@ The target device was attached. Everything below is measured on the device, not 
 `ro.boot.verifiedbootstate=green`. USB connected, USB debugging on, wireless debugging off. The
 owner-reported specs were all confirmed rather than assumed.
 
-### P02 — VERIFIED on the target device
+### P02 — first contact verified on the target device (picker path)
 
 This was the prototype that could not run on the OnePlus, because `DiscoveryRequest` only exists from
-API 37.
+API 37. This first run is superseded by the completion run at the end of this document; the
+sustained-duplex, recovery and permission tests were added there.
 
 - `ACCESS_LOCAL_NETWORK` requested and **granted**.
 - `DiscoveryRequest` with `FLAG_SHOW_PICKER` → the **system picker appears**
@@ -398,3 +427,67 @@ Two things this run exposed, both recorded rather than papered over:
    second re-pair. Persistent Mac identity is a P15 prerequisite, not a P03 defect.
 
 Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P3.
+
+
+## P01/P02 completion run — 2026-11-09 (S24 Ultra)
+
+A dedicated validation pass closed the gap between the earlier first-contact evidence and the
+P01/P02 acceptance lists. All sessions below are **SM-S928B, Android 17 / API 37, One UI 9.0,
+build `CP2A.260605.016.S928BXXS6EZJ1`**, with USB connected, USB debugging on, wireless debugging
+off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-networking.md`.
+
+### P01 — validated
+
+- Encoder `c2.qti.avc.encoder`; hardware accelerated; 3120×1440, 2560×1440, 1920×1080 and
+  1280×720 all accepted at 30 fps; 2-pixel alignment.
+- Output 1280×720, Baseline, level 3.1, VBR; SPS 21 bytes / PPS 8 bytes; 4 Mbit/s requested is a
+  ceiling (measured mean 1,392 kbps over a mixed-content 189 s session).
+- 189 s session: **12,610 frames / 32,960,629 bytes / 211 keyframes**, 0 crashes, FGS
+  `types=0x00000020` and notification id 4101. Capture survives backgrounding.
+- Rotation: `onCapturedContentResize` reported 1080×2340 ↔ 2340×1080; `VirtualDisplay.resize()`
+  accepted both; frame production continued. Android 17 **forbids a second
+  `createVirtualDisplay`** on one `MediaProjection`, so the pipeline rebuild was replaced by
+  `resize()`.
+- Screen lock fired `MediaProjection.Callback.onStop()` and tore the service down; user stop also
+  clean.
+- **20/20 start/stop cycles**, 2,005 frames, same PID, 0 crash-buffer entries, service gone after
+  the loop. Harness: `scripts/p01-capture-cycles.py`.
+- **FLAG_SECURE:** normal white test screen mean luma 159; same screen protected mean luma 0; back
+  to normal 159. No bypass attempted.
+- **Consent-token replay:** on this build `getMediaProjection` with a used token returns another
+  projection bound to the live session instead of throwing; stopping it ends the session. The
+  one-shot rule is enforced at `createVirtualDisplay` (second call throws). Product code must never
+  replay a token, and must not depend on retrieval throwing.
+- Selected-app capture produced 64 frames and fired `onCapturedContentVisibilityChanged(false)` when
+  the experiment returned to the foreground.
+- Open plan-only items: direct screen-sharing-chip tap, `KEY_LATENCY`, still-screen repeat-frame
+  on/off, `flush()` without `start()`. None blocks the P01 acceptance list.
+
+### P02 — primary path validated, two Mac lifecycle tests open
+
+- **Picker without permission:** after a reinstall reset `ACCESS_LOCAL_NETWORK` to NOT GRANTED,
+  the system picker still appeared and listed `DroidBridge`; selection produced
+  `onServiceFound host=null hostAddresses=[] port=0`, and resolve returned
+  `192.168.31.109:61169`.
+- **60 s sustained duplex:** 198/198 messages, 0 mismatches, 0 errors, 1 connection; RTT
+  8.0–327 ms, average 51.6 ms.
+- **Real outage:** airplane mode for ~30 s during a 180 s run; 475/474 messages, 0 mismatches,
+  1 error, 2 connections; approved-only rediscovery timed out during the outage, retried, found the
+  Mac after restore and reconnected with **no picker**.
+- **Android process recreation:** new process, approved-only found and connected (10.3 ms first
+  RTT). **Android reboot:** new process, found, resolved, connected; 20/20 messages.
+- **Inbound:** clean boot without the permission, Mac connect timed out; after grant, bidirectional
+  line echo passed. `pm revoke` did not take effect for the running process (3/3 connects
+  succeeded); after reboot, inbound was blocked again. `AdvertisingRequest` without the permission
+  throws `SecurityException: Missing local network permission`; with it, registration succeeds.
+- **`checkPermissionForService()`** returned `SERVICE_PERMISSION_DENIED` both before and after the
+  runtime grant, so it is not a reliable grant indicator on this build.
+- **Open:** Mac sleep/wake (attempt produced no `pmset` sleep event, so no pass) and Mac advertiser
+  restart (kill observed, relaunch not completed). Router restart, Mac IP change, guest-Wi-Fi
+  isolation and Mac interface change were not available in this environment.
+
+### Verification
+
+`JAVA_HOME` set to Zulu 17, `./scripts/verify-all.sh`: 78/78 shared-protocol tests, Android
+`:app` + media-projection + discovery + clipboard builds/tests/lint, 37/37 macOS tests, exit 0.
+P01 adds 13 unit tests (8 framing + 5 format policy); P02 adds 7 echo-payload tests.
