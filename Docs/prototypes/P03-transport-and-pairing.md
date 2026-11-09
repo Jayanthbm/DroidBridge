@@ -1,9 +1,12 @@
 # P03 — Local transport and pairing
 
-**Status: protocol layer implemented and verified; the live session is not.** The two pieces of P03
-that carry the real risk — length-prefixed framing and the short authentication code — are built,
-tested, and proven identical across Kotlin and Swift. The TLS session, discovery wiring and
-reconnect behaviour are not built, so none of P03's six acceptance criteria are met yet.
+**Status: implemented; verified on loopback and in one physical S24 Ultra pairing run. Final
+USB-disconnected acceptance is outstanding.** Framing, the sequenced control envelope, the short
+authentication code, mutual TLS 1.3 with pin enforcement, pairing confirmation and the Keychain /
+Keystore pin stores are built and tested. A physical pairing on the S24 Ultra produced matching
+codes on both screens and duplex data on a confirmed session (see
+`P03-live-handshake-evidence.md`, Run P1). Four of the six acceptance criteria are met or partially
+met; Wi-Fi-drop recovery and the final USB-disconnected run are not done.
 
 | Field | Value |
 |---|---|
@@ -90,48 +93,53 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
 
 ## Not built, and why
 
-- **TLS 1.3 with pinned certificates.** Requires the identity generation and the Android
-  `network_security_config.xml` anchor (ADR-011, ADR-024). The idle/timeout/replay layer below is
-  still to be implemented.
-- **Discovery wiring.** Depends on the winning P02 path, which is resolved in P02 (the API 37
-  picker path is the accepted flow on Android 17).
-- **Reconnect after Wi-Fi drop.** Requires a live session.
-- **Rate limiting, idle timeout, replay protection.** Specified in NETWORK_PROTOCOL §4, not yet
-  implemented.
-- **Application idle timeout.** The TLS layer carries a `timeoutMs` socket timeout, but there is no
-  application-level idle/timeout; that is a deliberate open decision for the NN.
+- **Persistent Mac identity.** `MacIdentity.generate()` creates a temp keychain per process, so every
+  Mac launch is a new pin. ADR-025 specifies the production storage (data protection keychain under an
+  embedded Developer ID profile) and P15 owns signing and notarisation. Until that lands, a Mac
+  restart forces a re-pair. Android is unaffected: `DeviceIdentity` persists in `AndroidKeyStore`.
+- **Wi-Fi drop recovery.** Reconnect with stored pins works, but surviving a mid-session network drop
+  has not been implemented or tested. The idle deadline closes the session; nothing re-establishes it.
+- **`network_security_config.xml`.** ADR-011/024 describe a custom trust anchor there. The
+  implementation pins in code instead (`PinnedTrustManager` on Android, the verify block on macOS),
+  and no such file exists. The pinning is real; the documented mechanism is not the one built. This
+  needs an ADR correction rather than a silent divergence.
 
-## P03 acceptance criteria — in-progress
+## P03 acceptance criteria — measured state
 
 | Criterion | Status |
 |---|---|
-| Unknown peer rejected | **partial** — `PinnedTrustManager` fails the handshake on pin mismatch; no automated Android device test yet (device required) |
-| Wrong code rejected | **partial** — the two `ShortAuthenticationCode` implementations agree on six vectors; nothing enforces rejection in a session yet |
-| Tampered message rejected | **partial** — framing rejects malformed and oversized frames; TLS provides integrity |
-| Sessions close on network loss | not verified — no live session |
-| No cloud connection | **verified** — local-only app, no cloud SDK / no network writes |
-| Reconnect after Wi-Fi drop | not met — no live session |
+| Unknown peer rejected | **met** — pin mismatch fails the TLS handshake itself (`verify: PIN MISMATCH`, peer sees `certificate unknown`). Proven on loopback (two identities, one listener) and on the device: the phone refused a restarted Mac's changed pin with `peer pin mismatch: expected 95c71d5e…, got ce3724ac…`. |
+| Wrong code rejected | **met** — `SecureSession` carries `authenticated=false` and locks application data until the user confirms; a wrong code is never accepted because the code is derived from the authenticated pins, so a mismatched pair produces different codes. Confirmation gating observed on device (`application data: locked (confirm the code)`). |
+| Tampered message rejected | **met** — framing rejects malformed, zero-length and oversized frames; the control envelope rejects unknown types, bad versions and replayed sequences; TLS provides integrity. Covered by 47 protocol tests and 37 macOS tests. |
+| Sessions close on network loss | **partial** — the 30 s idle deadline closed sessions twice on the device (`closed: idle timeout after 30s`). A true Wi-Fi drop mid-session was **not** tested. |
+| No cloud connection | **verified** — local-only app, no cloud SDK, no network writes. |
+| Reconnect after Wi-Fi drop | **partial** — authenticated reconnect with stored pins works (device: `handshake complete: protocol=TLSv1.3 … authenticated=true`), but reconnection was exercised by closing and redialling, not by dropping Wi-Fi mid-session. |
+
+### Known limitations
+
+1. **Mac identity is ephemeral** (ADR-025). Every Mac launch is a new pin, so the phone must re-pair
+   after a Mac restart. The device run shows the phone correctly *refusing* the changed identity
+   rather than silently re-pinning, which is the safe behaviour, but persistent Mac identity is a
+   prerequisite for "reconnect without re-pairing across launches".
+2. **A confirmed session can still be rejected from the UI.** A mis-aimed tap on "Codes don't match"
+   after confirmation closes the socket but leaves the pin stored. Not a security hole, but the
+   button should be unavailable once authenticated, or should delete the pin.
+3. **Code comparison was simulated** by reading both UIs and logs, not by a person looking at two
+   screens. The values matched exactly (`642 575`, `614 068`).
+4. **No on-device tamper or oversize input.** The phone UI cannot corrupt a frame; those paths are
+   covered by loopback and unit tests only.
+5. **USB was connected and both debugging transports were enabled** throughout the physical run.
+   The final acceptance run must repeat it with USB disconnected and both debugging modes off.
 
 ## Evidence
 
-- Android: `:experiments:session:assembleDebug` **BUILD SUCCESSFUL**; APK
-  `android/experiments/session/build/outputs/apk/debug/session-debug.apk` produced.
-- macOS: `xcodebuild -project macos/DroidBridge.xcodeproj -scheme DroidBridge` **BUILD SUCCEEDED**;
-  `DroidBridge.app` produced in DerivedData.
-- Shared protocol: 64 tests pass (framing + SAS + cross-language vectors).
-- macOS unit tests: 19 pass.
-- TLS: handshake v1 drafted; encrypted session and PIN mismatch rejection pending a physical
-  Android 17 / Mac run.
-
-## Not built, and why
-
-- TLS 1.3 connection. The Mac listener is built and builds; the Android frame client
-  (`SecureSession`) is built for frame transport but the Android shell has no handshake UI yet.
-  The identity generators (`MacIdentity`, `DeviceIdentity`) exist so a real mutually-authenticated
-  TLS 1.3 session is one file away (ADR-011, ADR-024).
-- Discovery wiring. P02 proved the API-37 picker path; `android/experiments/session` reuses the
-  same `NsdManager` flow. Reconnect after Wi-Fi drop. Requires a live session.
-- Rate limiting, idle timeout, replay protection. Specified in NETWORK_PROTOCOL §4, not yet
-  implemented.
-- Pair-timeout / session idle limits. The TLS layer carries a `timeoutMs` socket timeout; the
-  application-level idle behaviour below is left as a hard decision in this report.
+- `./scripts/verify-all.sh` → **All verifications passed** (2026-11-09, commit `a2555f0`).
+- Shared protocol: **47 tests** pass (framing 19, control envelope 13, SAS 14, plus the vector printer).
+- macOS: **37 tests** pass, including `SessionCodecTests` (18) and `ShortAuthenticationCodeTests` (9).
+- Android: `:app` and every experiment module assemble, unit-test and lint clean.
+- Loopback TLS: pin mismatch fails the handshake; first pairing accepted; framed duplex, split frames
+  and oversized frames behave as specified. See `P03-live-handshake-evidence.md` Run L1.
+- Physical S24 Ultra: pairing with matching codes on both screens, duplex data on a confirmed
+  session, authenticated reconnect with stored pins, idle timeout observed. See Run P1.
+- **Not yet done:** Wi-Fi-drop recovery, on-device tamper/oversize input, a real two-screen code
+  comparison by a person, and the final USB-disconnected / Developer-Options-disabled acceptance run.

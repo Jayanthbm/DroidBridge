@@ -62,6 +62,36 @@ All notable project changes are recorded here.
 - Length-prefixed control framing with a validated, unsigned length prefix and a 1 MiB cap.
 - Short authentication code for pairing, implemented in Kotlin and Swift with shared test vectors
   proving the two agree.
+- Sequenced control envelope (`ControlMessage` in Kotlin and Swift) with a version byte, message
+  types, and replay rejection: a sequence that does not advance is refused, and the first frame must
+  be sequence 1.
+- Mutual TLS 1.3 session with SPKI pinning on both sides. A pin mismatch fails the handshake itself
+  rather than warning after it.
+- Pairing confirmation: both sides derive and display the same code, application data stays locked
+  until the user confirms, and only then is the peer pin persisted.
+- `PeerPinStore` (macOS Keychain) and `KeystorePinStore` (Android Keystore) for persistent peer pins.
+- `P03Harness` (`--identity`, `--listen`, `--pair`) so the Mac half can be driven and measured
+  without a UI.
+
+### Verified — P03 on the S24 Ultra (2026-11-09)
+- Physical pairing against the Mac over Wi-Fi: the same code appeared on both screens (`642 575`,
+  then `614 068` after the fix below), data was locked until confirmation, and confirming persisted
+  the pin before enabling data.
+- Duplex data on the confirmed session; stored-pin reconnect authenticated inside the handshake with
+  no code prompt; the 30 s idle deadline closed sessions twice, observed rather than inferred.
+- A restarted Mac with a new identity was refused by the phone (`peer pin mismatch`), which is the
+  correct behaviour for a changed peer.
+
+### Fixed — P03 defects found only on hardware
+- The Android identity key permitted only SHA-256 digests, so Keystore refused Conscrypt's
+  `NONEwithECDSA` CertificateVerify and no client certificate was ever sent. The key now also
+  permits `DIGEST_NONE`. No build or unit test could have caught this.
+- The macOS verify block captured the expected pin at listener start, so a listener that began
+  unpinned kept accepting "first pairings" after a confirmation and then granted data access because
+  a pin existed. The pin is now read at handshake time, and `connectionReady` independently refuses
+  a mismatched pin.
+- Withdrew an unsupported claim that a live TLS handshake had been captured. The quoted bytes were
+  not a TLS record and no command producing them existed; the record now states what was measured.
 
 ### Added — Phase 1, P04 (2026-11-09)
 - `android/experiments/clipboard/`: clipboard read-access probe with one action per P04 matrix row

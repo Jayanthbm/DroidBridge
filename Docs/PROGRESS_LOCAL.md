@@ -1,11 +1,14 @@
 # Local Development Progress
 
-**Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03's protocol
-layer verified, live session next.
+**Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03 implemented and
+verified on loopback plus one physical S24 Ultra pairing run, with final USB-disconnected acceptance
+outstanding.
 **Last updated:** 2026-11-09
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. P01 and P04
-verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is now verified on
-the target device** — the picker path works, which was the last thing blocking P03's live session.
+verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is verified on the
+target device** — the picker path works. **P03 now has a physical pairing run on the S24 Ultra**:
+matching codes on both screens, duplex data on a confirmed session, authenticated reconnect with
+stored pins, and a changed Mac identity correctly refused.
 
 ## Device and environment
 
@@ -217,7 +220,7 @@ one observation across two lines. Now escaped.
 
 Report: `Docs/prototypes/P04-clipboard-android-to-mac.md`.
 
-### P03 — Transport and pairing (protocol layer done, 2026-11-09)
+### P03 — Transport and pairing (protocol layer, 2026-11-09)
 
 Built the two parts of P03 that can be proven without a live peer, and that carry the real risk:
 
@@ -230,12 +233,13 @@ passes. A reader that hits a framing error latches failed rather than resynchron
 sorted by content so both sides agree without a role, and length-prefixed so `("ab","c")` and
 `("a","bc")` cannot collide.
 
-**Verified:** 64 protocol tests (up from 31) and 19 macOS tests pass. Six fixed vectors are asserted
-in both languages, so the two implementations cannot drift silently — which matters because a drift
-would show two different codes on two screens and reject a valid device.
+**Verified:** six fixed vectors are asserted in both languages, so the two implementations cannot
+drift silently — which matters because a drift would show two different codes on two screens and
+reject a valid device.
 
-**Not built:** TLS session, discovery wiring, reconnect, rate limiting. None of P03's six acceptance
-criteria are met; two are partially met at the primitive level.
+**Later superseded:** the TLS session, sequenced control envelope, pin stores and pairing
+confirmation were built afterwards and exercised on the device — see "P03 — secure session, device
+run 2026-11-09" below. This section is kept as the record of the protocol-only milestone.
 
 Report: `Docs/prototypes/P03-transport-and-pairing.md`.
 
