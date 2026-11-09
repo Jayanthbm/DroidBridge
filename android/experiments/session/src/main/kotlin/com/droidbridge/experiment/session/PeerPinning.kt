@@ -42,37 +42,57 @@ object PeerPinning {
     }
 
     /**
+     * Where confirmed peer pins live.
+     *
+     * Storage is an interface because the decision logic — and its tests — must not depend on a
+     * keystore or a Context. The P03 implementation is [KeystorePinStore]; [Store] is the in-memory
+     * one used by tests.
+     */
+    interface PinStore {
+        /** The confirmed pin for [peerId], or null when this peer has never been confirmed. */
+        fun pinFor(peerId: String): String?
+
+        /** Persists a pin. Only ever called after the user confirmed the code. */
+        fun remember(peerId: String, pin: String)
+
+        /** Removes a pin, so the next connection is a first pairing again. */
+        fun forget(peerId: String)
+
+        /** Every stored pin, for diagnostics. */
+        fun snapshot(): Map<String, String>
+    }
+
+    /**
      * A minimal in-memory pin store.
      *
-     * The prototype keeps pins in memory because P03 is measuring the handshake, not building
-     * storage. The production shape is the same interface backed by EncryptedSharedPreferences or
-     * the Keystore; naming the interface now means the session code does not have to change when
-     * the storage does.
+     * Exists for tests and for a process that does not want persistence. It is deliberately *not*
+     * what the activity uses: a pairing that disappears on restart is not a pairing, and the P03
+     * "known peer" gate needs the pin to survive.
      */
-    class Store(initial: Map<String, String> = emptyMap()) {
+    class Store(initial: Map<String, String> = emptyMap()) : PinStore {
         private val pins = initial.toMutableMap()
 
-        fun pinFor(peerId: String): String? = pins[peerId]
+        override fun pinFor(peerId: String): String? = pins[peerId]
 
-        fun remember(peerId: String, pin: String) {
+        override fun remember(peerId: String, pin: String) {
             pins[peerId] = pin
         }
 
-        fun forget(peerId: String) {
+        override fun forget(peerId: String) {
             pins.remove(peerId)
         }
 
-        fun snapshot(): Map<String, String> = pins.toMap()
+        override fun snapshot(): Map<String, String> = pins.toMap()
     }
 
     /**
      * Decides what to do about a peer certificate.
      *
      * @param peerId a stable identifier for the peer. For P03 this is the service name the peer was
-     *   discovered under, because that is what the user selected and what they will recognise.
-     *   It is *not* the pin itself: keying pins by pin would make every peer look new.
+     *   discovered under, because that is what the user selected and what they will recognise. It is
+     *   *not* the pin itself: keying pins by pin would make every peer look new.
      */
-    fun evaluate(peerId: String, certificate: X509Certificate, store: Store): Decision {
+    fun evaluate(peerId: String, certificate: X509Certificate, store: PinStore): Decision {
         val actual = DeviceIdentity.pinOf(certificate)
         val expected = store.pinFor(peerId)
         return when {
@@ -89,7 +109,7 @@ object PeerPinning {
      * compared the codes. Storing on first sight would make the code confirmation decorative, since
      * the attacker's key would be pinned before anyone looked at it.
      */
-    fun confirm(peerId: String, certificate: X509Certificate, store: Store) {
+    fun confirm(peerId: String, certificate: X509Certificate, store: PinStore) {
         store.remember(peerId, DeviceIdentity.pinOf(certificate))
     }
 }

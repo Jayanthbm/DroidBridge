@@ -41,6 +41,9 @@ class DeviceIdentity private constructor(
 
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
 
+        /** A P-256 SubjectPublicKeyInfo is 91 bytes; the macOS side digests the same form. */
+        private const val P256_SPKI_BYTES = 91
+
         /**
          * Loads the identity, generating it on first run.
          *
@@ -57,6 +60,16 @@ class DeviceIdentity private constructor(
 
             val privateKey = keyStore.getKey(ALIAS, null) as PrivateKey
             val certificate = keyStore.getCertificate(ALIAS) as X509Certificate
+
+            // The pin and the short authentication code are both digests of this exact form. If the
+            // platform produced a different encoding, every pair would show two different codes and
+            // the failure would look like a peer problem instead of a form mismatch.
+            val spki = certificate.publicKey.encoded
+            check(spki.size == P256_SPKI_BYTES) {
+                "device identity exported a ${spki.size}-byte SubjectPublicKeyInfo; " +
+                    "P-256 must be $P256_SPKI_BYTES"
+            }
+
             return DeviceIdentity(privateKey, certificate)
         }
 

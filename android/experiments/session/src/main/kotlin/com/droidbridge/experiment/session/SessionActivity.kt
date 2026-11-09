@@ -28,14 +28,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.droidbridge.protocol.session.ControlMessage
 import com.droidbridge.protocol.session.ShortAuthenticationCode
 import java.util.concurrent.Executors
 
 /**
  * P03 experiment UI.
  *
- * Each button is one acceptance criterion. The log is the evidence, and every line is written to
+ * Each control is one acceptance criterion. The log is the evidence, and every line is written to
  * logcat under `P03Session` so a scripted run can read it without scraping the screen.
+ *
+ * ## The pairing confirmation is the point of this screen
+ *
+ * The flow is deliberately two-step for an unknown peer:
+ *
+ * 1. **Connect (first pairing)** runs a TLS 1.3 handshake with no expected pin and derives a six
+ *    digit code from both public keys. The session is [SecureSession.State.AWAITING_CONFIRMATION]
+ *    and both sides refuse application data.
+ * 2. The user reads the code on both screens and presses **Codes match — confirm pairing** (or
+ *    rejects). Only confirming stores the peer pin and calls [SecureSession.authenticate].
+ *
+ * The buttons are therefore not decoration: they are the only path from an unauthenticated to an
+ * authenticated session, and [SecureSession] independently refuses data while unconfirmed.
+ *
+ * A peer that already has a stored pin skips step 1's code comparison: the pin is checked inside the
+ * handshake, and re-prompting on every reconnect would train the user to confirm without looking.
  */
 class SessionActivity : ComponentActivity() {
 
@@ -44,15 +61,20 @@ class SessionActivity : ComponentActivity() {
 
     private lateinit var nsdManager: NsdManager
     private lateinit var identity: DeviceIdentity
-    private val pinStore = PeerPinning.Store()
+    private lateinit var pinStore: PeerPinning.PinStore
 
+    @Volatile
     private var session: SecureSession? = null
+
+    @Volatile
     private var discovered: NsdServiceInfo? = null
 
     private var logText by mutableStateOf("")
     private var statusText by mutableStateOf("idle")
     private var codeText by mutableStateOf("")
-    private var pinText by mutableStateOf("")
+    private var peerPinText by mutableStateOf("(none)")
+    private var storedPinText by mutableStateOf("(none)")
+    private var dataStateText by mutableStateOf("no session")
 
     private val requestPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -64,31 +86,53 @@ class SessionActivity : ComponentActivity() {
 
         nsdManager = getSystemService(NsdManager::class.java)
         identity = DeviceIdentity.loadOrCreate()
-        pinText = identity.pin
+        pinStore = KeystorePinStore(applicationContext)
+        storedPinText = pinStore.pinFor(PEER_ID) ?: "(none)"
         record("identity loaded: pin=${identity.pin}")
+        record("stored peer pin for $PEER_ID: ${storedPinText}")
 
         setContent {
             MaterialTheme {
                 SessionScreen(
                     status = statusText,
-                    ownPin = pinText,
+                    ownPin = identity.pin,
+                    storedPin = storedPinText,
+                    peerPin = peerPinText,
                     code = codeText,
+                    dataState = dataStateText,
                     log = logText,
                     onRequestPermission = {
                         requestPermission.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
                     },
                     onDiscover = ::discover,
-                    onConnect = { confirmFirst -> connect(confirmFirst) },
+                    onConnectFirstPairing = { connect(firstPairing = true) },
+                    onConnectKnownPeer = { connect(firstPairing = false) },
+                    onConfirmPairing = ::confirmPairing,
+                    onRejectPairing = ::rejectPairing,
                     onSendPing = ::sendPing,
                     onReceive = ::receiveOnce,
                     onClose = ::closeSession,
-                    onForgetPin = {
-                        pinStore.forget(PEER_ID)
-                        record("forgot pin for $PEER_ID")
-                    },
+                    onForgetPin = ::forgetPin,
                 )
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val current = session
+        if (current != null) {
+            record("foreground: session state=${current.state}")
+        }
+    }
+
+    override fun onStop() {
+        // The prototype owns the session from the activity, so backgrounding keeps it alive only as
+        // long as the process lives. The product runs it in a connectedDevice foreground service
+        // (ADR-023, P14); P03 does not claim background liveness.
+        val current = session
+        record("background: session state=${current?.state ?: "none"} (prototype keeps the socket)")
+        super.onStop()
     }
 
     override fun onDestroy() {
@@ -173,20 +217,39 @@ class SessionActivity : ComponentActivity() {
     /**
      * Connects to the discovered peer.
      *
-     * @param confirmFirst when true, connects with the stored pin if there is one, so the handshake
-     *   only completes for a peer whose pin matches. When false, connects with no pin so the code
-     *   can be derived for a first pairing.
+     * @param firstPairing true runs a no-pin handshake for code comparison and is refused when a pin
+     *   is already stored; false verifies the stored pin inside the handshake and is refused when
+     *   there is none. A changed identity can therefore never be accepted by choosing the other
+     *   button: it fails the stored-pin handshake, and the first-pairing path will not run.
      */
-    private fun connect(confirmFirst: Boolean) {
+    private fun connect(firstPairing: Boolean) {
         val target = discovered
         if (target?.host == null) {
             record("connect refused: no resolved peer, run Discover first")
             return
         }
 
+        val stored = pinStore.pinFor(PEER_ID)
+        val expectedPin: String?
+        if (firstPairing) {
+            if (stored != null) {
+                record(
+                    "connect refused: a pin is already stored for $PEER_ID; " +
+                        "use 'Connect (verify stored pin)' or forget it to re-pair",
+                )
+                return
+            }
+            expectedPin = null
+        } else {
+            if (stored == null) {
+                record("connect refused: no stored pin for $PEER_ID; run a first pairing")
+                return
+            }
+            expectedPin = stored
+        }
+
         val host = target.host!!.hostAddress
         val port = target.port
-        val expectedPin = if (confirmFirst) pinStore.pinFor(PEER_ID) else null
         record("connecting to $host:$port expectedPin=${expectedPin ?: "(none, first pairing)"}")
 
         executor.execute {
@@ -195,34 +258,107 @@ class SessionActivity : ComponentActivity() {
                 session = s
                 val code = s.shortAuthenticationCode(identity)
                 runOnUiThread {
+                    peerPinText = s.peerPin
                     codeText = ShortAuthenticationCode.formatForDisplay(code)
-                    statusText = if (s.isConfirmed) "connected (pin verified)" else "connected (unconfirmed)"
+                    dataStateText = if (s.isAuthenticated) {
+                        "available (authenticated)"
+                    } else {
+                        "locked (confirm the code)"
+                    }
+                    statusText = if (s.isAuthenticated) {
+                        "connected (stored pin verified)"
+                    } else {
+                        "connected (awaiting code confirmation)"
+                    }
                 }
                 record(
                     "handshake ok: protocol=TLSv1.3 peerPin=${s.peerPin} " +
-                        "confirmed=${s.isConfirmed} code=$code",
+                        "authenticated=${s.isAuthenticated} code=$code",
                 )
             } catch (e: Exception) {
                 record("connect FAILED: ${e.javaClass.simpleName}: ${e.message}")
-                runOnUiThread { statusText = "connect failed" }
+                runOnUiThread {
+                    statusText = "connect failed"
+                    dataStateText = "no session"
+                }
             }
+        }
+    }
+
+    /**
+     * Completes a first pairing after the user compared the codes.
+     *
+     * Persists the pin **before** marking the session authenticated, and refuses to overwrite a pin
+     * that appeared in the meantime. If persistence fails, the session stays unauthenticated and is
+     * closed: a pairing that cannot be remembered must not be treated as permanent.
+     */
+    private fun confirmPairing() {
+        val s = session ?: run { record("confirm refused: no session"); return }
+        if (s.isAuthenticated) {
+            record("confirm ignored: session is already authenticated")
+            return
+        }
+
+        executor.execute {
+            try {
+                if (pinStore.pinFor(PEER_ID) != null) {
+                    record("confirm refused: a pin appeared while pairing; not overwriting it")
+                    return@execute
+                }
+                val code = s.shortAuthenticationCode(identity)
+                PeerPinning.confirm(PEER_ID, s.peerCertificate, pinStore)
+                val persisted = pinStore.pinFor(PEER_ID) == s.peerPin
+                if (!persisted) {
+                    throw IllegalStateException("pin did not persist")
+                }
+                s.authenticate()
+                runOnUiThread {
+                    statusText = "authenticated (pairing confirmed)"
+                    dataStateText = "available (authenticated)"
+                    storedPinText = pinStore.pinFor(PEER_ID) ?: "(none)"
+                }
+                record("pairing confirmed: peerPin=${s.peerPin} code=$code pin persisted=$persisted")
+            } catch (e: Exception) {
+                record("confirm FAILED: ${e.javaClass.simpleName}: ${e.message}")
+                s.close("pairing confirmation failed")
+                session = null
+                runOnUiThread {
+                    statusText = "confirmation failed"
+                    dataStateText = "no session"
+                }
+            }
+        }
+    }
+
+    /** Rejects the pairing: no pin is stored and the session closes. */
+    private fun rejectPairing() {
+        val s = session ?: run { record("reject ignored: no session"); return }
+        record("pairing rejected by user: no pin stored, closing session")
+        s.close("pairing rejected by user")
+        session = null
+        runOnUiThread {
+            codeText = ""
+            peerPinText = "(none)"
+            statusText = "pairing rejected"
+            dataStateText = "no session"
         }
     }
 
     private fun sendPing() {
         val s = session ?: run { record("send refused: no session"); return }
-        if (!s.isConfirmed) {
-            // The whole point of the confirmation step: an unconfirmed peer must not receive data.
-            record("send refused: session is not confirmed (compare the code first)")
-            return
-        }
         executor.execute {
             try {
-                val payload = "session.ping".toByteArray()
-                s.send(payload)
-                record("sent ${payload.size} bytes: session.ping")
+                s.send(ControlMessage.Type.PING, "session.ping".toByteArray())
+                record("sent PING payload=session.ping")
+            } catch (e: SessionNotAuthenticatedException) {
+                record("send refused: session is not confirmed (compare the code first)")
             } catch (e: Exception) {
                 record("send failed: ${e.javaClass.simpleName}: ${e.message}")
+                session = null
+                runOnUiThread {
+                    statusText = "session closed"
+                    dataStateText = "no session"
+                }
             }
         }
     }
@@ -230,25 +366,55 @@ class SessionActivity : ComponentActivity() {
     private fun receiveOnce() {
         val s = session ?: run { record("receive refused: no session"); return }
         executor.execute {
-            val payload = s.receiveOrNull()
-            if (payload == null) {
-                record("receive: closed or framing error ${s.lastFramingError?.message ?: ""}")
-            } else {
-                record("received ${payload.size} bytes: ${String(payload).take(80)}")
+            try {
+                val message = s.tryReceive(10_000)
+                if (message == null) {
+                    record("receive: no frame within 10s (session still open)")
+                } else {
+                    record("received ${ControlMessage.describe(message)}")
+                }
+            } catch (e: SessionNotAuthenticatedException) {
+                record("receive refused: session is not confirmed")
+            } catch (e: Exception) {
+                record("receive failed: ${e.javaClass.simpleName}: ${e.message}")
+                session = null
+                runOnUiThread {
+                    statusText = "session closed"
+                    dataStateText = "no session"
+                }
             }
         }
     }
 
     private fun closeSession() {
-        session?.close()
+        val s = session
+        s?.close("closed from UI")
         session = null
-        statusText = "closed"
+        runOnUiThread {
+            statusText = "closed"
+            codeText = ""
+            peerPinText = "(none)"
+            dataStateText = "no session"
+        }
         record("session closed")
+    }
+
+    private fun forgetPin() {
+        pinStore.forget(PEER_ID)
+        runOnUiThread {
+            storedPinText = "(none)"
+            statusText = "stored pin forgotten (next connect is a first pairing)"
+        }
+        record("forgot pin for $PEER_ID")
     }
 
     private fun record(line: String) {
         Log.i(tag, line)
-        runOnUiThread { logText = if (logText.isEmpty()) line else "$logText\n$line" }
+        runOnUiThread {
+            // Bounded: a long session must not grow the text without limit.
+            val next = if (logText.isEmpty()) line else "$logText\n$line"
+            logText = if (next.length > 6000) next.takeLast(6000) else next
+        }
     }
 
     companion object {
@@ -264,11 +430,17 @@ class SessionActivity : ComponentActivity() {
 private fun SessionScreen(
     status: String,
     ownPin: String,
+    storedPin: String,
+    peerPin: String,
     code: String,
+    dataState: String,
     log: String,
     onRequestPermission: () -> Unit,
     onDiscover: () -> Unit,
-    onConnect: (Boolean) -> Unit,
+    onConnectFirstPairing: () -> Unit,
+    onConnectKnownPeer: () -> Unit,
+    onConfirmPairing: () -> Unit,
+    onRejectPairing: () -> Unit,
     onSendPing: () -> Unit,
     onReceive: () -> Unit,
     onClose: () -> Unit,
@@ -285,6 +457,9 @@ private fun SessionScreen(
         Text("TLS 1.3, mutual auth, pinned identity.", style = MaterialTheme.typography.bodySmall)
         Text("status: $status")
         Text("own pin: $ownPin", style = MaterialTheme.typography.bodySmall)
+        Text("stored peer pin: $storedPin", style = MaterialTheme.typography.bodySmall)
+        Text("peer pin: $peerPin", style = MaterialTheme.typography.bodySmall)
+        Text("application data: $dataState", style = MaterialTheme.typography.bodyMedium)
         if (code.isNotEmpty()) {
             Text("code: $code", style = MaterialTheme.typography.headlineSmall)
         }
@@ -295,11 +470,17 @@ private fun SessionScreen(
         Button(onClick = onDiscover, modifier = Modifier.fillMaxWidth()) {
             Text("Discover with picker")
         }
-        Button(onClick = { onConnect(false) }, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = onConnectFirstPairing, modifier = Modifier.fillMaxWidth()) {
             Text("Connect (first pairing, no pin)")
         }
-        Button(onClick = { onConnect(true) }, modifier = Modifier.fillMaxWidth()) {
+        Button(onClick = onConnectKnownPeer, modifier = Modifier.fillMaxWidth()) {
             Text("Connect (verify stored pin)")
+        }
+        Button(onClick = onConfirmPairing, modifier = Modifier.fillMaxWidth()) {
+            Text("Codes match — confirm pairing")
+        }
+        OutlinedButton(onClick = onRejectPairing, modifier = Modifier.fillMaxWidth()) {
+            Text("Codes don't match — reject pairing")
         }
         OutlinedButton(onClick = onSendPing, modifier = Modifier.fillMaxWidth()) {
             Text("Send session.ping")
