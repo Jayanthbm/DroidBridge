@@ -39,6 +39,7 @@ Clipboard behaviour also has limits on both sides: Android 10+ restricts clipboa
 DroidBridge/
 ├── README.md
 ├── AGENTS.md
+├── PHASE_STATUS.md          # phase/prototype status dashboard
 ├── Docs/
 │   ├── PRODUCT_REQUIREMENTS.md
 │   ├── RESEARCH_AND_FEASIBILITY.md
@@ -72,6 +73,12 @@ DroidBridge/
 ├── .github/workflows/         # CI: shared protocol + Android
 └── .gitignore
 ```
+
+## Current status
+
+The phase-by-phase and prototype-by-prototype status board is [PHASE_STATUS.md](PHASE_STATUS.md).
+It records what is complete, what is pending, whether the S24 Ultra or the Android 12 backup can be
+used, estimated effort and dependencies. Update it after every prototype or phase completion.
 
 ## Building and verifying
 
