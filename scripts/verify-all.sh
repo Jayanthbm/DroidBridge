@@ -39,6 +39,9 @@ fi
     :experiments:media-projection:assembleDebug \
     :experiments:media-projection:testDebugUnitTest \
     :experiments:media-projection:lintDebug \
+    :experiments:discovery:assembleDebug \
+    :experiments:discovery:testDebugUnitTest \
+    :experiments:discovery:lintDebug \
     :experiments:clipboard:assembleDebug \
     :experiments:clipboard:testDebugUnitTest \
     :experiments:clipboard:lintDebug \

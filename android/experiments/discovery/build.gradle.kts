@@ -19,6 +19,10 @@ android {
         applicationId = "com.droidbridge.experiment.discovery"
         versionCode = 1
         versionName = "0.1.0"
+        // API 37 only, deliberately. DiscoveryRequest, AdvertisingRequest and
+        // ACCESS_LOCAL_NETWORK exist only from 37; this prototype measures that path and a
+        // fallback would hide the result. Declaring it here is what makes the API guards real.
+        minSdk = 37
     }
 
     buildFeatures {

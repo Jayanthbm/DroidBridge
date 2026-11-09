@@ -15,14 +15,15 @@
 
     <application
         android:allowBackup="false"
-        android:label="P02 discovery"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.P02Discovery">
 
         <activity
             android:name=".DiscoveryActivity"
-            android:exported="true"
-            android:label="P02 discovery">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
