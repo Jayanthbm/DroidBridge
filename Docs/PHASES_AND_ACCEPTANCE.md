@@ -27,12 +27,11 @@ no crash or ANR. Audits in `PERMISSIONS_MATRIX.md` §6. Reports in `Docs/prototy
 **Status:** In progress — P00, P01, P02, P03 and P04 have device evidence. **P01 is validated on
 Android 12 and on Android 17 / S24 Ultra**: consent, foreground service, surface-fed H.264,
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and token
-replay (14/14 required items; three plan-only extras remain open). **P02's primary path is
-validated on the S24 Ultra**: picker approval, approved-only rediscovery, 60 s sustained duplex,
-airplane-mode outage recovery, Android process recreation and reboot. One P02 lifecycle test remains
-open: Mac sleep/wake, **deferred by the owner on 2026-11-09**. P02 is conditionally accepted, not
-claimed fully complete. Mac advertiser/cold restart is measured: a new Mac service instance requires
-one picker re-approval before approved-only reconnect works. Advertising and inbound require
+replay (14/14 required items; three plan-only extras remain open). **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
+sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
+sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
+advertiser/cold restart is measured: a new Mac service instance requires one picker re-approval;
+that is a documented product limitation for Phase 2. Advertising and inbound require
 `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not. **P03** has
 all six acceptance criteria met, including the USB-disconnected run. **P04** is verified on
 Android 12 and Android 17.

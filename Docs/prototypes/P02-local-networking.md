@@ -1,12 +1,13 @@
 # P02 — Android 17 local networking: the picker path
 
-**Status: the picker path, sustained duplex and network recovery are validated on the target
-device — Samsung Galaxy S24 Ultra, Android 17 / API 37, One UI 9.0 (2026-11-09). The Mac advertiser
-restart test is complete and exposed a required one-time re-approval when the Mac's service instance
-changes. One lifecycle test remains open: Mac sleep/wake, which the owner deferred to a later
-session on 2026-11-09. P02 is therefore conditionally accepted, not claimed fully complete.**
-Router restart, a Mac IP change, guest-Wi-Fi client isolation and a Mac interface change could not
-be exercised in this environment and are recorded as unavailable rather than guessed at.
+**Status: validated on the target device — Samsung Galaxy S24 Ultra, Android 17 / API 37,
+One UI 9.0 (2026-11-09).** The picker path, approved-only rediscovery, 60 s sustained duplex,
+airplane-mode recovery, Android process recreation/reboot, inbound/permission behaviour and Mac
+sleep/wake all have physical evidence. Mac sleep/wake finally passed on the third attempt: `pmset`
+recorded Sleep at 21:41:50 and Wake at 21:42:15, and the phone reconnected to the **same** Mac port
+64615 at 21:42:14 with no picker. P02 is accepted for Phase 1 with two documented limitations:
+a new Mac service instance requires one fresh picker approval, and router restart / Mac IP change /
+guest-Wi-Fi isolation / Mac interface change could not be exercised in this environment.
 
 The first S24 Ultra run established first contact (picker, `resolveService`, TCP connect, 26-byte
 echo, approved-only rediscovery). This run adds the parts that were missing: a 60-second sustained
@@ -208,22 +209,31 @@ and it reconnects" promise: either the Mac needs a stable service identity (or a
 the OS continues to accept, or the UX must present the re-approval as expected after a Mac restart.
 This is recorded as a limitation, not hidden by the successful re-approval.
 
-### Mac sleep/wake — **not completed**
+### Mac sleep/wake — **passed** (third attempt, 2026-11-09)
 
-Two attempts were made; neither produced a system sleep:
+The first two attempts did not produce a sleep event: the first left the Mac awake, and the second
+coincided with an unplanned Mac restart. The third attempt used a real forced sleep and produced
+the missing evidence.
 
-1. During a 180-second echo the owner was asked to sleep the Mac for ~10 seconds. The echo continued
-   uninterrupted (587/587 messages, 0 errors, 1 connection) and `pmset -g log` recorded **no sleep
-   event**.
-2. A second attempt coincided with the Mac **restarting** (boot time 21:25:28) rather than sleeping.
-   The phone saw the socket die at 21:24:57, retried approved-only rediscovery for ~90 seconds with
-   no peer, and the run ended 282/280 with 2 errors. There is no sleep event to cite, so this is not
-   sleep/wake evidence.
+| Time | Event |
+|---|---|
+| 21:41:19 | 180 s echo connected to the Mac on port 64615 |
+| 21:41:45 | `pmset sleepnow` issued |
+| 21:41:50 | **`pmset`: Entering Sleep state due to 'Software Sleep pid=4947'** |
+| 21:41:55 | Phone `ECHO disconnected: SocketTimeoutException: Read timed out` |
+| 21:41:55 | Approved-only rediscovery started (no picker) |
+| 21:42:11 | `pmset`: DarkWake from Deep Idle |
+| 21:42:13 | Phone: `approved-only onServiceFound: 'DroidBridge'` |
+| 21:42:14 | Phone: connected again to **192.168.31.109:64615** |
+| 21:42:15 | `pmset`: **Wake to FullWake due to UserActivity** |
 
-Mac sleep/wake is therefore recorded as **not completed**, not as a pass. The owner deferred it to a
-later session on 2026-11-09; P02 remains conditionally accepted rather than fully complete. The
-accidental restart did provide a useful cold-restart recovery result (below), but it is a different
-event.
+Final echo result for the run: **536 sent / 535 received, 0 mismatches, 1 error, 0 connect
+failures, 2 connections**, RTT min 5.8 ms / max 430 ms / average 44 ms. The single error is the
+in-flight ping whose reply was lost when the Mac suspended; the reconnect is the expected recovery.
+
+This is a pass: the Mac genuinely slept, the socket died, the phone kept trying, and after wake it
+rediscovered the same service instance and resumed without a picker. The earlier accidental restart
+also provides a separate cold-restart recovery result (below).
 
 ### Mac cold restart — recovery after reboot
 
@@ -327,16 +337,19 @@ lints clean (`minSdk=37`, `warningsAsErrors`); the full verification gate is rec
 | Wi-Fi/airplane loss and recovery without re-approval | Pass |
 | Android process recreation | Pass |
 | Android reboot | Pass |
-| Mac sleep/wake | **Deferred by owner (2026-11-09); no pass claimed** |
+| Mac sleep/wake | **Pass — real Sleep/Wake, same-port reconnect, no picker** |
 | Mac advertiser restart | **Pass with required re-approval**; old approval did not carry to the new instance |
 | Mac IP change / router restart / guest Wi-Fi / interface change | Not available in this environment |
 | Inbound under picker approval | Investigated; works only with `ACCESS_LOCAL_NETWORK`, revocation delayed to reboot |
 | Permission enforcement | Investigated; picker path exempt, advertising/inbound gated |
 
-P02 is **conditionally accepted**, not fully complete: the primary product path — picker approval,
-approved-only reconnect, sustained duplex, recovery after a real outage, process recreation,
-Android reboot and Mac restart with re-approval — is validated, but Mac sleep/wake was deferred by
-the owner and has no evidence. It stays tracked as an open test for a later session.
+P02 is **accepted/closed for Phase 1 (2026-11-09)**. Every mandatory P02 test now has evidence:
+picker approval, approved-only reconnect, sustained duplex, recovery after a real outage, process
+recreation, Android reboot, Mac sleep/wake, Mac restart and the inbound/permission investigation.
+The remaining items are documented environment limitations, not claims of a pass: router restart,
+Mac IP change, guest-Wi-Fi isolation and Mac interface change were unavailable. The product
+limitations are the one-time re-approval after a Mac service-instance change and the delayed
+permission revocation for a running process.
 
 ## Reproducing
 
