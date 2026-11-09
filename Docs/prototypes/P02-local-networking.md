@@ -164,13 +164,22 @@ ECHO progress sent=20 received=20 … mismatches=0 errors=0
 
 No picker. The approval survives reboot, and discovery after boot is fast.
 
-### Mac advertiser restart — **not completed**
+### Mac advertiser restart — Mac half complete, phone half pending
 
-The Mac advertiser was killed during a 180-second echo to force a new ephemeral port, but the
-relaunch step was interrupted before it ran (the owner needed the phone). The kill half was
-observed; the recovery half is not claimed. **Remaining test:** restart
-`DroidBridge.app/Contents/MacOS/DroidBridge --advertise-on-launch`, confirm a new port is
-advertised, and confirm the phone re-resolves and reconnects without a picker.
+The Mac advertiser was killed during a 180-second echo to force a new ephemeral port. The Mac half
+was then completed without the phone:
+
+```
+20:35:42  advertising type=_droidbridge-dev._tcp port=61172 sid=544f8f14…
+20:35:42  dns-sd -B lists "DroidBridge" on local.
+20:35:46  dns-sd -L resolves DroidBridge to Jayanths-MacBook-Air.local.:61172,
+          TXT sid=544f8f14… v=1
+20:36:0x  a second clean relaunch advertised port 61173 (current listener)
+```
+
+So the Mac re-registers under the same service name with a **new ephemeral port**, and Bonjour
+resolves it with the new TXT record. **Remaining half:** with the phone, confirm approved-only
+re-resolution finds the new port and the echo reconnects without a picker.
 
 ### Mac sleep/wake — **not completed**
 
@@ -267,7 +276,7 @@ lints clean (`minSdk=37`, `warningsAsErrors`); the full verification gate is rec
 | Android process recreation | Pass |
 | Android reboot | Pass |
 | Mac sleep/wake | **Open — attempt did not sleep the Mac** |
-| Mac advertiser restart | **Open — kill observed, relaunch not run** |
+| Mac advertiser restart | Mac half pass (new port advertised and resolved); phone half **open** |
 | Mac IP change / router restart / guest Wi-Fi / interface change | Not available in this environment |
 | Inbound under picker approval | Investigated; works only with `ACCESS_LOCAL_NETWORK`, revocation delayed to reboot |
 | Permission enforcement | Investigated; picker path exempt, advertising/inbound gated |

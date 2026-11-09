@@ -482,9 +482,12 @@ off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-n
   throws `SecurityException: Missing local network permission`; with it, registration succeeds.
 - **`checkPermissionForService()`** returned `SERVICE_PERMISSION_DENIED` both before and after the
   runtime grant, so it is not a reliable grant indicator on this build.
-- **Open:** Mac sleep/wake (attempt produced no `pmset` sleep event, so no pass) and Mac advertiser
-  restart (kill observed, relaunch not completed). Router restart, Mac IP change, guest-Wi-Fi
-  isolation and Mac interface change were not available in this environment.
+- **Open:** Mac sleep/wake (attempt produced no `pmset` sleep event, so no pass) and the phone half
+  of the Mac advertiser restart. The Mac half is now confirmed: after a kill/relaunch the advertiser
+  registered a new ephemeral port (61172, then 61173) and `dns-sd -B`/`dns-sd -L` resolved it with
+  the new TXT record. The phone-side approved-only re-resolution to the new port is still to run.
+  Router restart, Mac IP change, guest-Wi-Fi isolation and Mac interface change were not available
+  in this environment.
 
 ### Verification
 
