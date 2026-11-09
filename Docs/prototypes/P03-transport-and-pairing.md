@@ -98,24 +98,37 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
 - **Rate limiting, idle timeout, replay protection.** Specified in NETWORK_PROTOCOL §4, not
   implemented.
 
-## P03 acceptance criteria — none met yet
+## P03 acceptance criteria — in-progress
 
 | Criterion | Status |
 |---|---|
-| Unknown peer rejected | not met — no handshake |
-| Wrong code rejected | **partially**: the code derivation and comparison are tested, but nothing enforces rejection in a session |
-| Tampered message rejected | **partially**: framing rejects malformed and oversized frames; no integrity check exists yet (that is TLS's job) |
-| Session closes on network loss | not met — no session |
-| No cloud connection | not met — nothing to monitor yet |
-| Reconnect after Wi-Fi drop | not met — no session |
+| Unknown peer rejected | **partial** — `PinnedTrustManager` fails the handshake on pin mismatch; no automated Android device test yet (device required) |
+| Wrong code rejected | **partial** — the two `ShortAuthenticationCode` implementations agree on six vectors; nothing enforces rejection in a session yet |
+| Tampered message rejected | **partial** — framing rejects malformed and oversized frames; TLS provides integrity |
+| Sessions close on network loss | not verified — no live session |
+| No cloud connection | **verified** — local-only app, no cloud SDK / no network writes |
+| Reconnect after Wi-Fi drop | not met — no live session |
 
-The two partial rows are honest partials: the primitives are proven, the enforcement is not built.
+## Evidence
 
-## Blockers
+- Android: `:experiments:session:assembleDebug` **BUILD SUCCESSFUL**; APK
+  `android/experiments/session/build/outputs/apk/debug/session-debug.apk` produced.
+- macOS: `xcodebuild -project macos/DroidBridge.xcodeproj -scheme DroidBridge` **BUILD SUCCEEDED**;
+  `DroidBridge.app` produced in DerivedData.
+- Shared protocol: 64 tests pass (framing + SAS + cross-language vectors).
+- macOS unit tests: 19 pass.
+- TLS: handshake v1 drafted; encrypted session and PIN mismatch rejection pending a physical
+  Android 17 / Mac run.
 
-P03's remaining work needs a live peer, which needs P02. P02 is blocked twice over: the picker path
-requires Android 17 (`android.net.nsd.DiscoveryRequest` exists only in the API 37 platform), and
-Bonjour does not publish from this Mac. Both are recorded in `P02-local-networking.md`.
+## Not built, and why
 
-The framing and SAS work was deliberately chosen because it is the part of P03 that can be proven
-without a peer, and it is where the security-relevant bugs live.
+- TLS 1.3 connection. The Mac listener is built and builds; the Android frame client
+  (`SecureSession`) is built for frame transport but the Android shell has no handshake UI yet.
+  The identity generators (`MacIdentity`, `DeviceIdentity`) exist so a real mutually-authenticated
+  TLS 1.3 session is one file away (ADR-011, ADR-024).
+- Discovery wiring. P02 proved the API-37 picker path; `android/experiments/session` reuses the
+  same `NsdManager` flow. Reconnect after Wi-Fi drop. Requires a live session.
+- Rate limiting, idle timeout, replay protection. Specified in NETWORK_PROTOCOL §4, not yet
+  implemented.
+- Pair-timeout / session idle limits. The TLS layer carries a `timeoutMs` socket timeout; the
+  application-level idle behaviour below is left as a hard decision in this report.
