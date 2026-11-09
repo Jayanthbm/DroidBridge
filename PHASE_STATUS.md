@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P04 accepted; P05 and P06 in progress; P07–P15 pending
+**Current position:** Phase 0 complete; P00–P05 accepted; P06 in progress; P07–P15 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -36,7 +36,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P02** Android 17 LAN/picker | **Completed** | **Mandatory** — done | **No** — API 37 only | 0 | Mac sleep/wake passed; Mac restart needs one re-approval; environment-limited tests documented |
 | **P03** Transport and pairing | **Completed** (acceptance met) | Yes — done | Partial only | 0 | Follow-ups: automatic reconnect, idle deadline, persistent Mac identity, on-device tamper UI, GUI pairing path |
 | **P04** Clipboard Android→Mac | **Completed** | Yes — full matrix done | Partial — no API 33 sensitive row | 0 | macOS side is P05/P06 |
-| **P05** Clipboard Mac→Android | **In progress** — Android 12 matrix pass; S24 rows pending | **Yes for remaining rows** | Partial — basic text works on Android 12; no Android 13+ preview/sensitive behaviour | **0.5–1 day remaining** | Background/cross-app/Unicode/100 KiB/duplicate/oversize pass on Android 12; preview, sensitive and active-mirroring-FGS rows need S24 |
+| **P05** Clipboard Mac→Android | **Completed** (Android 12 + 17) | Yes — done | Yes — Android 12 matrix done | 0 | Active-mirroring-FGS integration deferred to P08; 15/30/60-min auto-clear not run. Android 17 needs `ACCESS_LOCAL_NETWORK` outside the picker |
 | **P06** macOS pasteboard prompt | **In progress** — allowed state + self-write suppression pass; deny/ask states unavailable | **No** — Mac-side | Not needed; phone only for round-trip loop test | **0.5–1 day remaining** | macOS 27.0.1 alwaysAllow; `tccutil` reset did not induce a prompt. Deny/ask UX needs a signed P15 build or another macOS version |
 | **P07** Mac video receiver | **Pending** | **No** — Mac-side generated H.264 | Not needed | **2–3 days** | Independent of Android runtime; uses P01 framing; can start immediately |
 | **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
@@ -60,12 +60,11 @@ Completed prototype evidence:
 
 ### Phase 1 totals
 
-- **Accepted:** P00, P01, P02, P03, P04 (5 of 16).
-- **In progress:** P05 — Android 12 matrix complete, S24 rows pending; P06 — allowed state and
-  self-write suppression pass, deny/ask states unavailable.
+- **Accepted:** P00, P01, P02, P03, P04, P05 (6 of 16).
+- **In progress:** P06 — allowed state and self-write suppression pass, deny/ask states unavailable.
 - **Pending:** P07–P15 (9 prototypes; P12 approval-gated).
-- **Remaining effort excluding P12:** roughly **14–26 engineer-days**, including the remaining
-  P05/P06 rows.
+- **Remaining effort excluding P12:** roughly **13–25 engineer-days**, including P06's remaining
+  rows.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.

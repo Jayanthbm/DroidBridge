@@ -27,8 +27,9 @@ no crash or ANR. Audits in `PERMISSIONS_MATRIX.md` §6. Reports in `Docs/prototy
 **Status:** In progress — P00, P01, P02, P03 and P04 have device evidence. **P01 is validated on
 Android 12 and on Android 17 / S24 Ultra**: consent, foreground service, surface-fed H.264,
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and token
-replay (14/14 required items; three plan-only extras remain open). **P05 is in progress** — the Android 12 Mac→Android clipboard matrix passes; the Android 13+
-preview/sensitive and active-mirroring-FGS rows await the S24 Ultra. **P06 is in progress** — the
+replay (14/14 required items; three plan-only extras remain open). **P05 is completed on Android 12 and Android 17** — the Mac→Android clipboard matrix passes on
+both, including the Android 17 "Copied." confirmation and the `ACCESS_LOCAL_NETWORK` requirement
+outside the picker; active-mirroring-FGS integration is deferred to P08. **P06 is in progress** — the
 allowed state and write-suppression pass, but macOS 27.0.1 reports `alwaysAllow`, so the deny/ask UX
 still needs a signed P15 build or another macOS version. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac

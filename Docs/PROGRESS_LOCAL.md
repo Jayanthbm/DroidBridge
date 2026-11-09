@@ -10,9 +10,10 @@ are met.
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. **P01 is
 validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service, surface-fed H.264,
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and consent-token
-replay were exercised. P04 is verified on both Android 12 and Android 17. **P05 is in progress:**
-the Android 12 Mac→Android clipboard matrix passes; the Android 13+ preview/sensitive and active-
-mirroring-FGS rows await the S24 Ultra. **P06 is in progress:** macOS 27.0.1 reports
+replay were exercised. P04 is verified on both Android 12 and Android 17. **P05 is completed on Android 12 and Android 17:** the Mac→Android
+clipboard matrix passes on both, including Android 17's generic "Copied." confirmation and the
+`ACCESS_LOCAL_NETWORK` requirement outside the picker; the active-mirroring-FGS integration context
+is deferred to P08. **P06 is in progress:** macOS 27.0.1 reports
 `accessBehavior=alwaysAllow`, no prompt appears, and self-write suppression works; the deny/ask
 states need a signed P15 build or another macOS version.
 
@@ -509,7 +510,7 @@ off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-n
 P01 adds 13 unit tests (8 framing + 5 format policy); P02 adds 7 echo-payload tests.
 
 
-## P05 — Clipboard Mac → Android (Android 12 partial, 2026-11-09)
+## P05 — Clipboard Mac → Android (completed Android 12 + 17, 2026-11-09)
 
 The OnePlus matrix ran against a real Mac→Android framed TCP harness
 (`scripts/p05-clipboard-sender.py`); this is not TLS evidence — P03 owns TLS, and P05 measures the
@@ -532,7 +533,10 @@ foreground service and writes it without logging content.
 Findings: background clipboard **writes** are allowed while reads remain focus-gated (P04);
 DroidBridge must enforce the 100 KiB cap and hash over UTF-8 bytes, not `String.length`; duplicate
 suppression works at the receiver but end-to-end loop prevention still needs P06/origin IDs; no
-content is logged or persisted. P05 remains in progress until the S24 rows run.
+content is logged or persisted. P05 is now **completed** on Android 12 and Android 17. The S24 run also showed that a raw local TCP
+socket outside the picker path is blocked until `ACCESS_LOCAL_NETWORK` is granted, that Android 17
+shows a generic "Copied." confirmation with no content preview, and that the clip was still present
+after ~6 minutes. The active-mirroring-FGS integration context is deferred to P08.
 
 
 ## P06 — macOS pasteboard monitoring (partial, 2026-11-09)

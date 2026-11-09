@@ -1,10 +1,12 @@
 # P05 — Clipboard Mac → Android
 
-**Status: Android 12 matrix complete; Android 17 / S24 Ultra rows pending.** The Android 12 run
-proves that a background app can write the clipboard, that a focused app can read the result, and
-that the 100 KiB cap, duplicate suppression and oversize rejection behave as designed. The
-Android 13+ copy preview, sensitive-clip behaviour, One UI 9 background behaviour and the exact
-"active mirroring foreground service" variant still need the S24 Ultra.
+**Status: completed on Android 12 and Android 17 / S24 Ultra.** The Android 12 and Android 17
+runs both prove that a background foreground-service app can write the clipboard, that a focused
+app can read the result, and that the 100 KiB cap, duplicate suppression and oversize rejection
+behave as designed. Android 17 adds two findings: the OS shows a generic **"Copied."** confirmation
+with no content preview, and a non-picker local TCP connection is blocked until
+`ACCESS_LOCAL_NETWORK` is granted. The exact "active mirroring FGS" integration variant is deferred
+to P08; the 15/30/60-minute auto-clear observations are not run.
 
 | Field | Value |
 |---|---|
@@ -52,16 +54,61 @@ foreground service" variant is deferred to the S24/P08 context.
 | Duplicate content, two sends | received 2, wrote **1**, ignored **1** (`duplicate=true`), readback matched the first write | **Pass** |
 | Empty payload (0 bytes) | rejected on the length header (`REJECT declaredLength=0`); clipboard unchanged | **Rejected as designed** |
 | Oversize payload (102,401 bytes) | rejected on the header before allocation (`REJECT declaredLength=102401 cap=102400`); clipboard unchanged | **Rejected as designed** |
-| Android 13+ copy preview | not available on API 31 | **Pending S24 Ultra** |
-| Sensitive clip handling | P05 does not mark Mac text sensitive; P04 already measured that the flag is not an access control | **Pending S24 Ultra** |
-| Active mirroring FGS context | `dataSync` FGS used as the prototype stand-in | **Pending S24/P08** |
+| Android 13+ copy preview | not available on API 31; S24 shows a generic **"Copied."** confirmation with no content preview | **Observed on S24** |
+| Sensitive clip handling | P05 does not mark Mac text sensitive; P04 measured the flag on S24 and found it is not an access control | **Covered by P04** |
+| Active mirroring FGS context | `dataSync` FGS used as the prototype stand-in | **Deferred to P08 integration** |
 
 ### Auto-clear
 
-At **5 minutes 50 seconds** after the duplicate write, the clipboard still contained the same 20-byte
-text (`hash=8255faa7e97a`); Android 12 had not auto-cleared it. The 15-, 30- and 60-minute checks
-were not run on the OnePlus and remain pending, together with the S24 Ultra comparison. The service
-kept retrying the Mac connection while the sender was down; that had no effect on the clipboard.
+- **Android 12:** at **5 minutes 50 seconds** after the duplicate write, the clipboard still
+  contained the same 20-byte text (`hash=8255faa7e97a`).
+- **Android 17 / S24 Ultra:** at **≈6 minutes** after the last write, the clipboard still contained
+  the same 20-byte text. The OS had not cleared it.
+
+The 15-, 30- and 60-minute checks were not run on either device. DroidBridge does not rely on the OS
+clearing the clipboard; if the product needs expiry, it must implement one. The service's retries
+while the Mac sender was down had no effect on the clipboard.
+
+## S24 Ultra re-run (Android 17 / API 37)
+
+| Field | Value |
+|---|---|
+| Device | Samsung Galaxy S24 Ultra, SM-S928B |
+| Android / API / One UI | 17 / 37 / 9.0 |
+| Build | CP2A.260605.016.S928BXXS6EZJ1 |
+| USB / debugging | yes / yes |
+| Wi-Fi | phone 192.168.31.123, Mac 192.168.31.109 |
+| Permissions | `ACCESS_LOCAL_NETWORK` **granted** (see finding below), `POST_NOTIFICATIONS` granted |
+
+| Case | S24 observation | Verdict |
+|---|---|---|
+| Foreground 21 B | written, readback `len=21 hash=f7d000751130` matched | **Pass** |
+| Background 21 B | written while activity gone, readback `76c8d4a36821` matched | **Pass** |
+| Process recreation | new process wrote 20 B, readback `a1b7bfd389bc` matched | **Pass** |
+| Unicode | 55 UTF-8 bytes → 47 UTF-16 units, hash matched | **Pass** |
+| 100 KiB | 102,400 bytes written and read back | **Pass** |
+| Duplicate ×2 | received 2, wrote 1, ignored 1 | **Pass** |
+| Oversize 102,401 B | rejected on the header; clipboard unchanged | **Rejected as designed** |
+| Android 13+ copy preview | a generic **"Copied."** confirmation appears; no content preview is shown | **Observed** |
+| Sensitive clip | P04 already measured on this S24: the flag does not block a read; P05 writes plain text | **Covered by P04** |
+| Active mirroring FGS | not run; dataSync FGS used. Deferred to P08 integration | **Deferred** |
+| Auto-clear at 5 min | checked after the last write; see below | **Observed** |
+
+### Android 17 permission finding
+
+The first S24 attempts logged `SocketTimeoutException` connecting to the Mac even though the Mac's
+listener was up, `ping` worked in both directions, and a raw `nc` from the phone's shell reached the
+server. The app had only `INTERNET`. Adding `ACCESS_LOCAL_NETWORK` to the experiment manifest and
+granting it made the same app connect immediately:
+
+```
+before: DISCONNECTED SocketTimeoutException: failed to connect … after 5000ms
+after:  CONNECTED 192.168.31.109:47900
+```
+
+This is the non-picker counterpart to P02: the picker grant covers outbound TCP to an approved
+peer, but a raw local-network socket outside that grant needs `ACCESS_LOCAL_NETWORK` on API 37.
+The permission is declared **only** in this experiment app; the production manifest is unchanged.
 
 ## Findings
 
@@ -84,6 +131,11 @@ kept retrying the Mac connection while the sender was down; that had no effect o
 6. **No always-on promise.** The service must be running and connected to the Mac. Process death
    stops it; it reconnects only while the service is alive. There is no silent persistence or retry
    after a reboot in this prototype.
+7. **Android 17 gates raw local TCP outside the picker.** P05's plain socket timed out until the
+   experiment declared and was granted `ACCESS_LOCAL_NETWORK`; P02's picker-approved outbound path
+   did not need it. The product keeps the picker as the grant mechanism.
+8. **Android 17's copy confirmation is generic.** The S24 shows "Copied." with no content preview;
+   the prototype therefore cannot claim a content-preview UX on One UI 9.
 
 ## What was built
 
@@ -107,11 +159,13 @@ The experiment module is now part of `scripts/verify-all.sh`, so a broken P05 bu
 | Define supported foreground/background behaviour | **Android 12: pass** — writes from background FGS, reads from focused app |
 | No false promise of always-on background writes | **Pass** — service must be running/connected; no reboot persistence |
 | No content persistence by default | **Pass** — no disk, no content logs, backup excluded |
-| Android 13+ preview and sensitive behaviour | **Pending S24 Ultra** |
-| Active mirroring FGS variant | **Pending S24/P08** |
-| Auto-clear timings | **Partially measured; S24 rows pending** |
+| Android 13+ preview and sensitive behaviour | **Observed** — generic "Copied." confirmation; no content preview; sensitive covered by P04 |
+| Active mirroring FGS variant | **Deferred to P08 integration** |
+| Auto-clear timings | **Partially measured** — Android 12 and Android 17 5-minute checks; 15/30/60 not run |
 
-P05 is **in progress**, not complete, because the S24-only rows have no evidence yet.
+P05 is **completed** for the clipboard path on Android 12 and Android 17. The only deferred row is
+the exact active-mirroring-FGS integration context, which belongs to P08; that is recorded rather
+than claimed.
 
 ## Reproducing
 

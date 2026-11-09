@@ -10,6 +10,12 @@
       S24 Ultra / P08 context.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      P05 bypasses the NSD picker and dials the Mac's test sender directly, so on Android 17 it
+      needs the local-network permission that the picker path would otherwise grant. This is a
+      prototype-only transport choice; the product path uses P02's picker grant.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

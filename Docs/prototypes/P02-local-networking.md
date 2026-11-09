@@ -291,6 +291,11 @@ mechanism. Do not rely on `ACCESS_LOCAL_NETWORK` as the only security boundary, 
 that revoking it takes effect for a running process. Advertising and listening need it; the
 picker path does not.
 
+**Cross-check from P05:** a raw local TCP socket to the Mac, outside the picker grant, timed out on
+the S24 Ultra until the P05 experiment declared and was granted `ACCESS_LOCAL_NETWORK`. The
+picker-approved outbound path did not need it. That confirms the permission gates non-picker local
+traffic while the picker grant covers the product's approved peer.
+
 ## F — network environment
 
 Performed: airplane-mode loss/recovery, transient Wi-Fi toggle, same-subnet verification, Mac
