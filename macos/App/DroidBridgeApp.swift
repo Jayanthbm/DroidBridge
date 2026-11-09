@@ -17,7 +17,9 @@ struct DroidBridgeApp: App {
         // This is a prototype affordance, not a product feature: it exists so the P03 acceptance
         // criteria can be measured by a script instead of by tapping buttons.
         let arguments = Array(CommandLine.arguments.dropFirst())
-        if arguments.contains("--listen") || arguments.contains("--identity") {
+        if arguments.contains("--listen")
+            || arguments.contains("--pair")
+            || arguments.contains("--identity") {
             exit(P03Harness.run(arguments))
         }
     }
