@@ -3,7 +3,7 @@
 **Date:** 2026-11-09
 **Owner:** Local Development Agent
 **Phase:** 0 (repository and environment)
-**Status:** Complete for the host and the available test device. The S24 Ultra baseline is **pending** — that device was not attached during this pass.
+**Status:** Complete for the host and **both** devices. The S24 Ultra baseline is now measured (section 5.2); the OnePlus Nord CE remains recorded separately as a temporary-device baseline (section 5.1).
 
 Regenerate this report with `scripts/env-baseline.sh` rather than editing the numbers by hand.
 
@@ -98,15 +98,66 @@ privileged or hidden APIs, and nothing in the app depends on root. The unlocked 
 recorded because it affects how much a security result can be trusted on this device, not because
 it was used.
 
-### 5.2 Samsung Galaxy S24 Ultra (target device) — PENDING
+### 5.2 Samsung Galaxy S24 Ultra (target device) — MEASURED
 
-Not attached during this pass, so nothing here is measured. The owner reports Android 17 /
-One UI 9, India region. `PROTOTYPE_PLAN.md` P00 asks specifically for `Build.VERSION.SDK_INT`,
-`Build.VERSION.RELEASE`, the One UI version and whether the device exposes the Android 17
-local-network prompt wording. All four remain **unverified**.
+Attached and measured on 2026-11-09. Every value below came from the device via `getprop` or
+`dumpsys`, not from the owner's report.
 
-Consequence: every result in this repository is an Android 12 / API 31 result on a OnePlus Nord CE.
-No Android 17 or Samsung behaviour is claimed anywhere.
+| Item | Value |
+|---|---|
+| Manufacturer | samsung |
+| Model | **SM-S928B** |
+| Device codename | `e3q` |
+| Android release | **17** |
+| API level (`SDK_INT`) | **37** |
+| One UI | **9.0** (`ro.build.version.oneui=90000`) |
+| Build | `CP2A.260605.016.S928BXXS6EZJ1` |
+| Incremental | `S928BXXS6EZJ1` |
+| Security patch | **2026-10-05** |
+| Build type | `user` |
+| Verified boot state | **`green`** (locked, unmodified) |
+| Physical screen | 1080x2340, density 450 (override 480) |
+| Wi-Fi | `wlan0` 192.168.31.246/24 |
+| Bluetooth | on (not used by any prototype yet) |
+| USB connected | yes |
+| USB debugging enabled | **yes** (development only) |
+| Wireless debugging enabled | **no** |
+
+The owner-reported Android 17 / API 37 / One UI 9 are all **confirmed**. The bootloader is `green`
+and the build type is `user`, so this is a stock retail device — no root, no unlocked bootloader, and
+nothing in this session changed that.
+
+#### API 37 platform APIs, verified against the physical device
+
+P00 asks specifically whether the Android 17 local-network APIs exist on the target. They do:
+
+| Check | Result |
+|---|---|
+| `android.net.nsd.DiscoveryRequest` in the API 37 platform jar | present, with `FLAG_SHOW_PICKER`, `FLAG_NO_PICKER`, `FLAG_USER_APPROVED_ONLY` |
+| `NsdManager.discoverServices(DiscoveryRequest, Executor, DiscoveryListener)` | present |
+| `NsdManager.registerService(AdvertisingRequest, Executor, RegistrationListener)` | present |
+| `android.permission.ACCESS_LOCAL_NETWORK` declared by the platform | present ("access local network devices") |
+| NSD system service | `servicediscovery: [android.net.nsd.INsdManager]` — found |
+| **The picker actually appears at runtime** | **yes** — `com.google.android.connectivity.resources/.NsdPickerActivity` |
+
+The last row is the one that matters. The class existing in the SDK stub proves nothing about the
+device; the picker appearing proves the device implements it. See `P02-local-networking.md`.
+
+#### The Android 17 local-network prompt wording
+
+P00 asked for this specifically, and it is now recorded verbatim:
+
+> **Choose a device to connect**
+> P02 discovery wants to connect to a device on your local network
+> *[list of discovered peers]*
+> Don't connect
+
+The prompt names the requesting app and states the scope ("a device on your local network"). It is
+the OS's own activity, not app-drawn UI, so an app cannot fake or skip it.
+
+Consequence, replacing the previous "every result is Android 12" statement: results are now split by
+device. P01 and P04 have Android 12 **and** Android 17 results; P02 is Android 17 only, because the
+API does not exist below 37. Each report states which device produced which figure.
 
 ## 6. What was actually built and run
 

@@ -1,15 +1,21 @@
 # Local Development Progress
 
-**Status:** Phase 0 complete. Both native shells exist and build from a clean checkout: `android/` (Kotlin + Compose, 10 Gradle modules) and `macos/` (Swift + SwiftUI, sandboxed, xcodegen-generated). The Android shell installs, launches and stays resumed on the OnePlus Nord CE (Android 12 / API 31) with no crash and no ANR. No feature code exists and no feasibility prototype has been run yet.
+**Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified; P03's protocol
+layer verified, live session next.
 **Last updated:** 2026-11-09
-**Current gate:** Phase 0 exit criteria met (see `Docs/prototypes/PHASE0-repository-and-environment.md`). Phase 1 (prototypes P00–P15) is next; P00's host/device baseline is done, P01 is the first prototype proper.
+**Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. P01 and P04
+verified on both the OnePlus (Android 12) and the S24 Ultra (Android 17). **P02 is now verified on
+the target device** — the picker path works, which was the last thing blocking P03's live session.
 
 ## Device and environment
 
-- Android device: Samsung Galaxy S24 Ultra.
-- Region: India.
-- Android: 17 (owner-reported; API level 37 assumed and supported by current Google documentation — **not yet verified on the device**).
-- One UI: 9 (owner-reported, not yet verified).
+- Primary target device: Samsung Galaxy S24 Ultra, model **SM-S928B** (device `e3q`), region India.
+- Android: **17, API 37** — verified on the device via `getprop`, not owner-reported.
+- One UI: **9.0** (`ro.build.version.oneui=90000`) — verified on the device.
+- Build: `CP2A.260605.016.S928BXXS6EZJ1` (`S928BXXS6EZJ1`), security patch **2026-10-05**,
+  `ro.build.type=user`, `ro.boot.verifiedbootstate=green`.
+- `android.permission.ACCESS_LOCAL_NETWORK` is present on the device and the NSD service
+  (`android.net.nsd.INsdManager`) is live, so the API 37 discovery path is testable here.
 - Mac: MacBook Air (M1, 2020), 8 GB, macOS 27.0.1 (26A434), arm64.
 - Xcode 27.2 (27B52), Swift 6.4.2, macOS SDK 27.2, xcodegen 2.46.0.
 - JDK: Zulu 17.0.21 on PATH (build daemon runs JDK 27 from Homebrew); Gradle 9.8.2; AGP 9.5.1.
@@ -267,3 +273,55 @@ Three findings that change the product:
   be DroidBridge's own, keyed on content hash and origin ID.
 
 The Android-to-Mac user story wording is now written from observation and recorded in the report.
+
+## S24 Ultra session — 2026-11-09
+
+The target device was attached. Everything below is measured on the device, not reported.
+
+### Device baseline (P00) — complete
+
+**SM-S928B** (`e3q`), Android **17**, API **37**, One UI **9.0**, build
+`CP2A.260605.016.S928BXXS6EZJ1`, security patch 2026-10-05, `ro.build.type=user`,
+`ro.boot.verifiedbootstate=green`. USB connected, USB debugging on, wireless debugging off. The
+owner-reported specs were all confirmed rather than assumed.
+
+### P02 — VERIFIED on the target device
+
+This was the prototype that could not run on the OnePlus, because `DiscoveryRequest` only exists from
+API 37.
+
+- `ACCESS_LOCAL_NETWORK` requested and **granted**.
+- `DiscoveryRequest` with `FLAG_SHOW_PICKER` → the **system picker appears**
+  (`com.google.android.connectivity.resources/.NsdPickerActivity`), titled "Choose a device to
+  connect", listing discovered peers.
+- Selecting a peer → `onServiceFound` with `host=null port=0`, then `resolveService` →
+  `host=192.168.31.109 port=47999`.
+- TCP connect from the phone → the Mac app logged `connection ready`.
+- **Duplex echo verified**: 26 bytes sent, echoed verbatim, received back.
+- `FLAG_USER_APPROVED_ONLY` → found the same peer **with no picker**, after a single approval. That
+  is the flag that makes silent reconnect possible.
+
+**Correction to a previous conclusion:** the earlier session recorded that Bonjour and inbound
+connections were blocked at the host level by Little Snitch. That was wrong. With no change to Little
+Snitch, the firewall, or any VPN, the phone connected to a plain Python listener, to the real
+`DroidBridge.app` listener, and completed a duplex echo. The Mac was never blocked. The previous
+diagnosis was an inference from a failing test rather than a measurement of the host, and it sent
+that session chasing a security control that was not in the way.
+
+**Open question, recorded honestly:** after `pm revoke`, `ACCESS_LOCAL_NETWORK` reads `granted=false`
+while discovery, the picker, resolve and approved-only all still work. A fresh install that had never
+been approved found nothing. So the picker grant appears to be the real gate and the permission's
+enforcement could not be demonstrated on this build. DroidBridge must keep the picker as its consent
+mechanism regardless, and must not treat the permission as a security boundary until this is settled.
+
+### P04 — re-run on Android 17
+
+The full matrix re-ran and is **unchanged from Android 12**: focused read works, empty/image/long/
+duplicate behave identically, and the unfocused read still returns `hasPrimaryClip=false`. The
+sensitive row is now the stronger result it could not be on API 31 — the flag is a real API-33+ extra
+here, and the clip was still read in full with `sensitive=true`. **The flag is a preview hint, not an
+access control.**
+
+The unfocused row was measured with a new **delayed read** (schedule a read, switch away, read fires
+with another app in front) instead of the exported receiver, which is both a better test of the real
+product path and does not require weakening the receiver's signature guard.

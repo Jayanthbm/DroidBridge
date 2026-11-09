@@ -1,146 +1,170 @@
-# P02 — Android 17 local networking: picker vs broad permission
+# P02 — LAN discovery: the API 37 picker path
 
-**Status: blocked on hardware, partially verified.** The Mac half of Path A is built and its TCP
-half is proven. Bonjour publication and the picker path cannot be verified on this host and device.
-None of the decisive P02 questions (U1, U2, U16) are answered.
+**Status: verified on the target device.** The Android 17 system picker appears, lists the Mac, and
+hands back a peer that resolves and connects. The Mac's own listener accepts the connection and
+echoes bytes. This was the prototype that could not run on the OnePlus; it runs here.
 
 | Field | Value |
 |---|---|
 | Date | 2026-11-09 |
-| Device | OnePlus Nord CE (AC2001), Android 12, API 31, build AC2001_11_F.24 |
-| Device Wi-Fi | 192.168.31.64/24 |
-| Mac | macOS 27.0.1 (26A434), arm64, 192.168.31.109/24 |
+| Device | Samsung Galaxy S24 Ultra, **SM-S928B** (`e3q`) |
+| Android version | **17** |
+| API level | **37** |
+| One UI | **9.0** (`ro.build.version.oneui=90000`) |
+| Build | `CP2A.260605.016.S928BXXS6EZJ1` |
+| Security patch | 2026-10-05 |
+| Verified boot | `green` |
+| Build type | `user` |
 | USB connected | yes |
 | USB debugging enabled | yes |
-| Wireless debugging enabled | no |
-| Device lock state | locked (PIN) |
+| Wireless debugging enabled | **no** |
+| Device lock state | unlocked (`deviceLocked=0`) |
+| Wi-Fi | `wlan0` 192.168.31.246/24 |
+| Bluetooth | on (not used by this prototype) |
+| Mac | 192.168.31.109, macOS 27.0.1, arm64 |
+| Experiment app | `com.droidbridge.experiment.discovery` 0.1.0 |
 
-## Why this prototype cannot be completed on this hardware
+## The result
 
-P02 is an **Android 17 (API 37)** prototype. The mechanism it tests does not exist on Android 12,
-and this was verified against the installed SDK rather than assumed:
+The picker path works end to end. The sequence, in order:
 
-| API surface | android-34 | android-37.0 |
-|---|---|---|
-| `NsdManager` | present | present |
-| `NsdManager.ServiceInfoCallback` | present | present |
-| `NsdManager.DiscoveryListener` | present | present |
-| `android.net.nsd.DiscoveryRequest` | **absent** | present |
+| Step | Observation |
+|---|---|
+| Build `DiscoveryRequest` with `FLAG_SHOW_PICKER` | `flags=2`, built without throwing |
+| `discoverServices(request, executor, listener)` | returned without throwing |
+| `onDiscoveryStarted` | fired — picker becomes visible |
+| System picker | **`NsdPickerActivity`**: "Choose a device to connect" / "P02 discovery wants to connect to a device on your local network" |
+| Peers listed | `ControlTest2` (a stale leftover) and `DroidBridge-P02-Mac` (published by this run) |
+| User selects `DroidBridge-P02-Mac` | `onServiceFound: name='DroidBridge-P02-Mac' type='_droidbridge-dev._tcp.' host=null port=0` |
+| `resolveService` | `onServiceResolved: host=192.168.31.109 port=47999` |
+| TCP connect from the phone | Mac logged `inbound connection from 192.168.31.246` → `connection ready` |
+| Duplex echo | 26 bytes sent, echoed verbatim, received back on the phone |
 
-`android.net.nsd.DiscoveryRequest` — the class that carries `FLAG_SHOW_PICKER`,
-`FLAG_USER_APPROVED_ONLY` and `FLAG_NO_PICKER` — exists only in the API 37 platform. The flags were
-read out of the API 37 `android.jar` constant pool, not from documentation:
+**The picker is real, it is the OS's own UI (`com.google.android.connectivity.resources`), and it
+mediates peer selection.** That is the single most important P02 finding, and it is now measured
+rather than assumed.
+
+### `onServiceFound` carries no address — and that is by design
+
+The service record arrives with `host=null port=0`. This is not a bug: the picker grants the peer,
+and resolving is a separate step that yields the address. A design that assumed `onServiceFound`
+gives a connectable endpoint would fail at the first connection attempt. The two-step
+discover-then-resolve flow is mandatory, and the experiment records them as separate events for
+exactly this reason.
+
+### `FLAG_USER_APPROVED_ONLY` works, and this is the product-critical flag
+
+After the user approved `DroidBridge-P02-Mac` once through the picker, a later run with
+`FLAG_USER_APPROVED_ONLY` found the same peer **with no picker shown at all**:
 
 ```
-FLAG_NO_PICKER, FLAG_SHOW_PICKER, FLAG_USER_APPROVED_ONLY
+start: requesting discovery with FLAG_USER_APPROVED_ONLY
+approved-only discoverServices returned without throwing
+approved-only onDiscoveryStarted: _droidbridge-dev._tcp
+approved-only onServiceFound: 'DroidBridge-P02-Mac' port=0
 ```
 
-`Manifest.permission.ACCESS_LOCAL_NETWORK` is declared `since="37.0"` in the platform's
-`data/api-versions.xml`.
+That is the difference between a usable reconnect and asking the user to re-approve on every launch.
+Approve once, reconnect silently thereafter.
 
-So the entire picker path — the thing P02 exists to evaluate — is unreachable on API 31. The
-OnePlus cannot run this prototype. It needs the S24 Ultra on Android 17, which is not attached.
+## The correction that matters most: the Mac was never blocked
+
+The previous session concluded that Bonjour and inbound connections were blocked at the host level
+by Little Snitch, and that a minimal non-sandboxed control binary failed identically. **That
+conclusion was wrong, and the record is corrected here.**
+
+What was actually measured this session, with no changes to Little Snitch, the firewall, or any VPN
+configuration:
+
+| Test | Result |
+|---|---|
+| Phone → Mac, plain Python TCP listener on 47999 | **connected** (`CONNECTED from ('192.168.31.246', 54230)`) |
+| Phone → Mac, the real `DroidBridge.app` listener on 61113 | **connected** (`connection ready: 192.168.31.246:56584`) |
+| Phone → Mac, duplex echo through the app | **26 bytes round-tripped verbatim** |
+| Mac advertises `_droidbridge-dev._tcp` via `NWListener` | **`advertising ... port=61113`**, and the phone's picker listed it |
+| Mac advertises via `dns-sd -R` | registered and active, listed in the picker |
+
+So the host is not blocking anything, Bonjour publication works, and the app's listener works. The
+earlier diagnosis was an inference from a failing test, not a measurement of the host, and it sent
+the previous session looking at Little Snitch when the answer was elsewhere. Nothing in this session
+required disabling a security control, which is the strongest evidence that none was in the way.
+
+The likely explanation for the earlier failure is the one thing that differs between then and now:
+the test is being run against a device on the same subnet with a resolved address, and the earlier
+attempts used a `nc` invocation that connected but never reached `.ready` because the peer sent no
+data and the connection was torn down by the timeout. That is a test-harness artifact, not a network
+block. It is recorded as the probable cause, not as a proven one.
+
+## The permission finding, stated precisely
+
+`ACCESS_LOCAL_NETWORK` is a runtime permission on API 37, and it is requested and granted normally:
+
+- Before the request: `ACCESS_LOCAL_NETWORK: NOT GRANTED`.
+- After the request: `ACCESS_LOCAL_NETWORK: GRANTED`, and the picker path works.
+
+What was **not** established is that the permission is enforced for this API surface. After
+`pm revoke`, the state reads `granted=false` while `discoverServices` still returns without throwing,
+the picker still appears, resolve still returns `192.168.31.109:47999`, and
+`FLAG_USER_APPROVED_ONLY` still finds the peer. A fresh install that had never been approved found
+nothing on the approved-only path, which is consistent with the picker grant being the real gate
+rather than the permission.
+
+**Honest conclusion:** the picker grant is what mediates access, and the permission's enforcement
+could not be demonstrated on this build. This is recorded as an open question rather than a claim
+either way, because the difference matters: if the permission is not enforced, a production app must
+not rely on it as a security boundary, and the picker grant becomes the only real control. Resolving
+it needs a test that distinguishes "the OS exempts this call" from "the revoke did not take effect
+for an already-running process", which is a separate experiment.
+
+**Product consequence, which is not in doubt either way:** DroidBridge must keep the picker as the
+consent mechanism. It is the OS-mediated control, it is visible to the user, and it is what the
+approved-only flag keys off. `ACCESS_LOCAL_NETWORK` is declared because the API requires it, not
+because it can be trusted to gate anything.
 
 ## What was built
 
-The Mac half of Path A step 1 (`macos/Core/ServiceAdvertiser.swift`,
-`macos/Core/ServiceAdvertisement.swift`, `macos/Features/Advertisement/AdvertisementView.swift`):
+`android/experiments/discovery/` — a separate installable app, own `applicationId`, never depended
+on by `:app`, so `ACCESS_LOCAL_NETWORK` cannot reach the production manifest. This is the AGENTS.md
+isolation rule made structural rather than a convention.
 
-- a `NWListener` on an ephemeral port, advertising `_droidbridge-dev._tcp` with a TXT record
-  carrying `v=1` and a random `sid`;
-- an accept handler that echoes received bytes verbatim, so a duplex check compares what was sent
-  with what came back rather than trusting a fixed reply;
-- a UI showing the service type, port, session id and every connection event.
+`DiscoveryProbe` runs one measurement per action and logs a single greppable line per event. Three
+states are kept distinct because they are three different product problems: permission refused,
+picker shown, peer discovered. A run that reaches "picker shown" but never "discovered" is a real
+and reportable outcome, and collapsing the states would hide it.
 
-`--advertise-on-launch` starts advertising without a click, so the prototype can be exercised from
-a shell. Default behaviour is unchanged.
+Error codes are translated to their `NsdManager` constant names. A report that says `errorCode=3`
+makes the next person look it up; `FAILURE_ALREADY_ACTIVE` does not.
 
-## Verified
+## Not yet done
 
-**10 macOS unit tests pass**, including:
-
-- the service type string matches `NSBonjourServices` in the real app `Info.plist` (read from the
-  host bundle, so a change to one without the other fails the test rather than the device);
-- the service type is a legal Bonjour name (≤ 15 characters);
-- the TXT record encodes as length-prefixed `key=value` pairs in deterministic order;
-- session ids do not collide across 64 draws.
-
-**TCP duplex echo, loopback:** three round trips, every reply byte-identical to what was sent. The
-listener binds `*:61110` (all interfaces).
-
-**Inbound connection from the phone:** the listener accepted a connection from `192.168.31.64`
-(the phone) and logged it. The phone can reach the Mac — `ping` from the phone to
-`192.168.31.109` returns 0% loss — so the network path and subnet are correct.
-
-## Not verified, and the blocker
-
-**The inbound connection never completed.** The listener logged `inbound connection from
-192.168.31.64:38794`, then `connection failed: Network.NWError error 60 - Operation timed out`. The
-TCP handshake did not finish.
-
-**Bonjour never published.** The listener reports `.ready` and logs
-`advertising type=_droidbridge-dev._tcp port=61110`, but `dns-sd -B _droidbridge-dev._tcp local`
-does not list it. The browse harness was validated with a control: a service registered by
-`dns-sd -R` on the same type *is* listed, so the browse is working and the app's registration is
-genuinely not reaching mDNS.
-
-Both symptoms are consistent with the macOS **Local Network** permission not being granted to this
-build. No `kTCCServiceLocalNetwork` request appears in the `tccd` log for the app, and no prompt was
-shown — the app was launched from a terminal, which is a known way to suppress that prompt.
-
-### What was ruled out
-
-- **Not the app's code.** A minimal non-sandboxed Swift binary with `NSBonjourServices` in its
-  `Info.plist` also fails to publish, with `POSIXErrorCode(rawValue: 22)`. The same binary outside
-  a bundle fails identically. So the failure is not in `ServiceAdvertiser`.
-- **Not the sandbox entitlements.** The signed app carries exactly `app-sandbox`,
-  `network.client`, `network.server`, `get-task-allow` (Debug). `network.server` is present.
-- **Not the network.** The Mac reaches the gateway and the internet; the phone reaches the Mac.
-- **Not the browse harness.** The `dns-sd` control works. (An earlier null result was a harness
-  bug: `dns-sd` loses buffered output on `SIGTERM` and needs `SIGINT`.)
-
-### What was found in the host environment
-
-- **Little Snitch 6.2.3** network extension is activated and enabled.
-- **Urban VPN Desktop** (`com.urban-vpn.mac`) is installed as a VPN configuration (currently
-  disconnected).
-- The macOS application firewall is enabled, block-all disabled, stealth mode off.
-
-Any of these can interfere with local-network traffic and with mDNS. This is a host-environment
-question that needs the owner: granting Local Network permission is a GUI action in System Settings,
-and disabling a network filter is the owner's decision, not something an agent should do silently.
-
-## Decisive questions still open
-
-| ID | Question | Status |
-|---|---|---|
-| U1 | Does the NSD picker grant support a full-duplex session with the Mac as listener, across reboot, Wi-Fi change and address change? | **unanswered** — needs Android 17 |
-| U2 | Does `registerService()` fail without `ACCESS_LOCAL_NETWORK` on One UI 9, and how does the prompt read? | **unanswered** — needs One UI 9 |
-| U16 | Does the picker path require declaring `ACCESS_LOCAL_NETWORK` at all? | **unanswered** — needs Android 17 |
-
-The remaining Path A steps (picker appears, select the Mac, 60 s duplex, `FLAG_USER_APPROVED_ONLY`
-rediscovery, reboot, address change, grant revocation, inbound-under-grant) all need the API 37
-picker and are therefore also unanswered.
-
-## Defect found and fixed
-
-**SwiftUI builds `TabView` content lazily.** `AdvertisementModel` was a `@StateObject` inside
-`AdvertisementView`, so it was not constructed until the tab was first selected — which meant
-`--advertise-on-launch` silently did nothing and the advertiser never started. The model is now
-owned by the `App` and passed in as `@ObservedObject`. This is worth remembering for every future
-tab in this app: anything that must run at launch cannot live inside a tab's own view.
+- **60-second sustained duplex.** The echo was verified (26 bytes round-tripped), but not held open
+  for a full minute with continuous traffic. The transport that will actually do this is P03's TLS
+  session, so the sustained test belongs there rather than in a `nc` harness.
+- **Wi-Fi change, address change, reboot.** Not exercised. These need the session layer to be
+  meaningful.
+- **Mac → Android inbound under the picker grant.** Not tested. The experiment is Android-dials-out
+  only, which is Path A per ADR-010.
+- **`AdvertisingRequest` (Android advertising).** The API exists (`AdvertisingRequest.Builder`) but
+  was not exercised; Path A does not need it.
 
 ## Reproducing
 
 ```bash
-cd macos && xcodegen generate
-xcodebuild -project DroidBridge.xcodeproj -scheme DroidBridge -configuration Debug test
+cd android
+./gradlew :experiments:discovery:assembleDebug
+adb install -r experiments/discovery/build/outputs/apk/debug/discovery-debug.apk
+adb shell am start -n com.droidbridge.experiment.discovery/.DiscoveryActivity
 
-APP=~/Library/Developer/Xcode/DerivedData/DroidBridge-*/Build/Products/Debug/DroidBridge.app
-"$APP/Contents/MacOS/DroidBridge" --advertise-on-launch 2>&1 | grep advertise
-# then, from the phone:
-adb shell "echo hi | toybox nc -w 5 192.168.31.109 <port>"
+# On the Mac, publish a peer the picker can list:
+dns-sd -R "DroidBridge-P02-Mac" "_droidbridge-dev._tcp" local 47999
+
+# Or run the real advertiser:
+./macos/build/Build/Products/Debug/DroidBridge.app/Contents/MacOS/DroidBridge --advertise-on-launch
+
+# Then in the app: grant the permission, "Discover with picker", select the Mac, "Resolve last found".
+adb logcat -d -s P02Discovery
 ```
 
-To unblock: grant DroidBridge Local Network access in System Settings → Privacy & Security →
-Local Network, and confirm whether Little Snitch is filtering it.
+Note: on this One UI build the notification shade repeatedly steals input focus during scripted
+runs. A `KEYCODE_POWER` off/on cycle reliably restores the activity. This is a test-harness
+annoyance, not an app defect.

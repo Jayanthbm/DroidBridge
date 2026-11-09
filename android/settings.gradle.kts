@@ -49,3 +49,4 @@ include(":feature:settings")
 // production manifest (AGENTS.md: keep experimental code out of production paths).
 include(":experiments:media-projection")
 include(":experiments:clipboard")
+include(":experiments:discovery")

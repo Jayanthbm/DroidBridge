@@ -1,9 +1,12 @@
 # P01 — Android MediaProjection capture
 
-**Status: verified on the real device.** Both halves ran: the encoder is measured, and the full
-capture pipeline produced real H.264 output. The capture half
-is implemented and unit-tested but **not yet run**, because the consent dialog cannot be driven on
-a locked device. Nothing in this report claims a live capture session succeeded.
+**Status: verified on the OnePlus (Android 12).** Both halves ran: the encoder is measured, and the
+full capture pipeline produced real H.264 output — 124 frames, 359,092 bytes, 3 keyframes, with real
+SPS/PPS. The earlier "capture not run" state was resolved when the device was unlocked; the run and
+its measurements are recorded below under "Measured: the capture pipeline".
+
+**S24 Ultra re-run: pending.** Every figure in this report is an Android 12 / API 31 result. Nothing
+here is an S24 Ultra result, and none of it has been re-verified on Android 17 / One UI 9.
 
 | Field | Value |
 |---|---|
@@ -16,7 +19,7 @@ a locked device. Nothing in this report claims a live capture session succeeded.
 | USB connected | yes |
 | USB debugging enabled | yes |
 | Wireless debugging enabled | no |
-| Device lock state | **locked (PIN), keyguard holds focus** |
+| Device lock state | unlocked during the capture run (`deviceLocked=0`) |
 | Host | macOS 27.0.1 (26A434), arm64 |
 | Experiment app | `com.droidbridge.experiment.mediaprojection` 0.1.0 (versionCode 1) |
 

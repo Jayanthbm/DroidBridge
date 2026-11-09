@@ -1,8 +1,8 @@
 # P04 — Clipboard Android → Mac
 
-**Status: matrix complete on Android 12.** Every row was observed on the device, including the
-decisive negative: with another app in front, the read returns nothing. The focus gate is measured,
-not assumed.
+**Status: matrix complete on Android 12 and re-run on the S24 Ultra (Android 17 / API 37).** Every
+row was observed on both devices, including the decisive negative: with another app in front, the
+read returns nothing. The focus gate is measured, not assumed, on both OS versions.
 
 | Field | Value |
 |---|---|
@@ -128,3 +128,64 @@ The first version of the log line interpolated clipboard content raw. A newline 
 have split one observation across two lines and corrupted the evidence log — and clipboard content
 routinely contains newlines. The unit test caught it; the preview is now escaped (`\n`, `\r`, `\t`,
 quotes, backslashes, control characters as `\uXXXX`).
+
+---
+
+# S24 Ultra re-run — Android 17 / API 37 (2026-11-09)
+
+| Field | Value |
+|---|---|
+| Device | Samsung Galaxy S24 Ultra, SM-S928B (`e3q`) |
+| Android | 17, API 37, One UI 9.0 |
+| Build | `CP2A.260605.016.S928BXXS6EZJ1` |
+| USB connected | yes |
+| USB debugging enabled | yes |
+| Wireless debugging enabled | no |
+| Device lock state | unlocked |
+
+## Results, and how they differ from Android 12
+
+| Case | Android 12 (API 31) | Android 17 (API 37) | Difference |
+|---|---|---|---|
+| Focused read | works, 22 bytes | works, 22 bytes | none |
+| Empty clipboard | `hasPrimaryClip=false` | `hasPrimaryClip=false` | none |
+| Image only | `mimes=[image/png]`, `textLen=0`, `hasImage=true` | identical | none |
+| Sensitive flag | readable, `sensitive=true` | readable, `sensitive=true`, `textLen=16` | none |
+| 100 KB text | returned complete | returned complete, `textLen=102400` | none |
+| Duplicate content | returned twice | returned twice | none |
+| **Unfocused read** | `hasPrimaryClip=false` | **`hasPrimaryClip=false`** | none |
+
+**The matrix is unchanged across six API levels.** That is a useful result in itself: the clipboard
+contract DroidBridge is built on did not shift between Android 12 and Android 17, so the P04 findings
+carry forward without revision.
+
+The sensitive row is now the stronger result it could not be on the OnePlus. There,
+`EXTRA_IS_SENSITIVE` did not exist on API 31 and the probe set the extra by its literal key. Here the
+flag is a real API-33+ extra, the clip was written with it, and the read still returned the full
+16-byte value with `sensitive=true`. **The flag is a preview-suppression hint for the system UI, not
+an access control.** That is now measured on the API level where the flag actually exists.
+
+## The unfocused row, measured without a broadcast this time
+
+On Android 12 the unfocused row needed an exported receiver, because a button press requires the
+activity to be focused. That receiver is now guarded by a signature permission (lint's
+`ExportedReceiver` finding was real), which also blocks `adb shell` — and Android 12+ defers
+broadcasts to backgrounded apps anyway, so the broadcast never reached the receiver on this device.
+
+Rather than weaken the guard, the experiment gained a **delayed read**: the app schedules a read for
+six seconds later, the user switches away, and the read fires with another app in front. That is a
+better test than the broadcast, because it measures the real product path (an app reading its own
+clipboard after losing focus) instead of a synthetic one.
+
+```
+ACTION read-delayed -> scheduled a read in 6s; switch to another app now
+DELAYED case="unfocused_delayed" hasPrimaryClip=false mimes=[] textLen=0 ...
+```
+
+Focus at read time was confirmed as `com.sec.android.app.launcher/.LauncherActivity`. The gate holds.
+
+## What this means for the product, restated
+
+Nothing in the Android 12 conclusions changes. The Android → Mac clipboard story stays manual: the
+user copies, opens DroidBridge, taps Send. There is no background path, and there is no OS protection
+to lean on for sensitive clips — DroidBridge must provide that itself.

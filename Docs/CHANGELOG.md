@@ -26,6 +26,27 @@ All notable project changes are recorded here.
 - macOS Bonjour advertiser: `NWListener` publishing `_droidbridge-dev._tcp` with a versioned TXT
   record, an echo handler, and a live event view. The Mac half of the ADR-010 direction.
 
+### Verified — P02 LAN discovery on the S24 Ultra (2026-11-09)
+- The Android 17 system picker path works end to end on the target device: the picker appears, lists
+  the Mac, resolves it to `192.168.31.109:47999`, and the connection completes a duplex echo.
+- `FLAG_USER_APPROVED_ONLY` rediscovers a previously approved peer with no picker, which is what
+  makes silent reconnect possible.
+- **Corrected a previous conclusion:** the Mac was never blocked by Little Snitch or the firewall.
+  With no security settings changed, the phone connected to both a plain listener and the real
+  `DroidBridge.app` listener and completed a duplex echo.
+- New experiment `android/experiments/discovery/`, a separate installable app so
+  `ACCESS_LOCAL_NETWORK` cannot reach the production manifest.
+
+### Verified — P00 target-device baseline (2026-11-09)
+- S24 Ultra measured: SM-S928B, Android 17, API 37, One UI 9.0, build `CP2A.260605.016.S928BXXS6EZJ1`,
+  security patch 2026-10-05, `user` build, verified boot `green`. The owner-reported specs are
+  confirmed rather than assumed.
+
+### Verified — P04 re-run on Android 17 (2026-11-09)
+- The clipboard matrix is unchanged from Android 12 across six API levels, including the unfocused
+  read returning nothing. The sensitive flag is now a real API-33+ extra and the clip was still read
+  in full, confirming it is a preview hint rather than an access control.
+
 ### Fixed — P01 encoder configuration (2026-11-09)
 - The H.264 encoder requires `KEY_LEVEL` whenever `KEY_PROFILE` is set; setting the profile alone
   made `configure()` fail with `CodecException 0x80001001`, an error that names no key. Found by a

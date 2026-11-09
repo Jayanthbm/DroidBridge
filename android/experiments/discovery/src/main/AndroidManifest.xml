@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      P02 measures the API 37 local-network discovery path, so it needs the permission that path
+      requires. This is declared here and ONLY here: the experiment is a separate installable app
+      that :app never depends on, so it cannot reach the production manifest.
+
+      ACCESS_LOCAL_NETWORK is a runtime permission from API 37. The experiment requests it in the
+      UI and records whether the request is granted, denied, or never shown, because "the picker
+      appeared" and "the permission was granted" are different findings.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:label="P02 discovery"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.P02Discovery">
+
+        <activity
+            android:name=".DiscoveryActivity"
+            android:exported="true"
+            android:label="P02 discovery">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

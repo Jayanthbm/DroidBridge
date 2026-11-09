@@ -1,6 +1,8 @@
 package com.droidbridge.experiment.clipboard
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -85,6 +87,20 @@ class ClipboardActivity : ComponentActivity() {
                 val second = ClipboardProbe.read(this, "duplicate_second").toLine()
                 "first: $first\nsecond: $second"
             }
+            "read-delayed" -> {
+                // Measures the unfocused row without a broadcast.
+                //
+                // Android 12+ defers broadcasts to backgrounded apps, and an exported receiver
+                // that any app could poke is a lint error worth not having. So the app schedules
+                // its own read for after the user has switched away: the read happens with another
+                // app in front, which is exactly the condition P04 asks about.
+                val appContext = applicationContext
+                Handler(Looper.getMainLooper()).postDelayed({
+                    val result = ClipboardProbe.read(appContext, "unfocused_delayed")
+                    Log.i("P04Clipboard", "DELAYED ${result.toLine()}")
+                }, 6_000L)
+                "scheduled a read in 6s; switch to another app now"
+            }
             else -> "unknown action"
         }
         Log.i("P04Clipboard", "ACTION $action -> $line")
@@ -120,6 +136,10 @@ private fun ClipboardScreen(
             OutlinedButton(onClick = { onAction(action) }, modifier = Modifier.fillMaxWidth()) {
                 Text(label)
             }
+        }
+
+        OutlinedButton(onClick = { onAction("read-delayed") }, modifier = Modifier.fillMaxWidth()) {
+            Text("Read in 6s (switch away now)")
         }
 
         Button(onClick = { onAction("read-focused") }, modifier = Modifier.fillMaxWidth()) {
