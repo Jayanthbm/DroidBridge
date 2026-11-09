@@ -45,6 +45,9 @@ fi
     :experiments:clipboard:assembleDebug \
     :experiments:clipboard:testDebugUnitTest \
     :experiments:clipboard:lintDebug \
+    :experiments:clipboard-receive:assembleDebug \
+    :experiments:clipboard-receive:testDebugUnitTest \
+    :experiments:clipboard-receive:lintDebug \
     "${ANDROID_ARGS[@]+"${ANDROID_ARGS[@]}"}"
 
 if [[ "$SKIP_MACOS" -eq 1 ]]; then

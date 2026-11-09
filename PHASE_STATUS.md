@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P04 accepted; P05–P15 pending
+**Current position:** Phase 0 complete; P00–P04 accepted; P05 in progress (Android 12 matrix done, S24 rows pending); P06–P15 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -36,7 +36,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P02** Android 17 LAN/picker | **Completed** | **Mandatory** — done | **No** — API 37 only | 0 | Mac sleep/wake passed; Mac restart needs one re-approval; environment-limited tests documented |
 | **P03** Transport and pairing | **Completed** (acceptance met) | Yes — done | Partial only | 0 | Follow-ups: automatic reconnect, idle deadline, persistent Mac identity, on-device tamper UI, GUI pairing path |
 | **P04** Clipboard Android→Mac | **Completed** | Yes — full matrix done | Partial — no API 33 sensitive row | 0 | macOS side is P05/P06 |
-| **P05** Clipboard Mac→Android | **Pending** | **Yes** | Partial — basic text only; no Android 13+ preview/sensitive behaviour | **1–2 days** | Depends on P03 transport and P04 semantics; local harness can start first |
+| **P05** Clipboard Mac→Android | **In progress** — Android 12 matrix pass; S24 rows pending | **Yes for remaining rows** | Partial — basic text works on Android 12; no Android 13+ preview/sensitive behaviour | **0.5–1 day remaining** | Background/cross-app/Unicode/100 KiB/duplicate/oversize pass on Android 12; preview, sensitive and active-mirroring-FGS rows need S24 |
 | **P06** macOS pasteboard prompt | **Pending** | **No** — Mac-side | Not needed; phone only for round-trip loop test | **1–2 days** | Independent; gates ADR-014; can start immediately |
 | **P07** Mac video receiver | **Pending** | **No** — Mac-side generated H.264 | Not needed | **2–3 days** | Independent of Android runtime; uses P01 framing; can start immediately |
 | **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
@@ -54,13 +54,15 @@ Completed prototype evidence:
 [P02](Docs/prototypes/P02-local-networking.md) ·
 [P03](Docs/prototypes/P03-transport-and-pairing.md) ·
 [P03 live-handshake evidence](Docs/prototypes/P03-live-handshake-evidence.md) ·
-[P04](Docs/prototypes/P04-clipboard-android-to-mac.md)
+[P04](Docs/prototypes/P04-clipboard-android-to-mac.md) ·
+[P05](Docs/prototypes/P05-clipboard-mac-to-android.md)
 
 ### Phase 1 totals
 
 - **Accepted:** P00, P01, P02, P03, P04 (5 of 16).
-- **Pending:** P05–P15 (11 prototypes; P12 approval-gated).
-- **Remaining effort excluding P12:** roughly **16–28 engineer-days**.
+- **In progress:** P05 — Android 12 matrix complete; S24 rows pending.
+- **Pending:** P06–P15 (10 prototypes; P12 approval-gated).
+- **Remaining effort excluding P12:** roughly **15–27 engineer-days**, including P05's remaining S24 rows.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.

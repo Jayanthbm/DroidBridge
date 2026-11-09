@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      P05 receives text from the Mac over the LAN and writes it to the Android clipboard.
+
+      INTERNET is required for the socket. The foreground service keeps the receive loop alive
+      while the app is backgrounded; dataSync is used as the prototype's stand-in for the future
+      mirroring foreground service. The exact "active mirroring FGS" variant is deferred to the
+      S24 Ultra / P08 context.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/experiment_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.DroidBridgeExperiment">
+
+        <activity
+            android:name=".ClipboardReceiveActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".ClipboardReceiverService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+    </application>
+</manifest>

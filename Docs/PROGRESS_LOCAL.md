@@ -10,7 +10,9 @@ are met.
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. **P01 is
 validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service, surface-fed H.264,
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and consent-token
-replay were exercised. P04 is verified on both Android 12 and Android 17.
+replay were exercised. P04 is verified on both Android 12 and Android 17. **P05 is in progress:**
+the Android 12 Mac→Android clipboard matrix passes; the Android 13+ preview/sensitive and active-
+mirroring-FGS rows await the S24 Ultra.
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -503,3 +505,29 @@ off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-n
 `JAVA_HOME` set to Zulu 17, `./scripts/verify-all.sh`: 78/78 shared-protocol tests, Android
 `:app` + media-projection + discovery + clipboard builds/tests/lint, 37/37 macOS tests, exit 0.
 P01 adds 13 unit tests (8 framing + 5 format policy); P02 adds 7 echo-payload tests.
+
+
+## P05 — Clipboard Mac → Android (Android 12 partial, 2026-11-09)
+
+The OnePlus matrix ran against a real Mac→Android framed TCP harness
+(`scripts/p05-clipboard-sender.py`); this is not TLS evidence — P03 owns TLS, and P05 measures the
+Android clipboard write path. A separate installable app,
+`android/experiments/clipboard-receive/`, receives length-prefixed UTF-8 text in a `dataSync`
+foreground service and writes it without logging content.
+
+| Case | Result |
+|---|---|
+| Foreground 21 B | written, readback hash matched |
+| Background 21 B | written while activity gone, readback matched |
+| Process recreation | new process wrote and read back |
+| Write while another app foreground | P04 read the newly written text (21 B) |
+| Unicode | 55 UTF-8 bytes → 47 UTF-16 units, hash matched |
+| 100 KiB | 102,400 bytes written and read back |
+| Duplicate ×2 | 1 write, 1 ignored duplicate |
+| Empty / 102,401 B | rejected on the length header; clipboard unchanged |
+| Auto-clear at 5 min 50 s | still present; 15/30/60 min and S24 comparison pending |
+
+Findings: background clipboard **writes** are allowed while reads remain focus-gated (P04);
+DroidBridge must enforce the 100 KiB cap and hash over UTF-8 bytes, not `String.length`; duplicate
+suppression works at the receiver but end-to-end loop prevention still needs P06/origin IDs; no
+content is logged or persisted. P05 remains in progress until the S24 rows run.

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Clipboard outline with a down arrow: Mac -> Android receive. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,28h40v10h-8v-2h-24v2h-8zM34,40h40v40h-40zM58,48h8l-12,14l-12,-14h8v-10h8z" />
+</vector>
