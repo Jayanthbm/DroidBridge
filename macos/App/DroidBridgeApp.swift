@@ -10,6 +10,18 @@ struct DroidBridgeApp: App {
     /// Created at launch, so `--advertise-on-launch` works without the user opening the tab.
     @StateObject private var advertisement = AdvertisementModel()
 
+    init() {
+        // P03 headless harness. Handled before SwiftUI starts so a scripted run gets a listener
+        // without a window, and exits with the harness's status rather than the app's.
+        //
+        // This is a prototype affordance, not a product feature: it exists so the P03 acceptance
+        // criteria can be measured by a script instead of by tapping buttons.
+        let arguments = Array(CommandLine.arguments.dropFirst())
+        if arguments.contains("--listen") || arguments.contains("--identity") {
+            exit(P03Harness.run(arguments))
+        }
+    }
+
     var body: some Scene {
         WindowGroup("DroidBridge") {
             // Two tabs: the Phase 0 environment baseline, and the P02 advertiser. The advertiser

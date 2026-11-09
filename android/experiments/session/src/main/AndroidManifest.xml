@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      P03 needs the API 37 local-network permission for the discovery half (P02 established that the
+      picker is the real consent gate). Declared here and only here: this experiment is a separate
+      installable app that :app never depends on.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:label="P03 session"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.P03Session">
+
+        <activity
+            android:name=".SessionActivity"
+            android:exported="true"
+            android:label="P03 session">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
