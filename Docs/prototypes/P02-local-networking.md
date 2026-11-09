@@ -1,8 +1,9 @@
 # P02 — Android 17 local networking: the picker path
 
 **Status: the picker path, sustained duplex and network recovery are validated on the target
-device — Samsung Galaxy S24 Ultra, Android 17 / API 37, One UI 9.0 (2026-11-09). Two lifecycle
-tests remain open: Mac sleep/wake and a Mac advertiser restart.** Router restart, a Mac IP change,
+device — Samsung Galaxy S24 Ultra, Android 17 / API 37, One UI 9.0 (2026-11-09). The Mac advertiser
+restart test is complete and exposed a required one-time re-approval when the Mac's service instance
+changes. One lifecycle test remains open: Mac sleep/wake.** Router restart, a Mac IP change,
 guest-Wi-Fi client isolation and a Mac interface change could not be exercised in this environment
 and are recorded as unavailable rather than guessed at.
 
@@ -164,30 +165,78 @@ ECHO progress sent=20 received=20 … mismatches=0 errors=0
 
 No picker. The approval survives reboot, and discovery after boot is fast.
 
-### Mac advertiser restart — Mac half complete, phone half pending
+### Mac advertiser restart — complete, with a required re-approval
 
-The Mac advertiser was killed during a 180-second echo to force a new ephemeral port. The Mac half
-was then completed without the phone:
+The Mac advertiser was killed during an echo and re-advertised on a new ephemeral port:
 
 ```
 20:35:42  advertising type=_droidbridge-dev._tcp port=61172 sid=544f8f14…
-20:35:42  dns-sd -B lists "DroidBridge" on local.
 20:35:46  dns-sd -L resolves DroidBridge to Jayanths-MacBook-Air.local.:61172,
           TXT sid=544f8f14… v=1
-20:36:0x  a second clean relaunch advertised port 61173 (current listener)
+20:36:0x  clean relaunch advertises port 61173
 ```
 
-So the Mac re-registers under the same service name with a **new ephemeral port**, and Bonjour
-resolves it with the new TXT record. **Remaining half:** with the phone, confirm approved-only
-re-resolution finds the new port and the echo reconnects without a picker.
+The phone was then reconnected to the network (its DHCP address had changed from 192.168.31.246 to
+192.168.31.123). Starting an echo with **no cached endpoint** caused approved-only rediscovery to
+run for 60 s and find **nothing**:
+
+```
+21:19:33  reconnect: approved-only rediscovery started
+21:19:53  reconnect: no approved peer within 20000ms
+21:19:54  reconnect: approved-only rediscovery started
+21:20:14  reconnect: no approved peer within 20000ms
+… four attempts, no peer
+```
+
+The picker, started immediately afterwards, listed **`DroidBridge (2)`** — the same Mac, new service
+instance — and listing it required a fresh approval. After that approval:
+
+```
+21:22:09  onServiceFound: name='DroidBridge (2)'
+21:22:15  onServiceResolved: host=192.168.31.109 port=61173
+21:22:21  ECHO connected to 192.168.31.109:61173
+```
+
+A subsequent force-stop/relaunch then found `DroidBridge (2)` with approved-only and connected to
+`:61173` without a picker. **So the new approval works; the old one did not carry over.**
+
+**Product finding:** on this build the picker approval is tied to the approved service instance, not
+merely to the service name/type. A Mac app restart with a new ephemeral port/session id forces one
+re-approval. Reconnect is automatic only after that. This matters for the product's "restart the Mac
+and it reconnects" promise: either the Mac needs a stable service identity (or a stable port) that
+the OS continues to accept, or the UX must present the re-approval as expected after a Mac restart.
+This is recorded as a limitation, not hidden by the successful re-approval.
 
 ### Mac sleep/wake — **not completed**
 
-The owner was asked to put the Mac to sleep for ~10 seconds during a 180-second echo. The echo
-continued uninterrupted (587/587 messages, 0 errors, 1 connection) and `pmset -g log` recorded **no
-sleep event**, so the Mac did not actually sleep. This is recorded as an attempted-but-not-achieved
-test, not a pass. A retry needs a real system sleep (Apple menu → Sleep or a lid close that sleeps
-the machine), verified via `pmset -g log`.
+Two attempts were made; neither produced a system sleep:
+
+1. During a 180-second echo the owner was asked to sleep the Mac for ~10 seconds. The echo continued
+   uninterrupted (587/587 messages, 0 errors, 1 connection) and `pmset -g log` recorded **no sleep
+   event**.
+2. A second attempt coincided with the Mac **restarting** (boot time 21:25:28) rather than sleeping.
+   The phone saw the socket die at 21:24:57, retried approved-only rediscovery for ~90 seconds with
+   no peer, and the run ended 282/280 with 2 errors. There is no sleep event to cite, so this is not
+   sleep/wake evidence.
+
+Mac sleep/wake is therefore recorded as **not completed**, not as a pass. The accidental restart did
+provide a useful cold-restart recovery result (below), but it is a different event.
+
+### Mac cold restart — recovery after reboot
+
+The unplanned Mac restart exercised a full Mac outage:
+
+- The phone's echo disconnected at 21:24:57 (Mac shutting down) and spent ~90 s attempting
+  approved-only rediscovery while the Mac was down; all attempts found no peer.
+- The Mac booted at 21:25:28. The advertiser had to be started again; it advertised a new ephemeral
+  port **64615**.
+- Approved-only discovery did **not** find the new instance until the picker was used and the new
+  `DroidBridge` instance was approved. After approval, resolve returned `192.168.31.109:64615` and
+  the echo connected (first RTT 10.5 ms, 16/16 messages shortly after).
+
+This confirms the same limitation as the advertiser restart: a Mac restart invalidates the prior
+instance approval and requires one picker approval. It also confirms the Android side survives the
+Mac outage without crashing and does not silently claim a reconnection it does not have.
 
 ## D — inbound connection behavior (U1)
 
@@ -275,15 +324,15 @@ lints clean (`minSdk=37`, `warningsAsErrors`); the full verification gate is rec
 | Wi-Fi/airplane loss and recovery without re-approval | Pass |
 | Android process recreation | Pass |
 | Android reboot | Pass |
-| Mac sleep/wake | **Open — attempt did not sleep the Mac** |
-| Mac advertiser restart | Mac half pass (new port advertised and resolved); phone half **open** |
+| Mac sleep/wake | **Open — neither attempt produced a sleep event** |
+| Mac advertiser restart | **Pass with required re-approval**; old approval did not carry to the new instance |
 | Mac IP change / router restart / guest Wi-Fi / interface change | Not available in this environment |
 | Inbound under picker approval | Investigated; works only with `ACCESS_LOCAL_NETWORK`, revocation delayed to reboot |
 | Permission enforcement | Investigated; picker path exempt, advertising/inbound gated |
 
-P02 is not closed while the two Mac lifecycle tests are open. The primary product path — picker
-approval, approved-only reconnect, sustained duplex, recovery after a real outage, process
-recreation and reboot — is validated.
+P02 is not closed while Mac sleep/wake is open. The primary product path — picker approval,
+approved-only reconnect, sustained duplex, recovery after a real outage, process recreation,
+Android reboot and Mac restart with re-approval — is validated.
 
 ## Reproducing
 

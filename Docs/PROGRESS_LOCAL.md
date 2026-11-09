@@ -14,9 +14,10 @@ replay were exercised. P04 is verified on both Android 12 and Android 17.
 
 **P02 is validated on the target device for the primary path:** picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
-airplane-mode outage without re-approval, Android process recreation and Android reboot. Two P02
-lifecycle tests remain open: **Mac sleep/wake** (the attempted sleep did not produce a system sleep
-event) and **Mac advertiser restart** (kill observed, relaunch not completed). Advertising and
+airplane-mode outage without re-approval, Android process recreation and Android reboot. One P02 lifecycle test remains open: **Mac sleep/wake** (two attempts produced no system sleep event;
+the second coincided with an unplanned Mac restart). The **Mac advertiser restart and cold restart**
+are now measured: a new Mac service instance requires one picker re-approval before approved-only
+reconnect works. Advertising and
 inbound need `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not.
 That permission's revocation was not applied to a running process until reboot.
 
@@ -141,7 +142,7 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 - **Full remote input is NO-GO** under the current constraints (research conclusion, not a device test): no public injection API, Knox is signature/managed-device gated, macOS cannot publish a HID peripheral.
 - **Automatic background clipboard sync is not a release claim.** Android requires focus/IME for reads; macOS 15.4+ can prompt or deny programmatic pasteboard access.
-- **Android 17 LAN path is resolved for the primary design.** P02 proved the picker path on the S24 Ultra: approval, resolve, connect, 60 s duplex and approved-only recovery all work. Discovery, approved-only discovery and outbound TCP work **without** `ACCESS_LOCAL_NETWORK`; advertising and inbound listening require it. Revoking it does not take effect for a running process until reboot. The product must keep the picker as its consent mechanism and must not treat the permission as the sole boundary. The two open P02 items are Mac sleep/wake and Mac advertiser restart.
+- **Android 17 LAN path is resolved for the primary design.** P02 proved the picker path on the S24 Ultra: approval, resolve, connect, 60 s duplex and approved-only recovery all work. Discovery, approved-only discovery and outbound TCP work **without** `ACCESS_LOCAL_NETWORK`; advertising and inbound listening require it. Revoking it does not take effect for a running process until reboot. The product must keep the picker as its consent mechanism and must not treat the permission as the sole boundary. The one open P02 item is Mac sleep/wake; the Mac advertiser/cold restart is measured and requires a one-time re-approval for a new service instance.
 - **Mac-as-Bluetooth-HID-peripheral is not proven and is expected to fail** (`CBError.uuidNotAllowed`); P09 exists to record the evidence.
 - **Background clipboard sync is best-effort, not guaranteed.** The `connectedDevice` foreground service keeps the session alive in normal use, but Doze suspends network access device-wide, so the design is reconnect-on-resume rather than an always-on promise. Whether a socket survives a full night is unproven (U11).
 - **The macOS app cannot be released without a paid Apple Developer Program membership.** Notarisation requires a Developer ID certificate, only the Account Holder can create one, and an unnotarised app is blocked by Gatekeeper on current macOS (R-27). This is an external dependency on the owner, not a technical uncertainty, and it blocks Phase 9 rather than Phase 0.
@@ -186,8 +187,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 1. P01 is validated on the S24 Ultra; its remaining items are plan-only extras (screen-sharing chip,
    `KEY_LATENCY`, still-screen repeat-frame comparison, `flush()` without `start()`).
-2. P02's primary path is validated. Close the two open lifecycle tests: Mac sleep/wake with a
-   verified `pmset` sleep event, and Mac advertiser restart with re-resolution to a new port.
+2. P02's primary path is validated. Close the one remaining lifecycle test: Mac sleep/wake with a
+   verified `pmset` sleep event. The Mac advertiser and cold restart are measured; a new Mac service
+   instance requires one picker re-approval before approved-only reconnect works.
 3. Update the detailed reports with the final results, review the diff, commit and push to
    `development`.
 4. Do not begin P05 or later until P01/P02 are closed and the owner agrees. The Android 12 backup
@@ -195,8 +197,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 ## Next task
 
-Close P02's **Mac sleep/wake** and **Mac advertiser restart** tests, then finish the documentation
-reconciliation and push. No later prototype is in scope.
+Close P02's **Mac sleep/wake** test, then finish the documentation reconciliation and push. The Mac
+restart finding (one re-approval per new service instance) is recorded as a product limitation, not
+as a test failure. No later prototype is in scope.
 
 
 ## Agent handoff status (2026-11-08)
@@ -463,7 +466,7 @@ off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-n
 - Open plan-only items: direct screen-sharing-chip tap, `KEY_LATENCY`, still-screen repeat-frame
   on/off, `flush()` without `start()`. None blocks the P01 acceptance list.
 
-### P02 — primary path validated, two Mac lifecycle tests open
+### P02 — primary path validated, Mac sleep/wake open
 
 - **Picker without permission:** after a reinstall reset `ACCESS_LOCAL_NETWORK` to NOT GRANTED,
   the system picker still appeared and listed `DroidBridge`; selection produced
@@ -482,11 +485,14 @@ off, Developer Options on. Full reports: `P01-media-projection.md`, `P02-local-n
   throws `SecurityException: Missing local network permission`; with it, registration succeeds.
 - **`checkPermissionForService()`** returned `SERVICE_PERMISSION_DENIED` both before and after the
   runtime grant, so it is not a reliable grant indicator on this build.
-- **Open:** Mac sleep/wake (attempt produced no `pmset` sleep event, so no pass) and the phone half
-  of the Mac advertiser restart. The Mac half is now confirmed: after a kill/relaunch the advertiser
-  registered a new ephemeral port (61172, then 61173) and `dns-sd -B`/`dns-sd -L` resolved it with
-  the new TXT record. The phone-side approved-only re-resolution to the new port is still to run.
-  Router restart, Mac IP change, guest-Wi-Fi isolation and Mac interface change were not available
+- **Open:** Mac sleep/wake. Two attempts produced no `pmset` sleep event; the second coincided with an
+  unplanned Mac restart. This is recorded as not completed, not as a pass.
+- **Mac restart finding:** both the advertiser restart (new ports 61172/61173) and the cold restart
+  (new port 64615) required a fresh picker approval. Approved-only discovery did **not** accept the
+  old approval for the new service instance; after one re-approval, approved-only reconnect worked
+  again. The product must either use a stable service identity/port that survives a Mac restart or
+  present the re-approval as expected UX.
+- Router restart, Mac IP change, guest-Wi-Fi isolation and Mac interface change were not available
   in this environment.
 
 ### Verification
