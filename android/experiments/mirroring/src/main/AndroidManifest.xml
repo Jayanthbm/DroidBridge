@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      P08 permissions, each one carrying its own justification so PERMISSIONS_MATRIX.md can be
+      checked against the manifest rather than against prose.
+
+      INTERNET + ACCESS_LOCAL_NETWORK: the authenticated LAN session (P02/P03). No other network
+      path exists in this experiment.
+      FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PROJECTION: screen capture must run in a
+      foreground service with the mediaProjection type, or Android stops it (R-04).
+      POST_NOTIFICATIONS: the capture service's ongoing notification, requested at the moment
+      mirroring starts and never at launch.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.P08Mirroring">
+
+        <activity
+            android:name=".MirroringActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          stopWithTask="false": the stream continues when the activity is swiped away, because the
+          user asked for a mirroring session rather than for an activity. The notification's Stop
+          action and the system's screen-sharing chip both end it explicitly.
+        -->
+        <service
+            android:name=".MirroringService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection"
+            android:stopWithTask="false" />
+    </application>
+</manifest>
