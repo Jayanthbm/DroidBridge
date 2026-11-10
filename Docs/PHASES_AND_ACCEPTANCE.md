@@ -31,9 +31,10 @@ replay (14/14 required items; three plan-only extras remain open). **P05 is comp
 both, including the Android 17 "Copied." confirmation and the `ACCESS_LOCAL_NETWORK` requirement
 outside the picker; active-mirroring-FGS integration is deferred to P08. **P06 is in progress** — the
 allowed state and write-suppression pass, but macOS 27.0.1 reports `alwaysAllow`, so the deny/ask UX
-still needs a signed P15 build or another macOS version. **P07 is in progress** — parser, conversion
-tests, live viewer, flush/recovery, startup latency and resolution changes pass; forced backpressure,
-glass-to-glass latency and `preventsCapture` verification remain. **P15 is in progress** — the
+still needs a signed P15 build or another macOS version. **P07 is completed** — parser, conversion
+tests, live viewer, flush/recovery, startup latency, resolution changes and `preventsCapture`
+(video area black in a screen capture) pass; backpressure false state and glass-to-glass latency are
+plan-only measurements. **P15 is in progress** — the
 Release sandbox/entitlement dry run passes; Developer ID/notarisation are blocked by the missing
 Apple Developer Program membership. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
 and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09 is completed as

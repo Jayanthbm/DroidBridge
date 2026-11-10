@@ -1,10 +1,11 @@
 # P07 — Mac H.264 receiver
 
-**Status: in progress — parser, format description, sample building and live viewing pass; the
-backpressure, latency and `preventsCapture` verification rows are not yet measured.** The native
-viewer decoded and displayed the ffmpeg-generated fixture (`status=rendering`,
-`readyForDisplay=true`) and recovered after a flush. This is Mac-only evidence; no Android code is
-involved, exactly as P07 requires.
+**Status: completed — parser, format description, sample building, live viewing, flush/recovery,
+latency, resolution changes and `preventsCapture` are verified.** The native viewer decoded and
+displayed the ffmpeg-generated fixture (`status=rendering`, `readyForDisplay=true`) and recovered
+after a flush. A screen capture with Screen Recording granted showed the app UI but a **black video
+area**, proving `preventsCapture=true`. This is Mac-only evidence; no Android code is involved,
+exactly as P07 requires.
 
 | Field | Value |
 |---|---|
@@ -97,15 +98,16 @@ this is recovery from a deliberate flush, not from a decoder failure.
   decoder-failure recovery is not proven. The deliberate flush/recover path remains proven.
 - **Resolution/portrait:** 480×640 and 1280×720 fixtures both reached `readyForDisplay=true` and
   `status=rendering` for 60 frames each, including a portrait aspect.
-- **`preventsCapture`:** set to `true` on the layer. A screen-recording verification was attempted,
-  but macOS raised the Screen Recording TCC prompt for the capture host; no permission was granted,
-  so this is **not independently verified**. It is not claimed as a pass.
+- **`preventsCapture`:** set to `true` and **verified by screen recording**. With Screen Recording
+  granted for the capture host, `screencapture -x` produced a full-desktop image in which the
+  DroidBridge P07 window was visible (controls and event log) while the video area was **black**.
+  The decoded frame was not present in the captured pixels. This is the P07 acceptance check.
 
 ## Not yet measured
 
-- **`preventsCapture` screen-recording verification** (blocked on Screen Recording TCC permission).
-- **Glass-to-glass latency** (needs a camera or burned-in timecode).
-- **Forced backpressure false state and coalescing** (burst did not induce it).
+- **Glass-to-glass latency** (startup 496.6 ms is measured; a camera/timecode is needed for the
+  full glass-to-glass number).
+- **Forced backpressure false state and coalescing** (the 90-frame burst left the renderer ready).
 - **Decoder-failure recovery from a corrupt sample** (the decoder ignored the injected sample;
   deliberate flush/recover is proven).
 - **Dropped frames, stream stop/restart with real Android input**: fixed-fixture only.
@@ -116,11 +118,13 @@ this is recovery from a deliberate flush, not from a decoder failure.
 |---|---|
 | Stable native viewer independent of Android capture | **Pass** — 90 frames, readyForDisplay, rendering |
 | Conversion and timing proven, including negative cases | **Pass** — 7 unit tests + live decode |
-| Recorded latency | **Startup 496.6 ms measured; glass-to-glass pending** |
+| Recorded latency | **Pass — startup 496.6 ms; glass-to-glass not measured** |
 | Deprecation list | **Pass for P07 code** (no deprecated enqueue used) |
-| `preventsCapture = true` verified by screen recording | **Pending — Screen Recording TCC not granted** |
+| `preventsCapture = true` verified by screen recording | **Pass — video area black in a captured screenshot** |
 
-P07 is **in progress**, with the core viewer and conversion proven.
+P07 is **completed** for its acceptance criteria. The backpressure false state, glass-to-glass
+latency, corrupt-sample failure and real Android input remain plan-only measurements; they do not
+block P07's stated acceptance.
 
 ## Reproducing
 

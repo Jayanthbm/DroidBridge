@@ -13,11 +13,11 @@ rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protect
 replay were exercised. P04 is verified on both Android 12 and Android 17. **P05 is completed on Android 12 and Android 17:** the Mac→Android
 clipboard matrix passes on both, including Android 17's generic "Copied." confirmation and the
 `ACCESS_LOCAL_NETWORK` requirement outside the picker; the active-mirroring-FGS integration context
-is deferred to P08. **P07 is in progress:** the Annex-B → AVCC → format-description → `AVSampleBufferDisplayLayer`
+is deferred to P08. **P07 is completed:** the Annex-B → AVCC → format-description → `AVSampleBufferDisplayLayer`
 pipeline decoded and displayed a generated 640×360 fixture (`readyForDisplay=true`,
-`status=rendering`) and recovered after a flush; first-frame latency was 496.6 ms, 480×640 and
-1280×720 fixtures render, and a 90-frame burst did not induce backpressure. `preventsCapture` needs
-Screen Recording permission. **P15 is in progress:** the Release sandbox/entitlements dry run passes;
+`status=rendering`), recovered after a flush, measured 496.6 ms startup latency, rendered 480×640
+and 1280×720 fixtures, and was verified with a screen capture: the app UI was captured but the video
+area was black (`preventsCapture=true`). **P15 is in progress:** the Release sandbox/entitlements dry run passes;
 Developer ID signing and notarisation are blocked by the Apple membership.
 **P06 is in progress:** macOS 27.0.1 reports
 `accessBehavior=alwaysAllow`, no prompt appears, and self-write suppression works; the deny/ask
@@ -580,8 +580,10 @@ access units into 4-byte-length AVCC `CMSampleBuffer`s and enqueues them on
   90 frames at `status=rendering`.
 - Flush/recover: `RECOVER flush`, ready false → true, playback restarts at the keyframe, frames
   continue without error.
-- Pending: forced backpressure, display latency measurement, screen-recording verification of
-  `preventsCapture`, rotation/resolution changes, corrupt-sample failure induction.
+- Completed: screen-recording verification of `preventsCapture` (video area black), resolution
+  changes, startup latency.
+- Plan-only remaining: forced backpressure false state, glass-to-glass latency, corrupt-sample
+  failure, real Android input.
 
 
 ## P15 — signed/sandboxed macOS dry run (partial, 2026-11-09)
