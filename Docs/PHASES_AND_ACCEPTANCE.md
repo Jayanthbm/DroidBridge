@@ -36,7 +36,8 @@ tests, live viewer, flush/recovery, startup latency and resolution changes pass;
 glass-to-glass latency and `preventsCapture` verification remain. **P15 is in progress** — the
 Release sandbox/entitlement dry run passes; Developer ID/notarisation are blocked by the missing
 Apple Developer Program membership. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
-and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
+and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09 is completed as
+NO-GO** — no public/accessible/root/Knox/HID remote-input path exists; mirroring ships view-only. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
 sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
 advertiser/cold restart is measured: a new Mac service instance requires one picker re-approval;

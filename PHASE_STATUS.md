@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P05 and P13 accepted; P06, P07 and P15 in progress; P08–P12, P14 pending
+**Current position:** Phase 0 complete; P00–P05, P09 and P13 accepted; P06, P07 and P15 in progress; P08, P10–P12, P14 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -40,7 +40,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P06** macOS pasteboard prompt | **In progress** — allowed state + self-write suppression pass; deny/ask states unavailable | **No** — Mac-side | Not needed; phone only for round-trip loop test | **0.5–1 day remaining** | macOS 27.0.1 alwaysAllow; `tccutil` reset did not induce a prompt. Deny/ask UX needs a signed P15 build or another macOS version |
 | **P07** Mac video receiver | **In progress** — parser/tests/viewer/recovery/latency/resolution pass; preventsCapture/backpressure/corrupt-failure pending | **No** — Mac-side generated H.264 | Not needed | **0.5–1 day remaining** | Startup latency 496.6 ms; burst did not induce backpressure; 480×640/1280×720 render; preventsCapture needs Screen Recording TCC |
 | **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
-| **P09** Remote input decision | **Pending** | **Yes** | Second data point only | **1–2 days** | Depends on a live mirror session (P08); expected NO-GO confirmation |
+| **P09** Remote input decision | **Completed — NO-GO** | Yes — checks done | Not representative | 0 | Accessibility/injection/Knox/HID refusals recorded; Phase 5 owner acceptance still needed |
 | **P10** Secure screen/protection | **Pending** | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work can start after P01 |
 | **P11** macOS local-network/TCC | **Pending** | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | Independent; benefits from P02 integration |
 | **P12** Audio/calls research | **Pending — approval-gated** | Yes | Not representative | **2–4 days** if approved | Separate owner approval; can be deferred without blocking the core product |
@@ -59,16 +59,17 @@ Completed prototype evidence:
 [P06](Docs/prototypes/P06-macos-pasteboard.md) ·
 [P07](Docs/prototypes/P07-mac-video-receiver.md) ·
 [P15](Docs/prototypes/P15-signed-build.md) ·
-[P13](Docs/prototypes/P13-pinned-tls-android17.md)
+[P13](Docs/prototypes/P13-pinned-tls-android17.md) ·
+[P09](Docs/prototypes/P09-remote-input.md)
 
 ### Phase 1 totals
 
-- **Accepted:** P00, P01, P02, P03, P04, P05, P13 (7 of 16).
+- **Accepted:** P00, P01, P02, P03, P04, P05, P09, P13 (8 of 16).
 - **In progress:** P06 — allowed state and self-write suppression pass, deny/ask unavailable;
   P07 — parser/tests/viewer/recovery/latency/resolution pass, preventsCapture/backpressure pending;
   P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
-- **Pending:** P08–P12, P14 (6 prototypes; P12 approval-gated).
-- **Remaining effort excluding P12:** roughly **9–19 engineer-days**, including in-progress rows.
+- **Pending:** P08, P10, P11, P12, P14 (5 prototypes; P12 approval-gated).
+- **Remaining effort excluding P12:** roughly **8–17 engineer-days**, including in-progress rows.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.

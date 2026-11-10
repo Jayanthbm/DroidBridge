@@ -612,3 +612,19 @@ Fresh P03 install on the S24 Ultra and a fresh Mac identity proved the P13 accep
 - Definitive U3/U13: pinned TLS works on API 37 with default CT for this local self-signed peer.
 
 P13 is completed. The same-key certificate re-issue test is plan-only and remains unrun.
+
+
+## P09 — remote input NO-GO (completed, 2026-11-10)
+
+On the S24 Ultra (`ro.build.type=user`, no root, Accessibility disabled), the P03 experiment
+requests only `INTERNET` and `ACCESS_LOCAL_NETWORK`. Public API checks confirm:
+
+- no `INJECT_EVENTS` signature permission or `InputManager` injection path;
+- `UiAutomation` is shell/privileged only;
+- Knox `RemoteInjection` is signature + managed-device gated (ADR-017);
+- Accessibility is prohibited and disabled;
+- Android `BluetoothHidDevice` is the wrong direction, and macOS cannot publish a HID peripheral
+  (ADR-016).
+
+Full remote touch/key control is **NO-GO**; mirroring remains view-only. P09 is completed as a
+decision. Phase 5 still needs the owner to accept the view-only direction explicitly.
