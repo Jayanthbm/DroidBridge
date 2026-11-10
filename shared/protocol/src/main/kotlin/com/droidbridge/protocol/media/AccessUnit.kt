@@ -43,17 +43,27 @@ object AnnexBToAvcc {
     /**
      * Converts one Annex-B access unit into a length-prefixed payload.
      *
+     * @param dropParameterSets when true, SPS and PPS NAL units are removed from the access unit.
+     *   This is what a live producer needs: the parameter sets already travel in `mirror.format`, and
+     *   repeating them inside a sample is at best redundant and at worst makes a decoder re-evaluate
+     *   its format mid-stream. Detection of an IDR still happens over the original units. An access
+     *   unit that contained *only* parameter sets throws, because sending an empty payload would
+     *   violate the media framing.
      * @throws MalformedStreamException if [annexB] is not a well-formed access unit.
      * @throws IllegalArgumentException if [ptsUs] is negative.
      */
-    fun convertAccessUnit(annexB: ByteArray, ptsUs: Long): AccessUnit {
+    fun convertAccessUnit(
+        annexB: ByteArray,
+        ptsUs: Long,
+        dropParameterSets: Boolean = false,
+    ): AccessUnit {
         require(ptsUs >= 0) { "ptsUs must be a non-negative microsecond timestamp, was $ptsUs" }
 
-        val nalUnits = AnnexB.splitNalUnits(annexB)
+        val allUnits = AnnexB.splitNalUnits(annexB)
         var isKeyframe = false
         var payloadSize = 0
 
-        for (nalUnit in nalUnits) {
+        for (nalUnit in allUnits) {
             val type = nalUnitType(nalUnit)
             if (type == NalUnitType.IDR_SLICE) isKeyframe = true
             if (nalUnit.size > MAX_NAL_UNIT_SIZE) {
@@ -61,6 +71,24 @@ object AnnexBToAvcc {
                     "NAL unit of ${nalUnit.size} bytes does not fit a $NAL_LENGTH_SIZE-byte length prefix",
                 )
             }
+        }
+
+        val nalUnits = if (dropParameterSets) {
+            allUnits.filter {
+                val type = nalUnitType(it)
+                type != NalUnitType.SPS && type != NalUnitType.PPS
+            }
+        } else {
+            allUnits
+        }
+
+        if (nalUnits.isEmpty()) {
+            throw MalformedStreamException(
+                "access unit carried only parameter sets; nothing is left to send",
+            )
+        }
+
+        for (nalUnit in nalUnits) {
             payloadSize += NAL_LENGTH_SIZE + nalUnit.size
         }
 

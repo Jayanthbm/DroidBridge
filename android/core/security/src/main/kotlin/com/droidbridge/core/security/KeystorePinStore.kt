@@ -1,5 +1,6 @@
-package com.droidbridge.experiment.session
+package com.droidbridge.core.security
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -65,6 +66,10 @@ class KeystorePinStore(context: Context) : PeerPinning.PinStore {
         }
     }
 
+    // Lint's ApplySharedPref check wants apply() here, and it is wrong for this file: apply() is
+    // asynchronous, so a caller that reports "paired" on return could be reporting a pin that is not
+    // on disk yet. Two deliberate commit() calls are suppressed rather than the check as a whole.
+    @SuppressLint("ApplySharedPref")
     override fun remember(peerId: String, pin: String) {
         val encrypted = encrypt(pin)
         // commit() rather than apply(): the caller states "the peer is now paired" only after this
@@ -76,7 +81,9 @@ class KeystorePinStore(context: Context) : PeerPinning.PinStore {
         Log.i(TAG, "pin stored for '$peerId'")
     }
 
+    @SuppressLint("ApplySharedPref")
     override fun forget(peerId: String) {
+        // commit() for the same reason as remember(): "forgotten" must mean gone, not queued.
         prefs.edit().remove(KEY_PREFIX + peerId).commit()
         Log.i(TAG, "pin forgotten for '$peerId'")
     }

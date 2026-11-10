@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.session
+package com.droidbridge.core.security
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties

@@ -37,12 +37,42 @@ object ControlMessage {
     const val MAX_PAYLOAD_BYTES: Int =
         Framing.MAX_CONTROL_PAYLOAD_BYTES - HEADER_BYTES
 
-    /** Control message types. Codes are wire values and must never be reused. */
+    /**
+     * Control message types. Codes are wire values and must never be reused.
+     *
+     * The mirroring family (0x10–0x13) and the media type (0x20) were added by P08. They travel on
+     * the same authenticated connection as the session messages rather than on a second socket,
+     * because a second connection would need its own handshake, its own pin check and its own
+     * replay window — three opportunities to get the trust model subtly wrong — to gain nothing on a
+     * LAN where both directions already share one TLS record stream.
+     *
+     * [VIDEO] is the one type that is not a control message. It is sized and paced like media, and
+     * both ends rate-limit it separately from the control traffic (see `SecureSession` and
+     * `SecureListener`): a 30 fps stream would trip a control-frame budget in its first second.
+     */
     enum class Type(val code: Int) {
         PING(0x01),
         PONG(0x02),
         CLOSE(0x03),
+
+        /** The producer has begun a mirroring session. Payload: empty. */
+        MIRROR_STARTED(0x10),
+
+        /** A new encode: geometry and parameter sets. Payload: `MirrorFormat` JSON. */
+        MIRROR_FORMAT(0x11),
+
+        /** The producer stopped mirroring. Payload: a short human-readable reason, redacted. */
+        MIRROR_STOP(0x12),
+
+        /** The receiver flushed its decoder and needs an IDR before P-frames can be used. */
+        MIRROR_KEYFRAME_REQUEST(0x13),
+
+        /** One access unit. Payload: `[8-byte big-endian ptsUs][AVCC access unit]`. */
+        VIDEO(0x20),
         ;
+
+        /** True for media, which is paced and limited separately from control traffic. */
+        val isMedia: Boolean get() = this == VIDEO
 
         companion object {
             fun fromCode(code: Int): Type =
@@ -132,6 +162,11 @@ object ControlMessage {
     /** Display form for a payload that is meant to be readable, bounded and redacted otherwise. */
     fun describe(message: Message): String {
         if (message.payload.isEmpty()) return "${message.type.name.lowercase()}:${message.sequence}"
+        // Media is never decoded into a string for logging, not even to test printability: the log
+        // line must not be a place where a slice of someone's screen can appear (P10).
+        if (message.type.isMedia) {
+            return "${message.type.name.lowercase()}:${message.sequence}:<${message.payload.size} bytes>"
+        }
         val text = message.payload.toString(Charsets.UTF_8)
         val printable = text.all { it.code in 0x20..0x7E }
         return if (printable) {

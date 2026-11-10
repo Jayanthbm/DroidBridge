@@ -28,6 +28,6 @@ object MediaFraming {
      * Converts one Annex-B access unit to the length-prefixed AVCC form CoreMedia requires,
      * reporting whether it carries an IDR slice.
      */
-    fun toAvcc(annexB: ByteArray, ptsUs: Long): AccessUnit =
-        AnnexBToAvcc.convertAccessUnit(annexB, ptsUs)
+    fun toAvcc(annexB: ByteArray, ptsUs: Long, dropParameterSets: Boolean = false): AccessUnit =
+        AnnexBToAvcc.convertAccessUnit(annexB, ptsUs, dropParameterSets)
 }

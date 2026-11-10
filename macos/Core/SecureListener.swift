@@ -76,6 +76,14 @@ public final class SecureListener {
     /// Control frames accepted per second, per connection.
     private let maxFramesPerSecond: Int
 
+    /// Media frames accepted per second, per connection.
+    ///
+    /// Separate from the control budget on purpose: a 30 fps stream is normal traffic, and counting
+    /// it against a 32/s control budget would close a healthy session in its first second. A media
+    /// budget of its own still bounds a peer that floods, which is the property the limit exists
+    /// for (a bounded, testable refusal rather than an open-ended queue).
+    private let maxVideoFramesPerSecond: Int
+
     /// Failed handshakes before the listener stops, so a pin cannot be ground down online.
     private let maxAuthenticationFailures: Int
 
@@ -100,6 +108,8 @@ public final class SecureListener {
     private var lastActivity = Date()
     private var rateWindowStart = Date()
     private var rateWindowFrames = 0
+    private var videoWindowStart = Date()
+    private var videoWindowFrames = 0
     private var authenticationFailures = 0
 
     private let verdict = PeerVerdict()
@@ -136,6 +146,7 @@ public final class SecureListener {
         idleTimeout: TimeInterval = 30,
         pairingTimeout: TimeInterval = 120,
         maxFramesPerSecond: Int = 32,
+        maxVideoFramesPerSecond: Int = 120,
         maxAuthenticationFailures: Int = 3
     ) {
         self.identity = identity
@@ -145,6 +156,7 @@ public final class SecureListener {
         self.idleTimeout = idleTimeout
         self.pairingTimeout = pairingTimeout
         self.maxFramesPerSecond = maxFramesPerSecond
+        self.maxVideoFramesPerSecond = maxVideoFramesPerSecond
         self.maxAuthenticationFailures = maxAuthenticationFailures
     }
 
@@ -330,6 +342,9 @@ public final class SecureListener {
     }
 
     /// Sends a control message. Refused unless the session is authenticated.
+    ///
+    /// Also used for `mirror.keyframe_request`, which is the receiver's only way to ask for an IDR
+    /// after a decoder flush (NETWORK_PROTOCOL §7).
     public func sendControl(type: ControlMessageType, payload: Data = Data()) throws {
         try queue.sync {
             guard state == .authenticated, let connection else {
@@ -404,6 +419,8 @@ public final class SecureListener {
         outboundSequence = 0
         rateWindowStart = Date()
         rateWindowFrames = 0
+        videoWindowStart = Date()
+        videoWindowFrames = 0
         lastActivity = Date()
         locked { peerPinValue = nil; pairingCodeValue = nil }
         setState(.idle)
@@ -515,7 +532,7 @@ public final class SecureListener {
             throw SecureListenerError.replayedSequence(String(describing: error))
         }
 
-        try enforceRateLimit()
+        try enforceRateLimit(isMedia: message.type.isMedia)
         lastActivity = Date()
 
         emit("frame \(message.summary)")
@@ -529,8 +546,20 @@ public final class SecureListener {
         notify { self.onFrame?(message) }
     }
 
-    private func enforceRateLimit() throws {
+    private func enforceRateLimit(isMedia: Bool) throws {
         let now = Date()
+        if isMedia {
+            if now.timeIntervalSince(videoWindowStart) >= 1 {
+                videoWindowStart = now
+                videoWindowFrames = 0
+            }
+            videoWindowFrames += 1
+            guard videoWindowFrames <= maxVideoFramesPerSecond else {
+                throw SecureListenerError.rateLimited(maxPerSecond: maxVideoFramesPerSecond)
+            }
+            return
+        }
+
         if now.timeIntervalSince(rateWindowStart) >= 1 {
             rateWindowStart = now
             rateWindowFrames = 0

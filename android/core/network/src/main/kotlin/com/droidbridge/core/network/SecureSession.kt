@@ -1,6 +1,8 @@
-package com.droidbridge.experiment.session
+package com.droidbridge.core.network
 
+import android.annotation.SuppressLint
 import android.util.Log
+import com.droidbridge.core.security.DeviceIdentity
 import com.droidbridge.protocol.session.ControlMessage
 import com.droidbridge.protocol.session.FrameReader
 import com.droidbridge.protocol.session.Framing
@@ -71,6 +73,7 @@ class SecureSession private constructor(
     initiallyAuthenticated: Boolean,
     private val idleTimeoutMs: Int,
     private val maxFramesPerSecond: Int,
+    private val maxVideoFramesPerSecond: Int,
 ) {
 
     /** Whether application data may move on this session. */
@@ -121,6 +124,17 @@ class SecureSession private constructor(
     private var rateWindowStartedNanos: Long = System.nanoTime()
     private var rateWindowFrames: Int = 0
 
+    /**
+     * Media is paced on its own budget.
+     *
+     * A 30 fps stream is normal traffic, so counting it against a 20/s control budget would close a
+     * healthy session in its first second. The separate budget still refuses a flooding peer, which
+     * is the property the limit exists for.
+     */
+    private var videoWindowStartedNanos: Long = System.nanoTime()
+    private var videoWindowFrames: Int = 0
+    private var videoFramesSent: Long = 0
+
     companion object {
         private const val TAG = "P03Session"
 
@@ -146,6 +160,7 @@ class SecureSession private constructor(
             connectTimeoutMs: Int = 5_000,
             idleTimeoutMs: Int = 30_000,
             maxFramesPerSecond: Int = 20,
+            maxVideoFramesPerSecond: Int = 120,
         ): SecureSession {
             require(connectTimeoutMs > 0) { "connectTimeoutMs must be positive" }
             require(idleTimeoutMs > 0) { "idleTimeoutMs must be positive" }
@@ -219,6 +234,7 @@ class SecureSession private constructor(
                     initiallyAuthenticated = expectedPin != null,
                     idleTimeoutMs = idleTimeoutMs,
                     maxFramesPerSecond = maxFramesPerSecond,
+                    maxVideoFramesPerSecond = maxVideoFramesPerSecond,
                 )
             } catch (e: Exception) {
                 runCatching { socket.close() }
@@ -271,6 +287,13 @@ class SecureSession private constructor(
      * [State.AWAITING_CONFIRMATION] and cannot send or receive data. This is the one place the
      * prototype is permissive, and it is permissive only about *reading* a certificate.
      */
+    // Lint's CustomX509TrustManager check exists because most hand-written trust managers end up
+    // calling checkServerTrusted with an empty chain ("trust everything") or skipping verification
+    // entirely. This one is the opposite: it is the only trust decision this transport has, it
+    // fails closed, and it is covered by the P13 device evidence (pin mismatch refused, no-cert
+    // client refused). Suppressed here rather than globally, because a second custom trust manager
+    // anywhere in the app should have to justify itself again.
+    @SuppressLint("CustomX509TrustManager")
     private class PinnedTrustManager(private val expectedPin: String?) : X509TrustManager {
 
         /** The pin this manager accepted, recorded so the caller can assert it was checked. */
@@ -358,9 +381,21 @@ class SecureSession private constructor(
             } catch (e: IOException) {
                 failLocked(SessionException("send failed: ${e.javaClass.simpleName}"))
             }
-            Log.i(TAG, "sent ${ControlMessage.describe(ControlMessage.Message(type, outboundSequence, payload))}")
+            if (type.isMedia) {
+                // One log line per frame would drown the log at 30 fps, and the line would be about
+                // the peer's screen. Counted instead; the session-level summary reports the rate.
+                videoFramesSent += 1
+            } else {
+                Log.i(
+                    TAG,
+                    "sent ${ControlMessage.describe(ControlMessage.Message(type, outboundSequence, payload))}",
+                )
+            }
         }
     }
+
+    /** Media frames sent since the session was created. For status display, never content. */
+    val mediaFramesSent: Long get() = synchronized(lock) { videoFramesSent }
 
     /**
      * Waits for the next control message, up to [timeoutMs].
@@ -443,7 +478,7 @@ class SecureSession private constructor(
         try {
             val message = ControlMessage.decode(frame)
             replayWindow.accept(message.sequence)
-            admitFrameLocked()
+            admitFrameLocked(message.type.isMedia)
             return message
         } catch (e: ReplayException) {
             failLocked(e)
@@ -460,8 +495,22 @@ class SecureSession private constructor(
      * Not a token bucket: P03 needs a bound it can demonstrate, and a strict per-second count is
      * testable without timing subtleties.
      */
-    private fun admitFrameLocked() {
+    private fun admitFrameLocked(isMedia: Boolean) {
         val now = System.nanoTime()
+        if (isMedia) {
+            if (now - videoWindowStartedNanos >= 1_000_000_000L) {
+                videoWindowStartedNanos = now
+                videoWindowFrames = 0
+            }
+            videoWindowFrames += 1
+            if (videoWindowFrames > maxVideoFramesPerSecond) {
+                throw RateLimitException(
+                    "peer exceeded $maxVideoFramesPerSecond media frames in one second",
+                )
+            }
+            return
+        }
+
         if (now - rateWindowStartedNanos >= 1_000_000_000L) {
             rateWindowStartedNanos = now
             rateWindowFrames = 0

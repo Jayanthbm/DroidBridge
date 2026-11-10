@@ -1,18 +1,38 @@
 import Foundation
 
 /// Control message types. Wire codes must match `ControlMessage.kt`.
+///
+/// The mirroring family and `video` were added by P08 and travel on the same authenticated
+/// connection as the session messages. `video` is media, not control: it is paced and rate-limited
+/// on its own budget on both ends, because a 30 fps stream would exhaust a control-frame budget in
+/// its first second.
 public enum ControlMessageType: UInt8, Equatable {
     case ping = 0x01
     case pong = 0x02
     case close = 0x03
+
+    case mirrorStarted = 0x10
+    case mirrorFormat = 0x11
+    case mirrorStop = 0x12
+    case mirrorKeyframeRequest = 0x13
+
+    case video = 0x20
 
     public var label: String {
         switch self {
         case .ping: return "ping"
         case .pong: return "pong"
         case .close: return "close"
+        case .mirrorStarted: return "mirror.started"
+        case .mirrorFormat: return "mirror.format"
+        case .mirrorStop: return "mirror.stop"
+        case .mirrorKeyframeRequest: return "mirror.keyframe_request"
+        case .video: return "video"
         }
     }
+
+    /// True for media, which is paced and limited separately from control traffic.
+    public var isMedia: Bool { self == .video }
 }
 
 /// One decoded control message: `[version][type][4-byte sequence][payload]`.
@@ -30,6 +50,11 @@ public struct ControlMessage: Equatable {
     /// Bounded, redacted description for logs: never dumps binary payloads wholesale.
     public var summary: String {
         if payload.isEmpty { return "\(type.label):\(sequence)" }
+        // Media is never decoded into a string for logging, not even to test printability: a log
+        // line must not be a place where a slice of someone's screen can appear (P10).
+        if type.isMedia {
+            return "\(type.label):\(sequence):<\(payload.count) bytes>"
+        }
         let text = String(decoding: payload, as: UTF8.self)
         let printable = payload.allSatisfy { $0 >= 0x20 && $0 <= 0x7E }
         if printable {

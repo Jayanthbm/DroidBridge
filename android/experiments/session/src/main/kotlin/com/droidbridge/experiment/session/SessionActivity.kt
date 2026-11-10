@@ -28,6 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.droidbridge.core.network.SecureSession
+import com.droidbridge.core.network.SessionNotAuthenticatedException
+import com.droidbridge.core.security.DeviceIdentity
+import com.droidbridge.core.security.KeystorePinStore
+import com.droidbridge.core.security.PeerPinning
 import com.droidbridge.protocol.session.ControlMessage
 import com.droidbridge.protocol.session.ShortAuthenticationCode
 import java.util.concurrent.Executors

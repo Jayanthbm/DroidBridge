@@ -105,7 +105,54 @@ class AnnexBToAvccTest {
         }
     }
 
+    @Test
+    fun `drops parameter sets when the producer already sent them in the format message`() {
+        // A live encoder may repeat SPS/PPS in-band. They are configuration, not a frame, and they
+        // already travelled in mirror.format, so a live access unit must not carry them again.
+        val annexB = hex("00 00 00 01") + Vectors.SPS +
+            hex("00 00 00 01") + Vectors.PPS +
+            hex("00 00 00 01") + Vectors.IDR
+
+        val unit = AnnexBToAvcc.convertAccessUnit(annexB, ptsUs = 0, dropParameterSets = true)
+
+        assertEquals(1, nalCount(unit.payload))
+        assertBytesEqual(Vectors.IDR, firstNalUnit(unit.payload), "only the IDR slice remains")
+        assertTrue(unit.isKeyframe, "dropping parameter sets must not lose the IDR detection")
+    }
+
+    @Test
+    fun `keeps parameter sets when the caller did not ask for them to be dropped`() {
+        val annexB = hex("00 00 00 01") + Vectors.SPS +
+            hex("00 00 00 01") + Vectors.PPS +
+            hex("00 00 00 01") + Vectors.IDR
+
+        val unit = AnnexBToAvcc.convertAccessUnit(annexB, ptsUs = 0)
+
+        assertEquals(3, nalCount(unit.payload))
+    }
+
+    @Test
+    fun `refuses an access unit that carried only parameter sets`() {
+        // Sending an empty access unit would violate the media framing, so this is an error rather
+        // than a silent skip.
+        val annexB = hex("00 00 00 01") + Vectors.SPS + hex("00 00 00 01") + Vectors.PPS
+
+        assertFailsWith<MalformedStreamException> {
+            AnnexBToAvcc.convertAccessUnit(annexB, ptsUs = 0, dropParameterSets = true)
+        }
+    }
+
     /** Reads the first length-prefixed NAL unit, independently of the production code. */
+
+    private fun nalCount(payload: ByteArray): Int {
+        var offset = 0
+        var count = 0
+        while (offset < payload.size) {
+            offset += 4 + lengthPrefix(payload, offset)
+            count++
+        }
+        return count
+    }
     private fun firstNalUnit(payload: ByteArray): ByteArray = nalUnitAt(payload, 0)
 
     private fun secondNalUnit(payload: ByteArray): ByteArray {
