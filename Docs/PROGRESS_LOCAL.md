@@ -139,13 +139,14 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run P02 Android 17 LAN strategy prototype (picker path, sustained duplex, recovery).
 - [x] Run P03 pairing/transport prototype.
 - [x] Run P04 clipboard prototype (Android 12 + Android 17).
-- [ ] Run the remaining P05 clipboard prototype.
-- [ ] Run P06 macOS pasteboard prompt prototype.
-- [ ] Run P07/P08 video receiver and end-to-end stream prototypes.
-- [ ] Run P09 remote-input confirmation experiment.
+- [x] Run the remaining P05 clipboard prototype (Android 12 + Android 17).
+- [x] Run P06 macOS pasteboard prompt prototype (completed on macOS 27.0.1 with a platform limitation).
+- [x] Run the P07 Mac video receiver prototype.
+- [ ] Run the P08 end-to-end stream prototype.
+- [x] Run P09 remote-input confirmation experiment (completed as NO-GO).
 - [ ] Run P10 secure-screen/screenshare-protection tests.
 - [ ] Run P11 macOS local-network permission tests.
-- [ ] Run P13 pinned TLS/CT prototype.
+- [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
 - [ ] Run P15 sandboxed, signed and notarised distribution prototype (entitlements, TCC, keychain after re-signing).
 - [ ] Confirm Apple Developer Program membership and Account Holder access for the Developer ID certificate.
@@ -210,9 +211,15 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 ## Next task
 
-P02 is accepted, including the Mac sleep/wake pass. The Mac restart finding (one re-approval per new
-service instance) is recorded as a product limitation, not as a test failure. Documentation is
-committed and pushed. No later prototype is in scope.
+**Reconciled 2026-11-10.** The section headings and the "Not started" checklist below had drifted
+behind the evidence: P05, P06 and P07 were still titled "partial" in this file while their own
+reports, `PHASE_STATUS.md` and `PHASES_AND_ACCEPTANCE.md` recorded them as completed, and P05/P06/P07/
+P09/P13 were still unchecked as "not run". The evidence was in this file all along — only the
+headings and the checklist were stale. They now match the reports; nothing was promoted on the
+strength of a commit message.
+
+The next prototype is **P08 — end-to-end mirroring**, which is the critical path (P01 + P03 + P07 are
+all accepted).
 
 
 ## Agent handoff status (2026-11-08)
@@ -546,7 +553,7 @@ shows a generic "Copied." confirmation with no content preview, and that the cli
 after ~6 minutes. The active-mirroring-FGS integration context is deferred to P08.
 
 
-## P06 — macOS pasteboard monitoring (partial, 2026-11-09)
+## P06 — macOS pasteboard monitoring (completed with a platform limitation, 2026-11-09)
 
 The P06 console ran on macOS 27.0.1 (26A434) with the bundled, ad-hoc signed, sandboxed app. It polls
 `NSPasteboard.general.changeCount` at 500 ms and reads only on a change.
@@ -569,7 +576,7 @@ The P06 console ran on macOS 27.0.1 (26A434) with the bundled, ad-hoc signed, sa
   macOS version that implements it.
 
 
-## P07 — Mac H.264 receiver (partial, 2026-11-09)
+## P07 — Mac H.264 receiver (completed, 2026-11-09)
 
 A Mac-only P07 path now parses Annex-B, builds `CMVideoFormatDescription` from bare SPS/PPS, turns
 access units into 4-byte-length AVCC `CMSampleBuffer`s and enqueues them on
@@ -589,7 +596,7 @@ access units into 4-byte-length AVCC `CMSampleBuffer`s and enqueues them on
   failure, real Android input.
 
 
-## P15 — signed/sandboxed macOS dry run (partial, 2026-11-09)
+## P15 — signed/sandboxed macOS dry run (in progress, 2026-11-09)
 
 Release build with the intended settings:
 
