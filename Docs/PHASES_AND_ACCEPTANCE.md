@@ -29,9 +29,10 @@ Android 12 and on Android 17 / S24 Ultra**: consent, foreground service, surface
 rotation, lock/`onStop`, user stop, 20 start/stop cycles, secure-content protection and token
 replay (14/14 required items; three plan-only extras remain open). **P05 is completed on Android 12 and Android 17** — the Mac→Android clipboard matrix passes on
 both, including the Android 17 "Copied." confirmation and the `ACCESS_LOCAL_NETWORK` requirement
-outside the picker; active-mirroring-FGS integration is deferred to P08. **P06 is in progress** — the
-allowed state and write-suppression pass, but macOS 27.0.1 reports `alwaysAllow`, so the deny/ask UX
-still needs a signed P15 build or another macOS version. **P07 is completed** — parser, conversion
+outside the picker; active-mirroring-FGS integration is deferred to P08. **P06 is completed on macOS 27.0.1 with a platform limitation** — the allowed state and
+write-suppression pass; the OS never presents a pasteboard prompt, even for an Apple Development-
+signed build, and TCC logs contain no pasteboard service. The deny/ask UX must be re-tested on a
+macOS version that implements it. **P07 is completed** — parser, conversion
 tests, live viewer, flush/recovery, startup latency, resolution changes and `preventsCapture`
 (video area black in a screen capture) pass; backpressure false state and glass-to-glass latency are
 plan-only measurements. **P15 is in progress** — the

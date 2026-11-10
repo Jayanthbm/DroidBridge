@@ -19,9 +19,10 @@ pipeline decoded and displayed a generated 640×360 fixture (`readyForDisplay=tr
 and 1280×720 fixtures, and was verified with a screen capture: the app UI was captured but the video
 area was black (`preventsCapture=true`). **P15 is in progress:** the Release sandbox/entitlements dry run passes;
 Developer ID signing and notarisation are blocked by the Apple membership.
-**P06 is in progress:** macOS 27.0.1 reports
-`accessBehavior=alwaysAllow`, no prompt appears, and self-write suppression works; the deny/ask
-states need a signed P15 build or another macOS version.
+**P06 is completed on macOS 27.0.1 with a platform limitation:** `accessBehavior=alwaysAllow`, no
+prompt appears, self-write suppression works, and TCC logs contain no pasteboard service. Apple
+Development signing did not change it; the deny/ask UX must be re-tested on a macOS version that
+implements the prompt.
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -561,9 +562,11 @@ The P06 console ran on macOS 27.0.1 (26A434) with the bundled, ad-hoc signed, sa
   the target's bundle ID/product/Info.plist settings were discarded and the app built as
   `com.droidbridge.DroidBridge`. The blocks are merged; the app now builds as
   `com.droidbridge.macos`.
-- P06 is partial: the required deny/ask UX has no evidence because those states could not be
-  induced on this OS/signing combination. The core question — can DroidBridge monitor the Mac
-  pasteboard automatically? — is answered **yes on this macOS 27.0.1/ad-hoc configuration**.
+- P06 is **completed for macOS 27.0.1**: the only observable state is allowed, and there is no
+  pasteboard TCC service/prompt on this OS. Re-signing with the Apple Development identity did not
+  change it. The core question — can DroidBridge monitor the Mac pasteboard automatically? — is
+  answered **yes here**. The deny/ask UX is a documented platform limitation, to be re-tested on a
+  macOS version that implements it.
 
 
 ## P07 — Mac H.264 receiver (partial, 2026-11-09)

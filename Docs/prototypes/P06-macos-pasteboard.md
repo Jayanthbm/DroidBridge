@@ -1,11 +1,12 @@
 # P06 — macOS pasteboard monitoring and the access prompt
 
-**Status: partial — allowed-state behaviour complete; deny/ask states could not be induced on this
-macOS build.** On macOS 27.0.1 with an ad-hoc signed, sandboxed build, `NSPasteboard.accessBehavior`
-is **alwaysAllow** and no access prompt appears for either `changeCount` polling or a real
-`string(forType:)` read. That makes automatic Mac→Android monitoring viable on this OS, but it also
-means the per-state "ask / don't allow" UX required by the prototype has no evidence yet. A signed
-build (P15) or a different macOS version is needed to close those states.
+**Status: completed on macOS 27.0.1, with a documented platform limitation.** On this OS the
+pasteboard is **alwaysAllow** and no access prompt appears for either `changeCount` polling or a
+real `string(forType:)` read. This holds for the ad-hoc build **and** for an Apple Development-signed
+build, and the TCC log contains no pasteboard service at all. The only observable state is
+**allowed**; `ask`/`denied` are not reachable on this macOS version. That is the definitive result
+for this OS, not a missing test. The per-state UX must be re-test on a macOS version that actually
+implements the prompt (the 15.4-era behaviour).
 
 | Field | Value |
 |---|---|
@@ -32,6 +33,8 @@ SHA-256 prefix to the log; clipboard content is never logged.
 | `tccutil reset Pasteboard com.droidbridge.macos` | reports success; behavior still `alwaysAllow` |
 | `tccutil reset All com.droidbridge.macos` | reports success; behavior still `alwaysAllow` |
 | LaunchServices launch vs direct binary | same result |
+| Apple Development-signed build (not ad-hoc) | same result: `alwaysAllow`, no prompt |
+| TCC log service list | no pasteboard service is requested or denied on this OS |
 | Requesting a manual read | succeeds with text; no alert |
 
 ### CPU / busy-loop check
@@ -59,6 +62,10 @@ Ten-minute harness run: **1,200 polls** at 500 ms, **0 reads** (the clipboard wa
    discarded and the built app was `com.droidbridge.DroidBridge`, not the documented
    `com.droidbridge.macos`. The two blocks are now merged and the binary is signed as
    **`com.droidbridge.macos`**. This matters for TCC, keychain groups and P15.
+7. **This is an OS limitation, not a signing limitation.** Re-signing the development bundle with
+   the Apple Development identity (`com.droidbridge.macos`, Team `BJ57AFQQD6`) did not change the
+   result. TCC logs contain no pasteboard service requests. Do not claim the 15.4-era prompt UX on
+   macOS 27.0.1.
 
 ## What was built
 
@@ -75,14 +82,15 @@ Ten-minute harness run: **1,200 polls** at 500 ms, **0 reads** (the clipboard wa
 | Criterion | Status |
 |---|---|
 | Definitive statement of which operation triggers the alert | **Pass for this config: neither polling nor a read triggers one; alwaysAllow** |
-| Per-state UX (undetermined/allowed/denied) | **Partial — allowed only; ask/deny not reachable** |
+| Per-state UX (undetermined/allowed/denied) | **Allowed only on macOS 27.0.1; ask/deny not implemented/reachable — documented limitation** |
 | No busy loop | **Pass — 500 ms timer; CPU check below** |
 | No sync echo | **Pass — self-write suppressed** |
 | No clipboard content in logs | **Pass — length/hash only** |
 | If a prompt appears on every read, fall back to manual paste | **Not applicable — no prompt appeared** |
 
-P06 is **in progress**, not complete: the deny/ask states still need a signed build or a macOS
-version that prompts.
+P06 is **completed for macOS 27.0.1**: the only state is allowed, and that is recorded as a
+platform limitation. The deny/ask UX must be re-tested on a macOS version that implements the
+pasteboard prompt; it is not claimed here.
 
 ## Reproducing
 
