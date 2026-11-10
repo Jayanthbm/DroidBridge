@@ -594,3 +594,21 @@ Release build with the intended settings:
 - Gatekeeper rejects the ad-hoc build, as expected without notarisation.
 - Developer ID signing, notarisation and stapling are **blocked** by the missing Apple Developer
   Program membership. P15 is partial, not passed.
+
+
+## P13 — Pinned TLS on Android 17 (completed, 2026-11-10)
+
+Fresh P03 install on the S24 Ultra and a fresh Mac identity proved the P13 acceptance criteria:
+
+- Per-install Android identity changed after uninstall/reinstall (`e0369bd5…` → `0c8d5ba9…`).
+- TLS 1.3, mutual certificate authentication, matching code `550 086` on both sides; pin persisted;
+  phone → Mac `session.ping` arrived as a framed control message.
+- A restarted Mac with a new identity was refused by the phone:
+  `peer pin mismatch: expected d2425c59…, got 6b20ec4d…`.
+- A TLS client with no certificate was refused by the Mac listener:
+  `tlsv13 alert certificate required` / `NWError certificate required`.
+- `targetSdk 37`, no `networkSecurityConfig`, no `usesCleartextTraffic`, no hostname-verifier
+  workaround, TLS 1.3 only. ECH does not apply to a literal-IP/no-SNI connection.
+- Definitive U3/U13: pinned TLS works on API 37 with default CT for this local self-signed peer.
+
+P13 is completed. The same-key certificate re-issue test is plan-only and remains unrun.

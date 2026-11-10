@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P05 accepted; P06, P07 and P15 in progress; P08–P14 pending
+**Current position:** Phase 0 complete; P00–P05 and P13 accepted; P06, P07 and P15 in progress; P08–P12, P14 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -44,7 +44,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P10** Secure screen/protection | **Pending** | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work can start after P01 |
 | **P11** macOS local-network/TCC | **Pending** | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | Independent; benefits from P02 integration |
 | **P12** Audio/calls research | **Pending — approval-gated** | Yes | Not representative | **2–4 days** if approved | Separate owner approval; can be deferred without blocking the core product |
-| **P13** Pinned TLS / CT / ECH on Android 17 | **Pending** | **Mandatory** | **No** — Android 12 is not representative | **2–3 days** | Depends on P03/P02; can run parallel with P05/P07 |
+| **P13** Pinned TLS / CT / ECH on Android 17 | **Completed** — TLS 1.3, mutual auth, pin mismatch, no-cert rejection, CT audit | Yes — done | No — Android 12 is not representative | 0 | Same-key certificate re-issue (plan-only) not run |
 | **P14** Background persistence | **Pending** | **Yes** | No — One UI 9/Doze behaviour matters | **2–3 days** | Depends on P03 + P13; feature side P05/P06 or P08 |
 | **P15** Sandboxed/signed/notarised macOS build | **In progress** — Release sandbox/entitlement dry run pass; Developer ID/notarisation blocked | **No** for signing; S24 for final smoke | Not needed | **1 day + external wait** | `codesign` valid, exact entitlements, no get-task-allow; Gatekeeper rejects ad-hoc as expected; Apple Developer Program membership is external |
 
@@ -58,16 +58,17 @@ Completed prototype evidence:
 [P05](Docs/prototypes/P05-clipboard-mac-to-android.md) ·
 [P06](Docs/prototypes/P06-macos-pasteboard.md) ·
 [P07](Docs/prototypes/P07-mac-video-receiver.md) ·
-[P15](Docs/prototypes/P15-signed-build.md)
+[P15](Docs/prototypes/P15-signed-build.md) ·
+[P13](Docs/prototypes/P13-pinned-tls-android17.md)
 
 ### Phase 1 totals
 
-- **Accepted:** P00, P01, P02, P03, P04, P05 (6 of 16).
+- **Accepted:** P00, P01, P02, P03, P04, P05, P13 (7 of 16).
 - **In progress:** P06 — allowed state and self-write suppression pass, deny/ask unavailable;
   P07 — parser/tests/viewer/recovery/latency/resolution pass, preventsCapture/backpressure pending;
   P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
-- **Pending:** P08–P14 (7 prototypes; P12 approval-gated).
-- **Remaining effort excluding P12:** roughly **11–22 engineer-days**, including in-progress rows.
+- **Pending:** P08–P12, P14 (6 prototypes; P12 approval-gated).
+- **Remaining effort excluding P12:** roughly **9–19 engineer-days**, including in-progress rows.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.
