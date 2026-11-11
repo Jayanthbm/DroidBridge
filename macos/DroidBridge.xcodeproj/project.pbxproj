@@ -41,6 +41,10 @@
 		F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */; };
 		FE69D7DA7F8548052EC95B5B /* ServiceAdvertiser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31941510EF3729E6B875C0A9 /* ServiceAdvertiser.swift */; };
 		FEA762FDC8FE386D2BBCA19B /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A277847708B2692DCD474697 /* DashboardView.swift */; };
+		A2B23B779C9A4FCFB8E7937B /* VideoPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04210690581A4E4E98664290 /* VideoPayload.swift */; };
+		0DEA438A7C454BA393FADD5C /* MirrorFormatPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = B29AB9BC48D14A19B7423DB8 /* MirrorFormatPayload.swift */; };
+		ADEFBBB54B0A41759B07C8BB /* LiveMirrorReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4F58C43DEF74D3BA2AAC0D8 /* LiveMirrorReceiver.swift */; };
+		F098B79E602C4C1B9E5CEC20 /* LiveMirrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E73C60A2B1D4620BDEDC6AF /* LiveMirrorView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +94,10 @@
 		EC83A3AC94D6A38CA642921B /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
 		EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummaryTests.swift; sourceTree = "<group>"; };
 		F6E7C447918BA19DECC45CCB /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		04210690581A4E4E98664290 /* VideoPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPayload.swift; sourceTree = "<group>"; };
+		B29AB9BC48D14A19B7423DB8 /* MirrorFormatPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFormatPayload.swift; sourceTree = "<group>"; };
+		C4F58C43DEF74D3BA2AAC0D8 /* LiveMirrorReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorReceiver.swift; sourceTree = "<group>"; };
+		5E73C60A2B1D4620BDEDC6AF /* LiveMirrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -152,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */,
+				5E73C60A2B1D4620BDEDC6AF /* LiveMirrorView.swift */,
 			);
 			path = Video;
 			sourceTree = "<group>";
@@ -181,6 +190,9 @@
 				3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */,
 				9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */,
 				045D97DC485774CFC0878C91 /* VideoReceiver.swift */,
+				C4F58C43DEF74D3BA2AAC0D8 /* LiveMirrorReceiver.swift */,
+				B29AB9BC48D14A19B7423DB8 /* MirrorFormatPayload.swift */,
+				04210690581A4E4E98664290 /* VideoPayload.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -371,6 +383,10 @@
 				B43C8476EEB1180D97D0F786 /* SessionFraming.swift in Sources */,
 				B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */,
 				822FACECDF22D3A8BB1B1AA8 /* VideoReceiver.swift in Sources */,
+				F098B79E602C4C1B9E5CEC20 /* LiveMirrorView.swift in Sources */,
+				ADEFBBB54B0A41759B07C8BB /* LiveMirrorReceiver.swift in Sources */,
+				0DEA438A7C454BA393FADD5C /* MirrorFormatPayload.swift in Sources */,
+				A2B23B779C9A4FCFB8E7937B /* VideoPayload.swift in Sources */,
 				4630552D56097E8EB4AE5B0C /* VideoView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

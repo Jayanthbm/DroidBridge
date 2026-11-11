@@ -22,10 +22,14 @@ struct DroidBridgeApp: App {
         streamPath: Self.argumentValue("--p07-stream")
     )
 
+    /// P08 live mirror receiver.
+    @StateObject private var liveMirror = LiveMirrorReceiver()
+
     /// Open a prototype tab directly for a scripted or manual run.
     @State private var selectedTab: Int = CommandLine.arguments.contains("--p06-monitor")
         ? 2
-        : (CommandLine.arguments.contains("--p07") ? 3 : 0)
+        : (CommandLine.arguments.contains("--p08-mirror") ? 4
+            : (CommandLine.arguments.contains("--p07") ? 3 : 0))
 
     private static func argumentValue(_ flag: String) -> String? {
         guard let index = CommandLine.arguments.firstIndex(of: flag),
@@ -67,6 +71,9 @@ struct DroidBridgeApp: App {
                 VideoView(model: video)
                     .tabItem { Label("P07 Video", systemImage: "play.rectangle") }
                     .tag(3)
+                LiveMirrorView(model: liveMirror)
+                    .tabItem { Label("P08 Mirror", systemImage: "display") }
+                    .tag(4)
             }
             .onAppear {
                 // Force the monitor to start with the window, independent of SwiftUI's lazy tab
