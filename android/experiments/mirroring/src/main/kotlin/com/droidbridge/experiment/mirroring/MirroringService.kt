@@ -178,37 +178,39 @@ class MirroringService : Service() {
 
         startForegroundWithNotification()
 
-        try {
-            val manager = getSystemService(MediaProjectionManager::class.java)
-            val mp = manager.getMediaProjection(resultCode, resultData)
-            if (mp == null) {
-                teardown("getMediaProjection returned null")
+        Thread({
+            try {
+                val manager = getSystemService(MediaProjectionManager::class.java)
+                val mp = manager.getMediaProjection(resultCode, resultData)
+                if (mp == null) {
+                    teardown("getMediaProjection returned null")
+                    stopSelf()
+                    return@Thread
+                }
+                projection = mp
+                mp.registerCallback(projectionCallback, mainHandler)
+                session = activeSession
+
+                activeSession.send(ControlMessage.Type.MIRROR_STARTED)
+                startSender(activeSession)
+                startReader(activeSession)
+
+                val metrics = resources.displayMetrics
+                val contentWidth = metrics.widthPixels
+                val contentHeight = metrics.heightPixels
+                stats.contentWidth.set(contentWidth)
+                stats.contentHeight.set(contentHeight)
+                startPipeline(mp, contentWidth, contentHeight)
+
+                mainHandler.postDelayed(statsRunnable, STATS_INTERVAL_MS)
+                Log.i(TAG, "mirroring started content=${contentWidth}x${contentHeight}")
+            } catch (e: Exception) {
+                Log.e(TAG, "start failed", e)
+                stats.state.set("start failed: ${e.javaClass.simpleName}: ${e.message}")
+                teardown("start failed")
                 stopSelf()
-                return
             }
-            projection = mp
-            mp.registerCallback(projectionCallback, mainHandler)
-            session = activeSession
-
-            activeSession.send(ControlMessage.Type.MIRROR_STARTED)
-            startSender(activeSession)
-            startReader(activeSession)
-
-            val metrics = resources.displayMetrics
-            val contentWidth = metrics.widthPixels
-            val contentHeight = metrics.heightPixels
-            stats.contentWidth.set(contentWidth)
-            stats.contentHeight.set(contentHeight)
-            startPipeline(mp, contentWidth, contentHeight)
-
-            mainHandler.postDelayed(statsRunnable, STATS_INTERVAL_MS)
-            Log.i(TAG, "mirroring started content=${contentWidth}x$contentHeight")
-        } catch (e: Exception) {
-            Log.e(TAG, "start failed", e)
-            stats.state.set("start failed: ${e.javaClass.simpleName}: ${e.message}")
-            teardown("start failed")
-            stopSelf()
-        }
+        }, "p08-start").start()
     }
 
     // ---------------------------------------------------------------------------------------
@@ -536,11 +538,18 @@ class MirroringService : Service() {
 
         val activeSession = session
         if (activeSession != null && activeSession.isAuthenticated) {
-            runCatching {
-                activeSession.send(
-                    ControlMessage.Type.MIRROR_STOP,
-                    reason.toByteArray(Charsets.UTF_8),
-                )
+            val sendStop = {
+                runCatching {
+                    activeSession.send(
+                        ControlMessage.Type.MIRROR_STOP,
+                        reason.toByteArray(Charsets.UTF_8),
+                    )
+                }
+            }
+            if (Looper.myLooper() == Looper.getMainLooper()) {
+                Thread({ sendStop() }, "p08-stop-send").start()
+            } else {
+                sendStop()
             }
         }
 
