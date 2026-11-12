@@ -40,6 +40,12 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var streamStartedAt: Date?
     private var lastPtsUs: Int64 = -1
 
+    // Live mirroring: sender encoder PTS are in an arbitrary clock domain. Rebase onto a local
+    // control timebase so frames present continuously instead of stalling in a different epoch.
+    private var timebase: CMTimebase?
+    private var ptsBaseUs: Int64?
+    private var ptsOffset: CMTime = .zero
+
     @Published public private(set) var state: State = .idle
     @Published public private(set) var lastEvent = "idle"
     @Published public private(set) var events: [String] = []
@@ -54,6 +60,7 @@ public final class LiveMirrorReceiver: ObservableObject {
     public init() {
         layer.preventsCapture = true
         layer.videoGravity = .resizeAspect
+        configureTimebase()
     }
 
     public func startListening(
@@ -159,6 +166,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             streamStartedAt = Date()
             needsKeyframe = true
             lastPtsUs = -1
+            resetPtsAnchor()
             emit("MIRROR_STARTED")
         case .mirrorFormat:
             do {
@@ -173,6 +181,7 @@ public final class LiveMirrorReceiver: ObservableObject {
                 pendingParameterSets = false
                 needsKeyframe = false
                 renderer.flush()
+                resetPtsAnchor()
                 emit("MIRROR_FORMAT \(fmt.width)x\(fmt.height) rotation=\(fmt.rotation) nalLengthSize=\(fmt.nalLengthSize) sps=\(fmt.sps.count) pps=\(fmt.pps.count)")
             } catch {
                 state = .failed
@@ -208,6 +217,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             framesDropped += 1
             renderer.flush()
             needsKeyframe = true
+            resetPtsAnchor()
             requestKeyframeIfNeeded(reason: "renderer-failed")
             return
         }
@@ -224,7 +234,8 @@ public final class LiveMirrorReceiver: ObservableObject {
                 needsKeyframe = false
             }
             lastPtsUs = video.ptsUs
-            let sample = try makeSampleBuffer(avcc: video.avcc, format: format, ptsUs: video.ptsUs)
+            let presentation = presentationTime(for: video.ptsUs)
+            let sample = try makeSampleBuffer(avcc: video.avcc, format: format, presentation: presentation)
             renderer.enqueue(sample)
             framesEnqueued += 1
             if firstFrameAt == nil {
@@ -258,7 +269,7 @@ public final class LiveMirrorReceiver: ObservableObject {
         }
     }
 
-    private func makeSampleBuffer(avcc: Data, format: CMVideoFormatDescription, ptsUs: Int64) throws -> CMSampleBuffer {
+    private func makeSampleBuffer(avcc: Data, format: CMVideoFormatDescription, presentation: CMTime) throws -> CMSampleBuffer {
         var blockBuffer: CMBlockBuffer?
         let blockStatus = CMBlockBufferCreateWithMemoryBlock(
             allocator: kCFAllocatorDefault,
@@ -282,10 +293,10 @@ public final class LiveMirrorReceiver: ObservableObject {
         }
         guard copyStatus == noErr else { throw H264Error.blockBuffer(copyStatus) }
 
-        // Duration unknown per-frame; use a nominal 30fps duration. PTS comes from sender.
+        // Duration unknown per-frame; use a nominal 30fps duration. PTS rebased to local timebase.
         var timing = CMSampleTimingInfo(
             duration: CMTime(value: 33333, timescale: 1_000_000),
-            presentationTimeStamp: CMTime(value: ptsUs, timescale: 1_000_000),
+            presentationTimeStamp: presentation,
             decodeTimeStamp: .invalid
         )
         var sampleSize = avcc.count
@@ -312,6 +323,41 @@ public final class LiveMirrorReceiver: ObservableObject {
         case .failed: return "failed"
         @unknown default: return "unknown(\(renderer.status.rawValue))"
         }
+    }
+
+    private func configureTimebase() {
+        var tb: CMTimebase?
+        let status = CMTimebaseCreateWithSourceClock(
+            allocator: kCFAllocatorDefault,
+            sourceClock: CMClockGetHostTimeClock(),
+            timebaseOut: &tb
+        )
+        guard status == noErr, let tb else {
+            emit("TIMEBASE_CREATE_FAILED status=\(status)")
+            return
+        }
+        CMTimebaseSetTime(tb, time: CMClockGetTime(CMClockGetHostTimeClock()))
+        CMTimebaseSetRate(tb, rate: 1.0)
+        timebase = tb
+        layer.controlTimebase = tb
+    }
+
+    private func resetPtsAnchor() {
+        ptsBaseUs = nil
+        ptsOffset = .zero
+    }
+
+    private func presentationTime(for ptsUs: Int64) -> CMTime {
+        guard let tb = timebase else {
+            return CMTime(value: ptsUs, timescale: 1_000_000)
+        }
+        if ptsBaseUs == nil {
+            ptsBaseUs = ptsUs
+            ptsOffset = CMTimebaseGetTime(tb)
+        }
+        let deltaUs = ptsUs - (ptsBaseUs ?? ptsUs)
+        let delta = CMTime(value: deltaUs, timescale: 1_000_000)
+        return CMTimeAdd(ptsOffset, delta)
     }
 
     private func emit(_ line: String) {
