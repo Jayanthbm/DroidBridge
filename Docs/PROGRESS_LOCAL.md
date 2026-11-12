@@ -5,7 +5,7 @@ device; P03 implemented and verified on loopback plus three physical S24 Ultra r
 drop and reconnect, and the final USB-disconnected acceptance run). All six P03 acceptance criteria
 are met.
 
-**Last updated:** 2026-11-09
+**Last updated:** 2026-11-12
 
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. **P01 is
 validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service, surface-fed H.264,
@@ -23,6 +23,17 @@ Developer ID signing and notarisation are blocked by the Apple membership.
 prompt appears, self-write suppression works, and TCC logs contain no pasteboard service. Apple
 Development signing did not change it; the deny/ask UX must be re-tested on a macOS version that
 implements the prompt.
+
+**2026-11-12 — P08 live mirroring now works end to end on the S24 Ultra; P10 in progress.** A
+three-part fix chain made the live view usable: the Android start/pipeline moved off the main thread
+(`92bb313`), and the macOS receiver rebases sender encoder PTS onto a host-clock control timebase
+(`8937f3d`) — before that the Mac buffered ~2 s and froze (constant `max PTS` in FigVideoQueue
+logs). A synthetic `FLAG_SECURE` toggle was then added to the mirroring experiment (`899cc87`) for
+P10: with mirroring live, enabling it made the Mac show **black** and disabling it restored the
+live image, and opening the Slice banking app (non-invasive observation only) also produced
+protected/black output. P10 remains in progress for its remaining cases; P08 acceptance (rotation,
+stop/teardown, keyframe recovery, 30-minute stability, final wireless-only run) is **not** closed.
+Evidence: `Docs/prototypes/P10-secure-screen-protection.md`.
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -142,9 +153,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run the remaining P05 clipboard prototype (Android 12 + Android 17).
 - [x] Run P06 macOS pasteboard prompt prototype (completed on macOS 27.0.1 with a platform limitation).
 - [x] Run the P07 Mac video receiver prototype.
-- [ ] Run the P08 end-to-end stream prototype.
+- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; acceptance evidence (rotation, stop/teardown, keyframe recovery, 30-minute stability, wireless-only run) still open.
 - [x] Run P09 remote-input confirmation experiment (completed as NO-GO).
-- [ ] Run P10 secure-screen/screenshare-protection tests.
+- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress (2026-11-12):** synthetic `FLAG_SECURE` toggle and Slice (non-invasive) showed protected/black in the mirror; lock screen/shade, password field, OTP notification, `setPublicVersion()`, cache check and correlated evidence runs remain.
 - [ ] Run P11 macOS local-network permission tests.
 - [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
@@ -163,6 +174,17 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 ## Tests and evidence
 
+- **2026-11-12 (P08 live + P10 partial, S24 Ultra):** live mirroring verified end to end after
+  `92bb313` (Android start/pipeline off main thread) and `8937f3d` (macOS PTS rebased to a host-clock
+  control timebase; the earlier freeze was a FigVideoQueue that stopped draining at a constant max
+  PTS). Session evidence: `TLSv1.3`, pairing confirmed (`peerPin=3b3d878a…`), encoder
+  `c2.qti.avc.encoder` at `590x1280` from `1080x2340` content, `dropped=0`, `stopReason=active`.
+  P10 synthetic check (`899cc87`): `P10 FLAG_SECURE test: ON` (09:51:59.219) → Mac **black**;
+  `OFF` (09:52:01.307) → live image restored. Slice banking app observed non-invasively → black.
+  **ADB state at log capture:** device reachable at `192.168.31.106:5555` (Wi-Fi ADB); no USB
+  transport listed by `adb devices -l` on this host at that moment. Not yet run: rotation, stop/
+  teardown, keyframe recovery, 30-minute stability, wireless-only acceptance, and the remaining P10
+  cases. See `Docs/prototypes/P10-secure-screen-protection.md`.
 - **2026-11-09 (Phase 0):** 31/31 shared protocol tests (JVM); Android `assembleDebug`,
   `testDebugUnitTest`, `lintDebug` all pass; macOS Debug + Release builds and 4/4 unit tests pass;
   clean-checkout rebuild of all three passes; APK installed and launched on OnePlus Nord CE

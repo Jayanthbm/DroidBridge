@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P15 in progress; P08, P10–P12, P14 pending
+**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P10, P15 in progress; P08, P11, P12, P14 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -41,7 +41,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P07** Mac video receiver | **Completed** — conversion/tests/viewer/recovery/latency/resolution/preventsCapture verified | **No** — Mac-side generated H.264 | Not needed | 0 | Backpressure false state, glass-to-glass latency, corrupt-failure and real Android input are plan-only |
 | **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
 | **P09** Remote input decision | **Completed — NO-GO** | Yes — checks done | Not representative | 0 | Accessibility/injection/Knox/HID refusals recorded; Phase 5 owner acceptance still needed |
-| **P10** Secure screen/protection | **Pending** | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work can start after P01 |
+| **P10** Secure screen/protection | **In progress** — synthetic `FLAG_SECURE` toggle and Slice (non-invasive) observed protected/black in mirror; remaining cases pending | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work started; [P10](Docs/prototypes/P10-secure-screen-protection.md) |
 | **P11** macOS local-network/TCC | **Pending** | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | Independent; benefits from P02 integration |
 | **P12** Audio/calls research | **Pending — approval-gated** | Yes | Not representative | **2–4 days** if approved | Separate owner approval; can be deferred without blocking the core product |
 | **P13** Pinned TLS / CT / ECH on Android 17 | **Completed** — TLS 1.3, mutual auth, pin mismatch, no-cert rejection, CT audit | Yes — done | No — Android 12 is not representative | 0 | Same-key certificate re-issue (plan-only) not run |
@@ -60,17 +60,20 @@ Completed prototype evidence:
 [P07](Docs/prototypes/P07-mac-video-receiver.md) ·
 [P15](Docs/prototypes/P15-signed-build.md) ·
 [P13](Docs/prototypes/P13-pinned-tls-android17.md) ·
-[P09](Docs/prototypes/P09-remote-input.md)
+[P09](Docs/prototypes/P09-remote-input.md) ·
+[P10 (in progress)](Docs/prototypes/P10-secure-screen-protection.md)
 
 ### Phase 1 totals
 
 - **Accepted:** P00, P01, P02, P03, P04, P05, P06, P07, P09, P13 (10 of 16).
-- **In progress:** P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
-- **Pending:** P08, P10, P11, P12, P14 (5 prototypes; P12 approval-gated).
+- **In progress:** P10 — synthetic `FLAG_SECURE` and initial banking-app observation recorded, remaining cases pending; P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
+- **Pending:** P08, P11, P12, P14 (4 prototypes; P12 approval-gated).
 - **Remaining effort excluding P12:** roughly **7–16 engineer-days**, including P15.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.
+
+Update note (2026-11-12): P10 moved to in progress with initial evidence ([P10](Docs/prototypes/P10-secure-screen-protection.md)); live P08 mirroring and synthetic FLAG_SECURE toggle exercised on S24/Mac but P08 acceptance remains open.
 
 ### What can start without the S24 Ultra
 
