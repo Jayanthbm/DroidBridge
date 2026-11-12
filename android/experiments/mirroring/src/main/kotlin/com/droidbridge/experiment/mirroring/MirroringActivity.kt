@@ -13,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,6 +83,7 @@ class MirroringActivity : ComponentActivity() {
     private var dataStateText by mutableStateOf("no session")
     private var mirrorStateText by mutableStateOf("not mirroring")
     private var statsText by mutableStateOf("")
+    private var secureTestEnabled by mutableStateOf(false)
 
     private val requestLocalNetwork =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -143,6 +145,8 @@ class MirroringActivity : ComponentActivity() {
                     onStopMirroring = { MirroringService.stop(this) },
                     onCloseSession = ::closeSession,
                     onForgetPin = ::forgetPin,
+                    secureTestEnabled = secureTestEnabled,
+                    onToggleSecureTest = ::toggleSecureTest,
                 )
             }
         }
@@ -371,6 +375,24 @@ class MirroringActivity : ComponentActivity() {
     }
 
     // ---------------------------------------------------------------------------------------
+    // P10 — synthetic FLAG_SECURE test
+    // ---------------------------------------------------------------------------------------
+
+    private fun toggleSecureTest() {
+        secureTestEnabled = !secureTestEnabled
+        if (secureTestEnabled) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
+            record("P10 FLAG_SECURE test: ON (this window should appear black/blank in the mirror)")
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+            record("P10 FLAG_SECURE test: OFF")
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------
     // Logging and state
     // ---------------------------------------------------------------------------------------
 
@@ -428,6 +450,8 @@ private fun MirrorScreen(
     onStopMirroring: () -> Unit,
     onCloseSession: () -> Unit,
     onForgetPin: () -> Unit,
+    secureTestEnabled: Boolean,
+    onToggleSecureTest: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -442,6 +466,11 @@ private fun MirrorScreen(
             style = MaterialTheme.typography.bodySmall,
         )
         Text("status: $status")
+        Text(
+            "P10 FLAG_SECURE test: ${if (secureTestEnabled) "ON — this window should be blank/black in the mirror" else "OFF"}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (secureTestEnabled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        )
         Text("own pin: $ownPin", style = MaterialTheme.typography.bodySmall)
         Text("stored peer pin: $storedPin", style = MaterialTheme.typography.bodySmall)
         Text("peer pin: $peerPin", style = MaterialTheme.typography.bodySmall)
@@ -471,6 +500,9 @@ private fun MirrorScreen(
         }
         Button(onClick = onStartMirroring, modifier = Modifier.fillMaxWidth()) {
             Text("Start mirroring (asks for screen-capture consent)")
+        }
+        Button(onClick = onToggleSecureTest, modifier = Modifier.fillMaxWidth()) {
+            Text(if (secureTestEnabled) "P10: Disable FLAG_SECURE test" else "P10: Enable FLAG_SECURE test")
         }
         OutlinedButton(onClick = onStopMirroring, modifier = Modifier.fillMaxWidth()) {
             Text("Stop mirroring")
