@@ -662,3 +662,34 @@ requests only `INTERNET` and `ACCESS_LOCAL_NETWORK`. Public API checks confirm:
 
 Full remote touch/key control is **NO-GO**; mirroring remains view-only. P09 is completed as a
 decision. Phase 5 still needs the owner to accept the view-only direction explicitly.
+
+## P08 — end-to-end mirroring acceptance evidence (2026-11-12, in progress)
+
+S24 Ultra (SM-S928B, Android 17 / API 37, build `CP2A.260605.016.S928BXXS6EZJ1`) against a Debug
+Mac app on macOS 27.2.1, same Wi-Fi LAN. Full evidence: [P08](prototypes/P08-live-mirroring.md).
+
+Measured this session:
+
+- Rotation mid-session: `re-encode 590x1280 -> 1280x590` plus a fresh `mirror.format`, Mac swapped
+  its description with `formats=2`, render queue stayed at 0 frames; rotating back produced
+  `formats=3 reEncodes=2`. No stall or stuck frame.
+- Keyframe recovery over the real transport: `--p08-fault-after` corrupt sample did not flip the
+  renderer to `.failed`, so the receiver drove the same branch explicitly
+  (`FAULT_FALLBACK scripted-flush` → flush → `KEYFRAME_REQUEST`), the phone logged
+  `requesting an IDR` with `keyframeRequests=1` and the stream resumed (`dropped=0`).
+- Stop/teardown: `MIRROR state=stopped: user stop`, `teardown complete`, `dumpsys media_projection`
+  `null`, no service entry. Same for the screen-off case (`system onStop`).
+- Stability: 30 m 43 s continuous, 9118 frames, 22 samples, `dropped=0` and
+  `received == enqueued` at every sample, render queue 0 frames on all probes. Idle-screen cost with
+  `KEY_REPEAT_PREVIOUS_FRAME_AFTER`: 4.6–5.1 fps, 244–321 kbit/s.
+- Reconnect: repeated Listen reports the same Mac pin, and Connect after Close session returned
+  `authenticated=true` from the stored pin without Forget or re-pairing.
+
+Fixed: `29892b4` — `startListening()` regenerated the Mac identity on every Listen, so the phone's
+stored pin went stale on every restart and reconnect recovery was impossible. The identity is now
+created once per app run; persistent identity remains P15 scope.
+
+Not done, so P08 stays open: the final run with USB disconnected and both debuggings disabled
+(these runs were wireless-only but needed wireless debugging on), glass-to-glass latency and
+CPU/GPU/battery/thermal numbers, the `KEY_REPEAT_PREVIOUS_FRAME_AFTER`-off comparison, and a
+locked-screen (keyguard) stop.

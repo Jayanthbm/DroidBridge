@@ -4,6 +4,28 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Fixed — P08 receiver identity (2026-11-12)
+- The macOS receiver minted a new identity every time Listen was pressed, so the phone's stored pin
+  went stale on each restart: reconnecting always meant Forget stored pin plus a fresh six-digit
+  comparison. One identity is now held for the life of the app run, so a reconnect authenticates
+  from the stored pin (`authenticated=true`, no re-pairing). Persistent identity storage remains
+  P15 scope.
+
+### Verified — P08 end-to-end mirroring on the S24 Ultra (2026-11-12)
+- Rotation mid-session re-encoded `590x1280` → `1280x590` with a fresh `mirror.format`, and the Mac
+  swapped its format description with the render queue staying at zero frames.
+- Keyframe recovery over the real transport: flush plus keyframe request reached the phone
+  (`keyframeRequests=1`, `requesting an IDR`) and the stream resumed without drops. The corrupt
+  sample used to provoke decoder failure did not flip the renderer, so that precondition is
+  recorded as unproven rather than passed.
+- Stop and screen-off both ended the capture (`user stop` / `system onStop`), with
+  `dumpsys media_projection` returning `null` and no service left behind.
+- 30 m 43 s continuous session: 9118 frames, `dropped=0` and `received == enqueued` at every
+  sample. Static-screen cost with `KEY_REPEAT_PREVIOUS_FRAME_AFTER`: 4.6–5.1 fps, 244–321 kbit/s.
+- Still open, so P08 is not complete: the run with USB and wireless debugging both off,
+  glass-to-glass latency and device-cost numbers, the no-repeat-frame comparison, and a
+  locked-screen stop.
+
 ### Added — Phase 0 (2026-11-09)
 - Android application shell: Kotlin + Jetpack Compose, Gradle Kotlin DSL, AGP 9.5.1,
   `compileSdk`/`targetSdk` 37, `minSdk` 31. Modules `app`, `core:{common,protocol,network,pairing,security}`

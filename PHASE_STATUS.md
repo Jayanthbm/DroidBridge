@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-09
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P10, P15 in progress; P08, P11, P12, P14 pending
+**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P08, P10, P15 in progress; P11, P12, P14 pending
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -39,7 +39,7 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P05** Clipboard Mac→Android | **Completed** (Android 12 + 17) | Yes — done | Yes — Android 12 matrix done | 0 | Active-mirroring-FGS integration deferred to P08; 15/30/60-min auto-clear not run. Android 17 needs `ACCESS_LOCAL_NETWORK` outside the picker |
 | **P06** macOS pasteboard prompt | **Completed on macOS 27.0.1 with limitation** — alwaysAllow, no pasteboard TCC service; deny/ask not reachable | **No** — Mac-side | Not needed; phone only for round-trip loop test | 0 | Apple Development signing did not change it; re-test prompt UX on a macOS that implements it |
 | **P07** Mac video receiver | **Completed** — conversion/tests/viewer/recovery/latency/resolution/preventsCapture verified | **No** — Mac-side generated H.264 | Not needed | 0 | Backpressure false state, glass-to-glass latency, corrupt-failure and real Android input are plan-only |
-| **P08** End-to-end mirroring | **Pending** | **Yes** — final acceptance | Early stream source only | **3–5 days** | Depends on P01 + P03 + P07; critical path |
+| **P08** End-to-end mirroring | **In progress** — rotation, keyframe recovery, stop/teardown, screen-off stop and a 30 m 43 s zero-drop session measured; final debuggings-off run, glass-to-glass latency and no-repeat-frame comparison pending | **Yes** — final acceptance | Early stream source only | **1–2 days** | Depends on P01 + P03 + P07; [P08](Docs/prototypes/P08-live-mirroring.md) |
 | **P09** Remote input decision | **Completed — NO-GO** | Yes — checks done | Not representative | 0 | Accessibility/injection/Knox/HID refusals recorded; Phase 5 owner acceptance still needed |
 | **P10** Secure screen/protection | **In progress** — synthetic `FLAG_SECURE` toggle and Slice (non-invasive) observed protected/black in mirror; remaining cases pending | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; capture-level work started; [P10](Docs/prototypes/P10-secure-screen-protection.md) |
 | **P11** macOS local-network/TCC | **Pending** | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | Independent; benefits from P02 integration |
@@ -61,19 +61,20 @@ Completed prototype evidence:
 [P15](Docs/prototypes/P15-signed-build.md) ·
 [P13](Docs/prototypes/P13-pinned-tls-android17.md) ·
 [P09](Docs/prototypes/P09-remote-input.md) ·
-[P10 (in progress)](Docs/prototypes/P10-secure-screen-protection.md)
+[P10 (in progress)](Docs/prototypes/P10-secure-screen-protection.md) ·
+[P08 (in progress)](Docs/prototypes/P08-live-mirroring.md)
 
 ### Phase 1 totals
 
 - **Accepted:** P00, P01, P02, P03, P04, P05, P06, P07, P09, P13 (10 of 16).
-- **In progress:** P10 — synthetic `FLAG_SECURE` and initial banking-app observation recorded, remaining cases pending; P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
-- **Pending:** P08, P11, P12, P14 (4 prototypes; P12 approval-gated).
+- **In progress:** P08 — stream, rotation, recovery, teardown, screen-off stop and 30-minute stability measured; final debuggings-off run and latency/instrumentation gaps documented; P10 — synthetic `FLAG_SECURE` and initial banking-app observation recorded, remaining cases pending; P15 — Release sandbox/entitlement dry run pass, Developer ID/notarisation blocked.
+- **Pending:** P11, P12, P14 (3 prototypes; P12 approval-gated).
 - **Remaining effort excluding P12:** roughly **7–16 engineer-days**, including P15.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
 - **Critical path:** P07 → P08 → P09/P10/P14; P13 runs in parallel once P03 is available; P15 waits on P11/P13/P07 and Apple membership.
 
-Update note (2026-11-12): P10 moved to in progress with initial evidence ([P10](Docs/prototypes/P10-secure-screen-protection.md)); live P08 mirroring and synthetic FLAG_SECURE toggle exercised on S24/Mac but P08 acceptance remains open.
+Update note (2026-11-12): P08 acceptance evidence captured — rotation re-encode, keyframe request recovery, stop/teardown, screen-off stop and a 30 m 43 s session with `dropped=0` throughout ([P08](Docs/prototypes/P08-live-mirroring.md)); the receiver identity is now held per app run (`29892b4`), which made stored-pin reconnect work. Still open for P08: the debuggings-off final run, glass-to-glass latency/CPU/battery/thermal and the `KEY_REPEAT_PREVIOUS_FRAME_AFTER` comparison. P10 remains in progress with its initial evidence ([P10](Docs/prototypes/P10-secure-screen-protection.md)).
 
 ### What can start without the S24 Ultra
 
