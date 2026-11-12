@@ -66,6 +66,9 @@ class MirroringService : Service() {
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_RESULT_DATA = "resultData"
 
+        /** P08 idle-cost comparison: `true` omits `KEY_REPEAT_PREVIOUS_FRAME_AFTER` for this run. */
+        const val EXTRA_OMIT_REPEAT_FRAME = "omitRepeatFrame"
+
         private const val CHANNEL_ID = "p08_mirroring"
         private const val NOTIFICATION_ID = 8108
         private const val STATS_INTERVAL_MS = 5_000L
@@ -82,11 +85,17 @@ class MirroringService : Service() {
         var isRunning: Boolean = false
             private set
 
-        fun start(context: Context, resultCode: Int, resultData: Intent) {
+        fun start(
+            context: Context,
+            resultCode: Int,
+            resultData: Intent,
+            omitRepeatFrame: Boolean = false,
+        ) {
             val intent = Intent(context, MirroringService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_RESULT_CODE, resultCode)
                 putExtra(EXTRA_RESULT_DATA, resultData)
+                putExtra(EXTRA_OMIT_REPEAT_FRAME, omitRepeatFrame)
             }
             context.startForegroundService(intent)
         }
@@ -160,6 +169,13 @@ class MirroringService : Service() {
             stopSelf()
             return
         }
+
+        MirrorEncoder.repeatPreviousFrameAfterUs = if (intent.getBooleanExtra(EXTRA_OMIT_REPEAT_FRAME, false)) {
+            null
+        } else {
+            MirrorEncoder.REPEAT_FRAME_AFTER_US
+        }
+        Log.i(TAG, "repeat-previous-frame=${MirrorEncoder.repeatPreviousFrameAfterUs ?: "off"}")
 
         val activeSession = MirrorSessionHolder.session
         if (activeSession == null || !activeSession.isAuthenticated) {

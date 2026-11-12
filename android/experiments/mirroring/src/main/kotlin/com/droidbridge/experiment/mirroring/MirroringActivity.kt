@@ -92,6 +92,9 @@ class MirroringActivity : ComponentActivity() {
     private var mirrorStateText by mutableStateOf("not mirroring")
     private var statsText by mutableStateOf("")
     private var secureTestEnabled by mutableStateOf(false)
+
+    /** P08 idle-cost comparison: launch with `--ez omitRepeatFrame true` to drop the repeat key. */
+    private var omitRepeatFrame = false
     private var passwordScreen by mutableStateOf(false)
 
     private val requestLocalNetwork =
@@ -115,7 +118,7 @@ class MirroringActivity : ComponentActivity() {
                 }
                 MirrorSessionHolder.session = active
                 record("screen-capture consent granted; starting the capture service")
-                MirroringService.start(this, result.resultCode, data)
+                MirroringService.start(this, result.resultCode, data, omitRepeatFrame)
             } else {
                 record("screen-capture consent denied (the system prompt was cancelled)")
             }
@@ -128,6 +131,10 @@ class MirroringActivity : ComponentActivity() {
         identity = DeviceIdentity.loadOrCreate()
         pinStore = KeystorePinStore(applicationContext)
         storedPinText = pinStore.pinFor(PEER_ID) ?: "(none)"
+        omitRepeatFrame = intent.getBooleanExtra(MirroringService.EXTRA_OMIT_REPEAT_FRAME, false)
+        if (omitRepeatFrame) {
+            record("P08 idle-cost comparison: repeat-previous-frame off for this run")
+        }
         record("identity pin=${identity.pin}")
         record("stored peer pin for $PEER_ID: $storedPinText")
 

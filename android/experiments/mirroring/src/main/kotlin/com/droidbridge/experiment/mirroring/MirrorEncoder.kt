@@ -55,7 +55,15 @@ class MirrorEncoder(
         private const val I_FRAME_INTERVAL_SECONDS = 2
 
         /** A still screen must keep producing frames, or the viewer looks frozen. */
-        private const val REPEAT_FRAME_AFTER_US = 250_000L
+        const val REPEAT_FRAME_AFTER_US = 250_000L
+
+        /**
+         * P08 idle-cost switch. `null` leaves `KEY_REPEAT_PREVIOUS_FRAME_AFTER` out of the format so
+         * the same session can be measured without it; the encoder then emits nothing while the
+         * screen is static. Experiment only: production always repeats the last frame.
+         */
+        @Volatile
+        var repeatPreviousFrameAfterUs: Long? = REPEAT_FRAME_AFTER_US
     }
 
     private var codec: MediaCodec? = null
@@ -93,7 +101,9 @@ class MirrorEncoder(
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL_SECONDS)
             // No reordering: the receiver assumes decode order is display order.
             setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
-            setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_AFTER_US)
+            repeatPreviousFrameAfterUs?.let {
+                setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, it)
+            }
             // PROFILE and LEVEL must be set together on this encoder family: profile alone fails
             // configure() with CodecException 0x80001001 and names no key (measured in P01).
             setInteger(
