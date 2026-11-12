@@ -2,6 +2,9 @@ package com.droidbridge.experiment.mirroring
 
 import android.Manifest
 import android.app.Activity
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
@@ -23,16 +26,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.droidbridge.core.network.SecureSession
@@ -84,6 +92,7 @@ class MirroringActivity : ComponentActivity() {
     private var mirrorStateText by mutableStateOf("not mirroring")
     private var statsText by mutableStateOf("")
     private var secureTestEnabled by mutableStateOf(false)
+    private var passwordScreen by mutableStateOf(false)
 
     private val requestLocalNetwork =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -124,30 +133,39 @@ class MirroringActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                MirrorScreen(
-                    status = statusText,
-                    ownPin = identity.pin,
-                    storedPin = storedPinText,
-                    peerPin = peerPinText,
-                    code = codeText,
-                    dataState = dataStateText,
-                    mirrorState = mirrorStateText,
-                    stats = statsText,
-                    log = logText,
-                    onRequestPermission = {
-                        requestLocalNetwork.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
-                    },
-                    onDiscover = ::discover,
-                    onConnect = ::connect,
-                    onConfirmPairing = ::confirmPairing,
-                    onRejectPairing = ::rejectPairing,
-                    onStartMirroring = ::startMirroring,
-                    onStopMirroring = { MirroringService.stop(this) },
-                    onCloseSession = ::closeSession,
-                    onForgetPin = ::forgetPin,
-                    secureTestEnabled = secureTestEnabled,
-                    onToggleSecureTest = ::toggleSecureTest,
-                )
+                if (passwordScreen) {
+                    PasswordTestScreen(onBack = { passwordScreen = false })
+                } else {
+                    MirrorScreen(
+                        status = statusText,
+                        ownPin = identity.pin,
+                        storedPin = storedPinText,
+                        peerPin = peerPinText,
+                        code = codeText,
+                        dataState = dataStateText,
+                        mirrorState = mirrorStateText,
+                        stats = statsText,
+                        log = logText,
+                        onRequestPermission = {
+                            requestLocalNetwork.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+                        },
+                        onDiscover = ::discover,
+                        onConnect = ::connect,
+                        onConfirmPairing = ::confirmPairing,
+                        onRejectPairing = ::rejectPairing,
+                        onStartMirroring = ::startMirroring,
+                        onStopMirroring = { MirroringService.stop(this) },
+                        onCloseSession = ::closeSession,
+                        onForgetPin = ::forgetPin,
+                        secureTestEnabled = secureTestEnabled,
+                        onToggleSecureTest = ::toggleSecureTest,
+                        onShowPasswordTest = {
+                            passwordScreen = true
+                            record("P10 password-field screen shown")
+                        },
+                        onPostNotification = ::postOtpNotification,
+                    )
+                }
             }
         }
 
@@ -392,6 +410,39 @@ class MirroringActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Posts a synthetic OTP notification. The public version deliberately omits the code, which is
+     * what the mirror (and a locked-screen projection) must show instead of the private content.
+     */
+    private fun postOtpNotification(usePublicVersion: Boolean) {
+        val manager = getSystemService(NotificationManager::class.java)
+        if (manager.getNotificationChannel(CHANNEL_ID) == null) {
+            manager.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, "P10 test", NotificationManager.IMPORTANCE_HIGH),
+            )
+        }
+        val private = Notification.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("P10 OTP test")
+            .setContentText("OTP-TEST-482913")
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setAutoCancel(true)
+        if (usePublicVersion) {
+            private.setPublicVersion(
+                Notification.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle("P10 notification")
+                    .setContentText("Synthetic notification (no code shown)")
+                    .build(),
+            )
+        }
+        manager.notify(
+            if (usePublicVersion) NOTIFICATION_ID_PUBLIC else NOTIFICATION_ID_PRIVATE,
+            private.build(),
+        )
+        record("P10 synthetic OTP notification posted publicVersion=$usePublicVersion")
+    }
+
     // ---------------------------------------------------------------------------------------
     // Logging and state
     // ---------------------------------------------------------------------------------------
@@ -427,6 +478,11 @@ class MirroringActivity : ComponentActivity() {
          * what the user selected and what they will recognise when an identity changes.
          */
         private const val PEER_ID = "DroidBridge-P08-Mac"
+
+        /** P10 test notification channel and ids (synthetic content only). */
+        private const val CHANNEL_ID = "p10-test"
+        private const val NOTIFICATION_ID_PRIVATE = 101
+        private const val NOTIFICATION_ID_PUBLIC = 102
     }
 }
 
@@ -452,6 +508,8 @@ private fun MirrorScreen(
     onForgetPin: () -> Unit,
     secureTestEnabled: Boolean,
     onToggleSecureTest: () -> Unit,
+    onShowPasswordTest: () -> Unit,
+    onPostNotification: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -504,6 +562,21 @@ private fun MirrorScreen(
         Button(onClick = onToggleSecureTest, modifier = Modifier.fillMaxWidth()) {
             Text(if (secureTestEnabled) "P10: Disable FLAG_SECURE test" else "P10: Enable FLAG_SECURE test")
         }
+        OutlinedButton(onClick = onShowPasswordTest, modifier = Modifier.fillMaxWidth()) {
+            Text("P10: Open password-field test screen")
+        }
+        OutlinedButton(
+            onClick = { onPostNotification(true) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("P10: Post OTP notification (with public version)")
+        }
+        OutlinedButton(
+            onClick = { onPostNotification(false) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("P10: Post OTP notification (no public version)")
+        }
         OutlinedButton(onClick = onStopMirroring, modifier = Modifier.fillMaxWidth()) {
             Text("Stop mirroring")
         }
@@ -516,5 +589,41 @@ private fun MirrorScreen(
 
         Text("Log:", style = MaterialTheme.typography.titleSmall)
         Text(if (log.isEmpty()) "(none yet)" else log, style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+/**
+ * P10 — a focused password field in our own app. Android hides password input from screen capture on
+ * recent versions; the test is that the mirrored output does not show the characters. It does not
+ * attempt any bypass.
+ */
+@Composable
+private fun PasswordTestScreen(onBack: () -> Unit) {
+    var value by remember { mutableStateOf("") }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("P10 — password field test", style = MaterialTheme.typography.titleLarge)
+        Text(
+            "Type in the field below while mirroring. The mirrored output should not show the characters. " +
+                "Use throwaway text only.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = { value = it },
+            label = { Text("Password") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
+            Text("Back to mirroring controls")
+        }
     }
 }
