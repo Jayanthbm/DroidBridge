@@ -11,16 +11,19 @@ All notable project changes are recorded here.
   from the stored pin (`authenticated=true`, no re-pairing). Persistent identity storage remains
   P15 scope.
 
-### Verified — P10 notification, password and shade cases (2026-11-12)
-- The notification shade mirrors (it is ordinary system UI) while the session keeps streaming, and
-  locking the device revokes the projection instead of exposing the keyguard.
-- Both synthetic OTP notification variants were posted and verified at the notification service:
-  the one with `setPublicVersion()` exposes only `Synthetic notification (no code shown)`, the other
-  carries no public version at all.
-- The password test field (`password="true"`) was driven with throwaway text during a live session,
-  and the app's sandbox holds no frame or screenshot files afterwards.
-- What the mirror visually shows for the password field and the OTP notifications still needs the
-  owner to observe it; the agent cannot capture the Mac's rendered video.
+### Verified — P10 password case, shade defect (2026-11-12)
+- The password test field (`password="true"`) was driven with throwaway text during a live session and
+  the mirrored pixels were captured: the mirror shows mask dots, never the typed characters. Recording
+  them at all needed `--p08-allow-capture`, because the display layer's `preventsCapture` made every
+  `screencapture` of the video area black.
+- Opening the notification shade freezes the mirrored picture on the last pre-shade frame, and the
+  receiver then closes the session with `peer exceeded 120 control frames per second` (twice, fresh
+  sessions). This withdraws the earlier "shade streams normally" claim, which had been inferred from
+  window focus and a rising frame counter rather than from the picture.
+- Both synthetic OTP notification variants remain confirmed at the notification service (the
+  `setPublicVersion()` one exposes only `Synthetic notification (no code shown)`, the other has no
+  public version), but the shade freeze blocks observing either of them in the mirror.
+- Locking the device continues to revoke the projection instead of exposing the keyguard.
 
 ### Verified — P08 end-to-end mirroring on the S24 Ultra (2026-11-12)
 - Rotation mid-session re-encoded `590x1280` → `1280x590` with a fresh `mirror.format`, and the Mac

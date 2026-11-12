@@ -87,6 +87,12 @@ struct DroidBridgeApp: App {
                    let seconds = TimeInterval(raw) {
                     liveMirror.scriptedFaultAfter = seconds
                 }
+                // P10 evidence harness: the display layer sets `preventsCapture`, which is correct
+                // for normal use but also hides the rendered video from `screencapture`, so the
+                // mirrored pixels cannot be recorded without turning it off for the run.
+                if CommandLine.arguments.contains("--p08-allow-capture") {
+                    liveMirror.allowScreenCapture()
+                }
             }
         }
         .defaultSize(width: 620, height: 560)

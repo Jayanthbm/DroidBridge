@@ -63,6 +63,14 @@ public final class LiveMirrorReceiver: ObservableObject {
     public var scriptedFaultAfter: TimeInterval?
     private var scriptedFaultFired = false
 
+    /// Test affordance for P10 evidence: `preventsCapture` is on by default, which also makes the
+    /// rendered video invisible to `screencapture`, so a recorded observation of protected content
+    /// is impossible. Only enabled by `--p08-allow-capture` on evidence runs.
+    public func allowScreenCapture() {
+        layer.preventsCapture = false
+        emit("CAPTURE_ALLOWED preventsCapture=false")
+    }
+
     @Published public private(set) var state: State = .idle
     @Published public private(set) var lastEvent = "idle"
     @Published public private(set) var events: [String] = []

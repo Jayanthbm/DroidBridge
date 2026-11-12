@@ -705,21 +705,26 @@ Not done, so P08 stays open: the final run with USB disconnected and both debugg
 (these runs were wireless-only but needed wireless debugging on), and glass-to-glass latency plus
 CPU/GPU/battery/thermal numbers.
 
-## P10 — remaining cases exercised (2026-11-12, in progress)
+## P10 — password case captured, shade defect found (2026-11-12)
 
-Same S24 Ultra session (wireless ADB only, USB absent) against a live `590x1280` stream. Evidence in
-[P10](prototypes/P10-secure-screen-protection.md).
+The Mac app sets `preventsCapture` on its display layer, which is why every earlier `screencapture` of
+the mirror came back black. A `--p08-allow-capture` switch now turns that off for evidence runs, and
+with it the mirrored pixels are recordable (evidence:
+`Docs/prototypes/evidence/p10/password-mirrored.png`).
 
-- Notification shade while mirroring: `mCurrentFocus=NotificationShade` with the session still
-  `state=mirroring … dropped=0`, i.e. system UI is captured (expected; it is not protected surface).
-- OTP notifications: both posted and verified with `dumpsys notification --noredact` — `id=102` carries
-  a `publicVersion` whose text is `Synthetic notification (no code shown)`, `id=101` has no
-  `publicVersion` at all; app log confirms `publicVersion=true` and `=false`.
-- Password field: real `EditText` with `password="true"`, focused, `throwaway-1234` typed while the
-  stream stayed live.
-- No frames cached: `run-as … du -a files cache` shows only `profileInstalled` (24 B) and an empty
-  `cache/`.
-- Locking the device revokes the projection outright, so the lock screen cannot be mirrored (P08 §5).
+- **Password field — pass.** `PELICAN-7731` typed into the `password="true"` field, stream live, and
+  the mirrored frame shows eight mask dots. Captured from the Mac window, not inferred.
+- **Notification shade — defect, not a pass.** Opening the shade freezes the mirrored picture on the
+  pre-shade frame (verified by re-capturing after collapsing the shade), and the receiver then closes
+  the session with `CLOSED framing/protocol violation: peer exceeded 120 control frames per second`
+  (`received=2840 enqueued=2840 dropped=0`), twice in a row on fresh sessions. The phone's own stats
+  freeze at `frames=1240` and end at `frames=1551 keyframes=26`. The earlier "shade streams normally"
+  line in the P10 doc was inferred from `mCurrentFocus` plus a rising frame counter and is withdrawn.
+- **OTP notifications — blocked.** Both variants are confirmed at the notification service (`id=102`
+  carries a `publicVersion` reading "Synthetic notification (no code shown)", `id=101` has none), but
+  with the shade unobservable and heads-up banners ending the session the same way, nobody can yet see
+  what the mirror displays for them.
+- No frames cached in app storage still holds (`files/` holds only `profileInstalled`, `cache/` empty).
 
-Still outstanding: the mirrored *appearance* for the password field and the two OTP variants. The
-agent has no screen-capture permission on the Mac, so these three verdicts are an owner visual check.
+Open: find why the shade produces a control-frame flood on the receiver's side while the picture stops
+advancing, then redo the shade and OTP observations.
