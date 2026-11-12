@@ -43,12 +43,28 @@
 ## Not yet tested (P10 remaining)
 
 - Lock screen and notification shade while mirroring.
-- Synthetic test app/activity focused on a **password field** (mirror should hide input).
-- Synthetic **OTP-bearing notification** / related protected activity behavior.
-- Notifications **with and without `setPublicVersion()`** — record what the mirror shows.
+- **Password field** (control added in `bd3f4b5`: "P10: Open password-field test screen").
+- **Synthetic OTP notification** with and without `setPublicVersion()` (control added in `bd3f4b5`: "P10: Post OTP notification (with public version)" / "(no public version)"). Text is synthetic (`OTP-TEST-482913`).
 - Additional banking/DRM apps by **non-invasive observation only** (no interaction, no bypass).
 - Confirmation that **no protected frames are cached** to disk or memory beyond the encode buffer.
 - Fully correlated evidence runs (device/build/timestamps/logs/Mac state) for each case, with USB/USB-debugging/wireless-debugging state recorded per run.
+
+## Running the remaining cases
+
+Mirroring must be live (Mac `P08 Mirror` listening, phone connected and capturing) before each case:
+
+1. **Password field** — tap *P10: Open password-field test screen*, focus the field, type throwaway
+   text, watch the Mac. Back to the controls with *Back to mirroring controls*.
+2. **OTP notification, no public version** — tap *P10: Post OTP notification (no public version)* and
+   read the Mac (shade open and closed).
+3. **OTP notification, with public version** — tap *P10: Post OTP notification (with public version)*
+   and compare. The public version carries no code, so if the mirror shows a redacted form that is
+   the expected result; if it shows the code that is a finding to record.
+4. **Lock screen / shade** — lock the device and pull the shade down mid-session; record whether the
+   stream stops (P01 showed lock fires `onStop()`), goes black, or shows unprotected content.
+
+Record the Mac observation, `adb logcat -s P08Mirroring P08Encoder` around each step, and the
+USB/debugging state for the run.
 
 ## Limitations
 
