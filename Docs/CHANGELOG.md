@@ -22,9 +22,13 @@ All notable project changes are recorded here.
   `dumpsys media_projection` returning `null` and no service left behind.
 - 30 m 43 s continuous session: 9118 frames, `dropped=0` and `received == enqueued` at every
   sample. Static-screen cost with `KEY_REPEAT_PREVIOUS_FRAME_AFTER`: 4.6–5.1 fps, 244–321 kbit/s.
-- Still open, so P08 is not complete: the run with USB and wireless debugging both off,
-  glass-to-glass latency and device-cost numbers, the no-repeat-frame comparison, and a
-  locked-screen stop.
+- Locked-screen stop: with the keyguard showing, the projection was revoked immediately and the Mac
+  received `MIRROR_STOP` with the system reason; no service or projection record was left behind.
+- Idle cost measured on the same static screen: 3.7 fps / 342 kbit/s with
+  `KEY_REPEAT_PREVIOUS_FRAME_AFTER`, 0.39 fps / 103 kbit/s without it (experiment switch
+  `--ez omitRepeatFrame true`), and keyframes stop advancing when nothing is encoded.
+- Still open, so P08 is not complete: the run with USB and wireless debugging both off, and
+  glass-to-glass latency plus CPU/GPU/battery/thermal numbers.
 
 ### Added — Phase 0 (2026-11-09)
 - Android application shell: Kotlin + Jetpack Compose, Gradle Kotlin DSL, AGP 9.5.1,

@@ -1,9 +1,10 @@
 # P08 — End-to-end mirroring stream (evidence)
 
 **Status: acceptance run performed 2026-11-12 on the S24 Ultra against a rebuilt Debug Mac app.**
-Rotation/re-encode, keyframe-request recovery, clean stop/teardown, screen-off stop and a
-30-minute continuous session are recorded with logs below. Two gaps remain and are stated
-explicitly at the end: the final "all debuggings disabled" run, and glass-to-glass latency.
+Rotation/re-encode, keyframe-request recovery, clean stop/teardown, screen-off and locked-screen
+stops, the `KEY_REPEAT_PREVIOUS_FRAME_AFTER` idle-cost comparison and a 30-minute continuous session
+are recorded with logs below. Two gaps remain and are stated explicitly at the end: the final
+"all debuggings disabled" run, and glass-to-glass latency/device cost.
 
 | Field | Value |
 |---|---|
@@ -70,7 +71,8 @@ Separately, the explicit **Request keyframe** control was exercised on a healthy
 
 - Screen off at 10:04:44 (screen timeout during an unattended run): window manager showed `isSleeping=true` and projection `onStop` followed immediately — `MIRROR state=stopped: system onStop (lock / screen-sharing chip / user stop)`.
 - Same stop path at the end of the stability run, 10:52:08, after 30 m 43 s.
-- A locked-screen (keyguard) run was **not** performed separately; both observed stops are the screen-off / projection-revoked case. Lock remains unrun for P08.
+- **Locked-screen (keyguard) run, 11:14:48:** with a live session, `input keyevent KEYCODE_SLEEP` locked the device — `dumpsys window` then reported `isKeyguardShowing=true`, `mDreamingLockscreen=true` — and the projection was revoked: `projection onStop`, `MIRROR state=stopped: system onStop (lock / screen-sharing chip / user stop)` at `durationMs=139182`. The Mac received `MIRROR_STOP reason=system onStop (lock / screen-sharing chip / user stop)` and went to `state=stopped`.
+- Teardown for that run was confirmed from state rather than from the log line: `dumpsys media_projection` → `Media Projection:` (empty), `dumpsys activity services` → `(nothing)`, and the encoder released (`CCodec: [c2.qti.avc.encoder] state->set(STOPPING)`, `GraphicBufferSource: released unpopulated slots`). The app process was then killed (`Process: Sending signal. PID … SIG: 9`), which is why no `teardown complete reason=system onStop` line reached the buffer — that line is only emitted when the stop path finishes before the process is reaped.
 
 ## 6) 30-minute stability
 
@@ -89,9 +91,32 @@ Sampled every ~60 s (22 samples, `/tmp/p08-stability.log` during the run):
 | Final counters | `frames=9118 bytes=72477748 dropped=0 maxSendMs=7 durationMs=1804992` |
 
 The low frame rate and sub-300 kbit/s bitrate on an idle screen are the measured effect of
-`KEY_REPEAT_PREVIOUS_FRAME_AFTER` (repeat last frame instead of a free-running 30 fps). The
-comparison run **without** `KEY_REPEAT_PREVIOUS_FRAME_AFTER` was not executed, so the "with vs
-without" delta in `PROTOTYPE_PLAN.md` is only half measured.
+`KEY_REPEAT_PREVIOUS_FRAME_AFTER` (repeat last frame instead of a free-running 30 fps).
+
+### 6a) Idle cost with and without `KEY_REPEAT_PREVIOUS_FRAME_AFTER`
+
+Both runs used the same static screen (the launcher home screen reached with `KEYCODE_HOME`, so the
+experiment app's own status text was not repainting) and were measured by differencing consecutive
+stats lines, not by reading the running average.
+
+| Configuration | Window | Frames | Bytes | Frame rate | Bitrate | Keyframes |
+|---|---|---|---|---|---|---|
+| `KEY_REPEAT_PREVIOUS_FRAME_AFTER=250 ms` | 105.0 s (`durationMs` 20 129 → 125 154) | 392 | 4 484 408 | **3.7 fps** | **342 kbit/s** | 5 → 12 |
+| key omitted (repeat off) | 100.0 s (`durationMs` 20 133 → 120 164) | 39 | 1 282 276 | **0.39 fps** | **103 kbit/s** | 4 → 5 |
+
+The comparison is run through an experiment-only switch: launch the activity with
+`--ez omitRepeatFrame true` and the service omits the key for that session, logging
+`repeat-previous-frame=off` (default logs `repeat-previous-frame=250000`). Nothing else changes.
+
+Reading: repeating the last frame costs about **3.3x the bitrate and 9.5x the frames** of a static
+screen. It is also what keeps keyframes flowing — with the key omitted, keyframe counters barely
+advance (4 → 5 in 100 s) because nothing is encoded at all, so a receiver that flushes during a
+still period waits for the next screen change. Keeping the key is the right default for a viewer;
+the measured cost is the number to watch on battery.
+
+Caveat: the 30-minute run above measured 4.6–5.1 fps and 244–321 kbit/s, but its visible screen was
+the experiment app, whose status label repaints — close to, but not identical with, the 3.7 fps /
+342 kbit/s static-screen figure here.
 
 Not measured, and not claimed: end-to-end latency in milliseconds, CPU/GPU cost, battery drain,
 thermal behaviour, reconnect time after a deliberate link drop.
@@ -107,10 +132,16 @@ thermal behaviour, reconnect time after a deliberate link drop.
 
 1. **Final acceptance run with USB disconnected and both USB and wireless debugging disabled.** These runs were wireless-only (USB absent), but wireless debugging was necessarily on for scripted control. Owner action: disable Wireless debugging / USB debugging and re-run a manual 30-minute session.
 2. **Glass-to-glass latency, CPU/GPU, battery, thermal** not instrumented.
-3. **Bitrate/frame-rate comparison without `KEY_REPEAT_PREVIOUS_FRAME_AFTER`.**
-4. **Locked-screen (keyguard) stop** not run; only screen-off.
-5. **Corrupt-sample precondition for decoder failure** did not reproduce; recovery is proven via the flush + keyframe request branch and the explicit keyframe control.
-6. **Rotation UI state**: the recreated activity reports `idle` while the service keeps streaming; controls need a reconnect.
+3. **Corrupt-sample precondition for decoder failure** did not reproduce; recovery is proven via the flush + keyframe request branch and the explicit keyframe control.
+4. **Rotation UI state**: the recreated activity reports `idle` while the service keeps streaming; controls need a reconnect.
 
-P08 is therefore **not** marked complete: the stream itself meets the measured criteria, but items
-1–3 above are acceptance evidence that has not been captured.
+P08 is therefore **not** marked complete: the stream itself meets the measured criteria, but item 1
+is acceptance evidence that has not been captured, and item 2 is not measured at all.
+
+### Side observation while scripting these runs
+
+The 120 s idle deadline is easy to trip with a script: a session that authenticated and then sat
+idle during a consent dialog had been closed by the receiver, so `start` failed with
+`send failed: ConnectionResetException` / `stopReason=start failed` when the capture started. The
+failure is loud and correct (no stale socket was presented as live), but it means any automated run
+must open the session and start the capture inside two minutes.

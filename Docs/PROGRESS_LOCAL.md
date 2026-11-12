@@ -689,7 +689,18 @@ Fixed: `29892b4` — `startListening()` regenerated the Mac identity on every Li
 stored pin went stale on every restart and reconnect recovery was impossible. The identity is now
 created once per app run; persistent identity remains P15 scope.
 
+Second pass the same day (11:04–11:15):
+
+- Locked-screen stop: `KEYCODE_SLEEP` with `isKeyguardShowing=true` revoked the projection at once
+  (`system onStop`, `durationMs=139182`), the Mac received `MIRROR_STOP` with that reason, and
+  teardown was confirmed by an empty `dumpsys media_projection`, no service entry and released
+  encoder; the app process is reaped right after, so the `teardown complete` line never reaches the
+  buffer on this path.
+- Idle cost, measured by differencing stats on the same static home screen: with
+  `KEY_REPEAT_PREVIOUS_FRAME_AFTER` 3.7 fps / 342 kbit/s; with the key omitted (experiment switch
+  `--ez omitRepeatFrame true`) 0.39 fps / 103 kbit/s, and keyframes stop advancing because nothing is
+  encoded while the screen is still.
+
 Not done, so P08 stays open: the final run with USB disconnected and both debuggings disabled
-(these runs were wireless-only but needed wireless debugging on), glass-to-glass latency and
-CPU/GPU/battery/thermal numbers, the `KEY_REPEAT_PREVIOUS_FRAME_AFTER`-off comparison, and a
-locked-screen (keyguard) stop.
+(these runs were wireless-only but needed wireless debugging on), and glass-to-glass latency plus
+CPU/GPU/battery/thermal numbers.
