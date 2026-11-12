@@ -11,6 +11,17 @@ All notable project changes are recorded here.
   from the stored pin (`authenticated=true`, no re-pairing). Persistent identity storage remains
   P15 scope.
 
+### Verified — P10 notification, password and shade cases (2026-11-12)
+- The notification shade mirrors (it is ordinary system UI) while the session keeps streaming, and
+  locking the device revokes the projection instead of exposing the keyguard.
+- Both synthetic OTP notification variants were posted and verified at the notification service:
+  the one with `setPublicVersion()` exposes only `Synthetic notification (no code shown)`, the other
+  carries no public version at all.
+- The password test field (`password="true"`) was driven with throwaway text during a live session,
+  and the app's sandbox holds no frame or screenshot files afterwards.
+- What the mirror visually shows for the password field and the OTP notifications still needs the
+  owner to observe it; the agent cannot capture the Mac's rendered video.
+
 ### Verified — P08 end-to-end mirroring on the S24 Ultra (2026-11-12)
 - Rotation mid-session re-encoded `590x1280` → `1280x590` with a fresh `mirror.format`, and the Mac
   swapped its format description with the render queue staying at zero frames.

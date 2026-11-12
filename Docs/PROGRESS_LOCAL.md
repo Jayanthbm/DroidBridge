@@ -704,3 +704,22 @@ Second pass the same day (11:04–11:15):
 Not done, so P08 stays open: the final run with USB disconnected and both debuggings disabled
 (these runs were wireless-only but needed wireless debugging on), and glass-to-glass latency plus
 CPU/GPU/battery/thermal numbers.
+
+## P10 — remaining cases exercised (2026-11-12, in progress)
+
+Same S24 Ultra session (wireless ADB only, USB absent) against a live `590x1280` stream. Evidence in
+[P10](prototypes/P10-secure-screen-protection.md).
+
+- Notification shade while mirroring: `mCurrentFocus=NotificationShade` with the session still
+  `state=mirroring … dropped=0`, i.e. system UI is captured (expected; it is not protected surface).
+- OTP notifications: both posted and verified with `dumpsys notification --noredact` — `id=102` carries
+  a `publicVersion` whose text is `Synthetic notification (no code shown)`, `id=101` has no
+  `publicVersion` at all; app log confirms `publicVersion=true` and `=false`.
+- Password field: real `EditText` with `password="true"`, focused, `throwaway-1234` typed while the
+  stream stayed live.
+- No frames cached: `run-as … du -a files cache` shows only `profileInstalled` (24 B) and an empty
+  `cache/`.
+- Locking the device revokes the projection outright, so the lock screen cannot be mirrored (P08 §5).
+
+Still outstanding: the mirrored *appearance* for the password field and the two OTP variants. The
+agent has no screen-capture permission on the Mac, so these three verdicts are an owner visual check.
