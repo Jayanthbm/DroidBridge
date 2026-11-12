@@ -81,6 +81,12 @@ struct DroidBridgeApp: App {
                 if CommandLine.arguments.contains("--p06-monitor") {
                     pasteboard.start()
                 }
+                // P08 keyframe-recovery harness: inject one corrupt sample after the given delay so
+                // the renderer-failed -> flush -> keyframe-request path can be measured by a script.
+                if let raw = Self.argumentValue("--p08-fault-after"),
+                   let seconds = TimeInterval(raw) {
+                    liveMirror.scriptedFaultAfter = seconds
+                }
             }
         }
         .defaultSize(width: 620, height: 560)

@@ -32,6 +32,15 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var renderer: AVSampleBufferVideoRenderer { layer.sampleBufferRenderer }
 
     private var listener: SecureListener?
+
+    /// One identity for the life of the app run.
+    ///
+    /// `startListening` used to generate a fresh identity every time Listen was pressed, which
+    /// changed this Mac's pin under the phone's feet: every restart of the session looked like a
+    /// peer identity change and forced Forget stored pin + a manual re-pair. Reconnect recovery
+    /// therefore could not be exercised at all. The identity is now created once and reused; it is
+    /// still per-process, because persistent identity storage is P15's scope (ADR-025).
+    private var identity: MacIdentity?
     private var format: CMVideoFormatDescription?
     private var formatDescription: MirrorFormatPayload?
     private var pendingParameterSets = false
@@ -45,6 +54,14 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var timebase: CMTimebase?
     private var ptsBaseUs: Int64?
     private var ptsOffset: CMTime = .zero
+
+    /// Scripted fault hook for the P08 keyframe-recovery case (`--p08-fault-after <seconds>`).
+    /// When set, one deliberately corrupt sample is enqueued after that many seconds of streaming.
+    /// A random payload does not always flip the renderer to `.failed`, so if it stays healthy a
+    /// second later the same recovery branch is driven explicitly (flush + keyframe request) and
+    /// the event log records which of the two ran. Test affordance only; inert without the flag.
+    public var scriptedFaultAfter: TimeInterval?
+    private var scriptedFaultFired = false
 
     @Published public private(set) var state: State = .idle
     @Published public private(set) var lastEvent = "idle"
@@ -70,7 +87,14 @@ public final class LiveMirrorReceiver: ObservableObject {
     ) {
         stop()
         do {
-            let identity = try MacIdentity.generate()
+            let identity: MacIdentity
+            if let existing = self.identity {
+                identity = existing
+            } else {
+                let fresh = try MacIdentity.generate()
+                self.identity = fresh
+                identity = fresh
+            }
             let store = PeerPinStore(service: "com.droidbridge.p08.peer-pins")
             if resetPin { store.forget(peerId) }
             let secure = SecureListener(
@@ -250,6 +274,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             if framesEnqueued % 60 == 0 {
                 emit("FRAMES received=\(framesReceived) enqueued=\(framesEnqueued) dropped=\(framesDropped) ptsUs=\(video.ptsUs) status=\(statusName())")
             }
+            maybeInjectScriptedFault()
         } catch {
             framesDropped += 1
             if framesDropped <= 5 || framesDropped % 30 == 0 {
@@ -266,6 +291,49 @@ public final class LiveMirrorReceiver: ObservableObject {
             emit("KEYFRAME_REQUEST reason=\(reason) count=\(keyframeRequests)")
         } catch {
             emit("KEYFRAME_REQUEST_FAILED \(error)")
+        }
+    }
+
+    /// Enqueue a single garbage sample once the configured delay has elapsed, which pushes the
+    /// renderer into its failure state. The normal handleVideo path then flushes and asks the
+    /// sender for a keyframe, so the recovery under test is the real one.
+    private func maybeInjectScriptedFault() {
+        guard let delay = scriptedFaultAfter, !scriptedFaultFired, let format else { return }
+        guard let started = streamStartedAt ?? firstFrameAt else { return }
+        guard Date().timeIntervalSince(started) >= delay else { return }
+        scriptedFaultFired = true
+        var garbage = Data(count: 4096)
+        for index in 0..<garbage.count {
+            garbage[index] = UInt8.random(in: 0...255)
+        }
+        do {
+            let sample = try makeSampleBuffer(
+                avcc: garbage,
+                format: format,
+                presentation: presentationTime(for: max(lastPtsUs, 0))
+            )
+            renderer.enqueue(sample)
+            emit("FAULT_INJECTED method=corrupt-sample bytes=\(garbage.count) " +
+                 "afterSeconds=\(String(format: "%.1f", delay))")
+        } catch {
+            emit("FAULT_INJECTION_FAILED \(error)")
+        }
+
+        // A random payload does not reliably flip AVSampleBufferDisplayLayer to `.failed`, because
+        // the decoder may discard it without reporting. If the renderer is still healthy shortly
+        // after the corrupt sample, drive the same recovery branch explicitly so the flush and
+        // keyframe request round trip is still measured. The event records which path ran.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let self else { return }
+            if self.renderer.status == .failed || self.renderer.requiresFlushToResumeDecoding {
+                self.emit("FAULT_CONFIRMED status=\(self.statusName())")
+                return
+            }
+            self.emit("FAULT_FALLBACK scripted-flush status=\(self.statusName())")
+            self.renderer.flush()
+            self.needsKeyframe = true
+            self.resetPtsAnchor()
+            self.requestKeyframeIfNeeded(reason: "scripted-fault")
         }
     }
 
