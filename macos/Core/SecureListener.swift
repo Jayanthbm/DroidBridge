@@ -555,7 +555,9 @@ public final class SecureListener {
             }
             videoWindowFrames += 1
             guard videoWindowFrames <= maxVideoFramesPerSecond else {
-                throw SecureListenerError.rateLimited(maxPerSecond: maxVideoFramesPerSecond)
+                throw SecureListenerError.rateLimited(
+                    maxPerSecond: maxVideoFramesPerSecond, kind: "media"
+                )
             }
             return
         }
@@ -566,7 +568,9 @@ public final class SecureListener {
         }
         rateWindowFrames += 1
         guard rateWindowFrames <= maxFramesPerSecond else {
-            throw SecureListenerError.rateLimited(maxPerSecond: maxFramesPerSecond)
+            throw SecureListenerError.rateLimited(
+                maxPerSecond: maxFramesPerSecond, kind: "control"
+            )
         }
     }
 
@@ -725,7 +729,7 @@ public enum SecureListenerError: Error, CustomStringConvertible {
     case dataBeforeAuthentication
     case malformedControl(String)
     case replayedSequence(String)
-    case rateLimited(maxPerSecond: Int)
+    case rateLimited(maxPerSecond: Int, kind: String)
 
     public var description: String {
         switch self {
@@ -745,8 +749,8 @@ public enum SecureListenerError: Error, CustomStringConvertible {
             return "malformed control message: \(reason)"
         case .replayedSequence(let reason):
             return "replayed control sequence: \(reason)"
-        case .rateLimited(let maxPerSecond):
-            return "peer exceeded \(maxPerSecond) control frames per second"
+        case .rateLimited(let maxPerSecond, let kind):
+            return "peer exceeded \(maxPerSecond) \(kind) frames per second"
         }
     }
 }
