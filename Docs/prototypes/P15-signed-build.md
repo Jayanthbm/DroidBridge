@@ -7,7 +7,7 @@
 | Date | 2026-11-17 |
 | Mac | MacBook Air M1, macOS 27.2.1 (26B131), arm64 |
 | Xcode | 27.2 (27B52) |
-| Bundle | `com.droidbridge.macos` |
+| Bundle | `com.droidbridge.app` (updated 2026-11-17; macOS only) |
 | Build | Release, Xcode “Sign to Run Locally” / ad-hoc |
 | Hardened runtime | yes |
 | S24 / USB | Not involved; Mac-only test |
@@ -28,10 +28,10 @@ Artifact: `macos/build/Build/Products/Release/DroidBridge.app`.
 | Check | Result |
 |---|---|
 | Release build | **Pass** |
-| Local `open -n` launch from the build output | **Pass** on this Mac; the Release executable was observed running |
+| Local `open -n` launch from the build output and canonical `~/Applications/DroidBridge.app` | **Pass** on this Mac; both executables were observed running. The canonical app resolved Bonjour alone after the prior advertiser was stopped |
 | `codesign --verify --deep --strict --verbose=2` | **Pass** — valid on disk and satisfies its Designated Requirement |
 | Signature | **Ad-hoc**, `TeamIdentifier=not set`, hardened-runtime flag present |
-| Bundle identifier | `com.droidbridge.macos` |
+| Bundle identifier | `com.droidbridge.app`; verified in the built and canonical app `Info.plist` |
 | Entitlements embedded in the app | Exactly `app-sandbox`, `network.client`, `network.server` |
 | `get-task-allow` | Absent |
 | Gatekeeper `spctl -a -vv` | **Rejected** (exit 3), expected for this unnotarized ad-hoc artifact |
@@ -41,7 +41,7 @@ Artifact: `macos/build/Build/Products/Release/DroidBridge.app`.
 | Peer reconnect without re-pairing | **Not run** — Android reconnect against the persisted Mac identity remains outstanding |
 | Developer ID signing, notarisation, stapling | **Not run; deferred by owner** |
 
-The successful local launch and Gatekeeper's rejection are both recorded: the former demonstrates this build ran from the local build output on this Mac, while the latter means it is not an acceptable notarized distribution artifact. No Gatekeeper setting or security control was changed to run it.
+The successful local launches and Gatekeeper's rejection are both recorded: the former demonstrates this build ran from the local build output and canonical `~/Applications/DroidBridge.app` on this Mac, while the latter means it is not an acceptable notarized distribution artifact. No Gatekeeper setting or security control was changed to run it.
 
 ## Identity implementation and evidence
 
@@ -56,6 +56,12 @@ An earlier failed experiment's generated Keychain key item remains untouched. Th
 The current goal is personal use on the owner's Mac, not distribution. Continue developing and testing the sandboxed local Mac build without requiring an Apple Developer Program membership. The ad-hoc artifact is for this local workflow only; do not claim it will launch as a downloaded/quarantined app on another Mac.
 
 If distribution becomes a goal, reopen P15 and complete Developer ID signing with the hardened runtime, notarisation, stapling, and clean/quarantined-machine launch checks. Phase 9's distribution gates remain unchanged. The P15 distribution portion is deferred rather than passed. The personal-use identity path is verified only for the current local ad-hoc build; persistence and ACL behavior after Developer ID signing or re-signing need separate validation.
+
+## Bundle identifier update (2026-11-17)
+
+The owner requested `com.droidbridge.app` for the macOS app. `macos/project.yml` was updated and the Xcode project regenerated; Android's `applicationId` remains independently `com.droidbridge.app` and was not changed. The macOS test bundle uses `com.droidbridge.app.tests`. The Release build and all 67 macOS tests passed. The final app's embedded identifier, sandbox/network entitlements, usage description, and Bonjour declaration were checked. Two separate Release identity harness processes still reported the existing pin. The canonical copy at `~/Applications/DroidBridge.app` resolved `_droidbridge-dev._tcp` alone on port 59559 after the previous advertiser was stopped. See P11 for permission and discovery limitations; this does not prove a first-run prompt or denial path.
+
+Older generated app bundles were removed only after the canonical copy was built and verified; no DerivedData/build directories, Keychain entries, app settings, or repository files were removed. The canonical copy remains an ad-hoc, personal-use app, not a distribution artifact.
 
 ## Reproducing the local-use check
 

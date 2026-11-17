@@ -66,6 +66,9 @@ public final class ServiceAdvertiser {
                     let port = listener.port?.rawValue ?? 0
                     self.state = .advertising(name: "DroidBridge", port: port)
                     self.emit("advertising type=\(ServiceType.droidBridge) port=\(port) sid=\(txt.sessionId)")
+                case .waiting(let error):
+                    self.state = .waiting(error.localizedDescription)
+                    self.emit("advertiser waiting: \(error.localizedDescription)")
                 case .failed(let error):
                     self.state = .failed(error.localizedDescription)
                     self.emit("advertiser failed: \(error.localizedDescription)")

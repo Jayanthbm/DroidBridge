@@ -66,9 +66,14 @@ final class ServiceAdvertisementTests: XCTestCase {
         XCTAssertEqual(ids.first?.count, 32, "16 random bytes hex encoded is 32 characters")
     }
 
-    func testAdvertiseStateReportsAdvertisingCorrectly() {
+    func testAdvertiseStateReportsAdvertisingAndSettingsRecoveryStates() {
         XCTAssertFalse(AdvertiseState.idle.isAdvertising)
         XCTAssertTrue(AdvertiseState.advertising(name: "DroidBridge", port: 5000).isAdvertising)
         XCTAssertFalse(AdvertiseState.failed("nope").isAdvertising)
+
+        XCTAssertFalse(AdvertiseState.idle.shouldOfferLocalNetworkSettings)
+        XCTAssertFalse(AdvertiseState.advertising(name: "DroidBridge", port: 5000).shouldOfferLocalNetworkSettings)
+        XCTAssertTrue(AdvertiseState.waiting("local network denied").shouldOfferLocalNetworkSettings)
+        XCTAssertTrue(AdvertiseState.failed("nope").shouldOfferLocalNetworkSettings)
     }
 }

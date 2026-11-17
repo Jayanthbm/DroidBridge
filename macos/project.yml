@@ -1,8 +1,6 @@
 name: DroidBridge
 options:
-  # No bundleIdPrefix: each target sets PRODUCT_BUNDLE_IDENTIFIER explicitly. The prefix option
-  # was overriding the app target's identifier, so the built app was com.droidbridge.DroidBridge
-  # while the docs, entitlements and TCC-keychain expectations use com.droidbridge.macos.
+  # No bundleIdPrefix: each target sets PRODUCT_BUNDLE_IDENTIFIER explicitly.
   deploymentTarget:
     macOS: "15.0"
   createIntermediateGroups: true
@@ -50,7 +48,7 @@ targets:
       - path: Resources
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.macos
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.app
         PRODUCT_NAME: DroidBridge
         INFOPLIST_FILE: App/Info.plist
         GENERATE_INFOPLIST_FILE: NO
@@ -91,7 +89,7 @@ targets:
       - target: DroidBridge
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.macos.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.app.tests
         GENERATE_INFOPLIST_FILE: YES
         # Test bundles are not shipped; the sandbox entitlement would block the test host from
         # loading. This does not affect the app target's entitlements.

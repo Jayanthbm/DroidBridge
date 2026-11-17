@@ -4,6 +4,16 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Changed — macOS bundle identifier and local app cleanup (2026-11-17)
+- Changed the macOS bundle ID to `com.droidbridge.app` and the test bundle ID to `com.droidbridge.app.tests`; Android's `applicationId` remains unchanged.
+- Regenerated the Xcode project, passed 67/67 macOS tests and the Release build, and verified the canonical `~/Applications/DroidBridge.app` signature, embedded ID/entitlements, persistent identity pin, and standalone Bonjour resolution.
+- Removed only the specifically inventoried old `.app` bundles. Preserved their enclosing Xcode/build cache directories, app settings, Keychain items, and repository contents. See [ADR-035](TECHNICAL_DECISIONS.md#adr-035--use-comdroidbridgeapp-for-the-macos-bundle-identifier) and [P15](prototypes/P15-signed-build.md).
+
+### In progress — P11 macOS Local Network permission UX (2026-11-17)
+- Added user-facing Local Network permission guidance and an Open System Settings action when Bonjour advertising fails.
+- On macOS 27.2.1, the ad-hoc Release app advertised `_droidbridge-dev._tcp`; `dns-sd` browsed and resolved the service and its TXT record. This confirms the current effective allowed state only.
+- First-launch prompt wording and denied-state recovery remain unverified; native UI inspection was unavailable, and no TCC reset or settings change was made. macOS suite: 67/67; Release build succeeded. See [P11](prototypes/P11-local-network-permission.md).
+
 ### Changed and verified — P08/P10 receiver investigation (2026-11-17)
 - Replaced the macOS wall-clock one-second frame counter with monotonic bounded-burst token buckets; the sustained media/control limits remain. Media events are summarized instead of emitted once per frame, and receiver UI counters publish at a bounded cadence.
 - Hardened H.264 access-unit parsing and stream sequencing: signed PTS decode, AVCC/NAL validation and IDR detection, monotonic PTS within each format epoch, IDR after stream/format boundaries, IDR-gated decoder recovery, and local renderer errors separated from invalid peer traffic.

@@ -4,6 +4,15 @@ Use newest entries at the top. Every change must include date, status, context, 
 
 Research pass of 2026-11-08 produced ADR-010 to ADR-028. Each one cites the register entry it comes from in `Docs/RESEARCH_AND_FEASIBILITY.md`.
 
+## ADR-035 — Use `com.droidbridge.app` for the macOS bundle identifier
+
+**Date:** 2026-11-17
+**Status:** Implemented and locally verified
+**Context:** The owner requested a consistent, less ambiguous DroidBridge app identity and cleanup of older Finder-indexed app copies. The macOS project previously built with `com.droidbridge.macos`; Android independently uses `com.droidbridge.app`.
+**Decision:** Set the macOS app bundle identifier to `com.droidbridge.app` and the macOS test bundle to `com.droidbridge.app.tests`. Leave Android's `applicationId` unchanged. Regenerate the Xcode project from `macos/project.yml`, build and test, then verify the canonical app's plist, signature, persistent identity pin, and Bonjour discovery before removing stale generated app bundles. Retain the canonical copy at `~/Applications/DroidBridge.app`.
+**Alternatives:** Keep the old Mac identifier (rejected: does not satisfy the owner's request); change Android's identifier too (rejected: outside scope and can affect Android install/identity behavior); remove broad DerivedData or build directories (rejected: unnecessary and risks unrelated data).
+**Consequences:** macOS and Android use the same reverse-DNS string in separate platform namespaces. Local Network consent may be associated with the new Mac bundle identity; actual denied/first-run behavior remains unverified. The login-Keychain identity was verified to persist across the identifier change in the current local build. Existing TCC state was not reset. Only explicitly identified stale `.app` bundles are removed; Keychain items, application settings, cache/build parent directories, and repository files are retained.
+
 ## ADR-034 — Persist personal-use Mac identity in the login Keychain until a profile is available
 
 **Date:** 2026-11-17

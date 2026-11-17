@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-17
 **Current phase:** Phase 1 — feasibility prototypes (P00–P15)
-**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P08 and P10 in progress; P15 local identity persistence verified with peer reconnect outstanding; P11, P14 pending; P12 approval-gated
+**Current position:** Phase 0 complete; P00–P07, P09 and P13 accepted; P08, P10 and P11 in progress; P15 local identity persistence verified with peer reconnect outstanding; P14 pending; P12 approval-gated
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,
@@ -42,11 +42,11 @@ and no Apple membership/notarisation wait. They are estimates, not commitments.
 | **P08** End-to-end mirroring | **In progress** — 2026-11-17 live S24 run mirrored the notification shade and remained active through dismissal; this single non-failure run does not establish the historical freeze's root cause or prove a general fix. Rotation UI device check, final debuggings-off run, glass-to-glass latency and device cost pending | **Yes** — final acceptance | Early stream source only | **1 day** | Depends on P01 + P03 + P07; [P08](Docs/prototypes/P08-live-mirroring.md) |
 | **P09** Remote input decision | **Completed — NO-GO** | Yes — checks done | Not representative | 0 | Accessibility/injection/Knox/HID refusals recorded; Phase 5 owner acceptance still needed |
 | **P10** Secure screen/protection | **In progress** — historical shade freeze remains unroot-caused; one fresh 2026-11-17 run showed the shade in the mirror and stayed active. Public-version synthetic OTP redaction was visually observed; private-only OTP visibility remains inconclusive / **Awaiting Local Validation** | **Yes** | Android 12 baseline only | **1–2 days** | Depends on P01/P08; [P10](Docs/prototypes/P10-secure-screen-protection.md) |
-| **P11** macOS local-network/TCC | **Pending** | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | Independent; benefits from P02 integration |
+| **P11** macOS local-network/TCC | **In progress** — allowed-state browse/resolve verified on macOS 27.2.1; first-launch prompt not visually verified, denied state and Android picker integration remain open | **No** for Mac-side | Not needed; S24 for final NSD integration | **1–2 days** | [P11](Docs/prototypes/P11-local-network-permission.md); first-run/denied-state UX needs human permission interaction |
 | **P12** Audio/calls research | **Pending — approval-gated** | Yes | Not representative | **2–4 days** if approved | Separate owner approval; can be deferred without blocking the core product |
 | **P13** Pinned TLS / CT / ECH on Android 17 | **Completed** — TLS 1.3, mutual auth, pin mismatch, no-cert rejection, CT audit | Yes — done | No — Android 12 is not representative | 0 | Same-key certificate re-issue (plan-only) not run |
 | **P14** Background persistence | **Pending** | **Yes** | No — One UI 9/Doze behaviour matters | **2–3 days** | Depends on P03 + P13; feature side P05/P06 or P08 |
-| **P15** Sandboxed macOS build | **Personal-use identity persistence verified; reconnect remains** — Release build/signature audit pass; two separate login-Keychain Release harness launches reported the same pin. Disposable-Keychain persistence and fail-closed tests pass; full macOS suite 67/67. Android reconnect without re-pairing and Keychain ACL behavior across code-signing changes remain untested. Developer ID/notarisation/quarantine checks deferred by owner while personal-use only | **No** for local build/signature; optional for Android smoke test | Not needed | Validate reconnect; distribution deferred | Ad-hoc app runs from local build output; Gatekeeper rejects it as expected. Do not claim distribution readiness; see [P15](Docs/prototypes/P15-signed-build.md) and ADR-033 |
+| **P15** Sandboxed macOS build | **Personal-use identity persistence verified; reconnect remains** — Release build/signature audit pass; two separate login-Keychain Release harness launches reported the same pin. Disposable-Keychain persistence and fail-closed tests pass; full macOS suite 67/67. macOS bundle ID is now `com.droidbridge.app`; canonical `~/Applications/DroidBridge.app` verified and resolves Bonjour alone. Android reconnect without re-pairing and Keychain ACL behavior across code-signing changes remain untested. Developer ID/notarisation/quarantine checks deferred by owner while personal-use only | **No** for local build/signature; optional for Android smoke test | Not needed | Validate reconnect; distribution deferred | Ad-hoc app runs locally; Gatekeeper rejects it as expected. Do not claim distribution readiness; see [P15](Docs/prototypes/P15-signed-build.md), ADR-033 and ADR-035 |
 Completed prototype evidence:
 [P00](Docs/prototypes/P00-environment-report.md) ·
 [P01](Docs/prototypes/P01-media-projection.md) ·
@@ -61,13 +61,14 @@ Completed prototype evidence:
 [P13](Docs/prototypes/P13-pinned-tls-android17.md) ·
 [P09](Docs/prototypes/P09-remote-input.md) ·
 [P10 (in progress)](Docs/prototypes/P10-secure-screen-protection.md) ·
-[P08 (in progress)](Docs/prototypes/P08-live-mirroring.md)
+[P08 (in progress)](Docs/prototypes/P08-live-mirroring.md) ·
+[P11 (in progress)](Docs/prototypes/P11-local-network-permission.md)
 
 ### Phase 1 totals
 
 - **Accepted:** P00, P01, P02, P03, P04, P05, P06, P07, P09, P13 (10 of 16).
-- **In progress:** P08 — stream, rotation, recovery, teardown, screen-off and keyguard stops, idle-cost comparison and an earlier 30-minute stability run measured; latest unplugged supervised attempt ended when the phone locked, and no new 30-minute awake run completed. Historical shade-freeze cause, final debugging-off acceptance, and latency/device-cost instrumentation remain open; P10 — protected surfaces withheld, password case captured, public-version redaction observed in an earlier run, current private-only notification test inconclusive because no notification appeared in the shade, and the latest unlocked/unplugged shade observation ended after mirroring stopped. P15's personal-use Release build/signature audit and login-Keychain identity persistence pass; isolated persistence/fail-closed tests pass and the full macOS suite is 67/67. Android reconnect without re-pairing remains untested. Developer ID/notarisation are distribution-only work explicitly deferred by the owner.
-- **Pending:** P11, P12, P14 (3 prototypes; P12 approval-gated).
+- **In progress:** P08 — stream, rotation, recovery, teardown, screen-off and keyguard stops, idle-cost comparison and an earlier 30-minute stability run measured; latest unplugged supervised attempt ended when the phone locked, and no new 30-minute awake run completed. Historical shade-freeze cause, final debugging-off acceptance, and latency/device-cost instrumentation remain open; P10 — protected surfaces withheld, password case captured, public-version redaction observed in an earlier run, current private-only notification test inconclusive because no notification appeared in the shade, and the latest unlocked/unplugged shade observation ended after mirroring stopped; P11 — current-state Bonjour browse/resolve passed on macOS 27.2.1 and denied-state recovery UI added, but first-launch prompt, denied-state behavior and Android picker integration remain untested. P15's personal-use Release build/signature audit and login-Keychain identity persistence pass; isolated persistence/fail-closed tests pass and the full macOS suite is 67/67. The macOS bundle ID is `com.droidbridge.app`; the canonical app copy was verified and resolved Bonjour by itself. Android reconnect without re-pairing remains untested. Developer ID/notarisation are distribution-only work explicitly deferred by the owner.
+- **Pending:** P12 and P14 (2 prototypes; P12 approval-gated).
 - **Remaining effort excluding P12:** roughly **7–16 engineer-days** for the current personal-use scope; Developer ID/notarisation are excluded as deferred distribution work.
 - **Including P12 if approved:** roughly **18–32 engineer-days**.
 - **Calendar, one engineer:** roughly **5–7 weeks**, assuming S24 availability and no Apple wait.
@@ -79,7 +80,7 @@ Update note (2026-11-17): The owner confirmed personal-use-only scope and deferr
 
 - **P06** remaining deny/ask-state UX work (blocked on a signed build or another macOS version).
 - **P07** remaining backpressure/latency/preventsCapture measurements (Mac-only).
-- **P11** macOS local-network permission/TCC.
+- **P11 follow-up** first-launch/denied-state permission UI and Android picker integration.
 - **P15 preparation** — sandbox/signing steps that do not need the Apple membership.
 - Documentation and automated tests.
 

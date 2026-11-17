@@ -441,7 +441,7 @@
 					"@executable_path/../Frameworks",
 				);
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.app;
 				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
 			};
@@ -459,7 +459,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.app.tests;
 				SDKROOT = macosx;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DroidBridge.app/Contents/MacOS/DroidBridge";
 			};
@@ -541,7 +541,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.app.tests;
 				SDKROOT = macosx;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DroidBridge.app/Contents/MacOS/DroidBridge";
 			};
@@ -561,7 +561,7 @@
 					"@executable_path/../Frameworks",
 				);
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.macos;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.app;
 				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
 			};

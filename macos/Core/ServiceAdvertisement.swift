@@ -47,10 +47,18 @@ public struct ServiceTxtRecord: Equatable {
 public enum AdvertiseState: Equatable {
     case idle
     case advertising(name: String, port: UInt16)
+    case waiting(String)
     case failed(String)
 
     public var isAdvertising: Bool {
         if case .advertising = self { return true }
         return false
+    }
+
+    public var shouldOfferLocalNetworkSettings: Bool {
+        switch self {
+        case .waiting, .failed: return true
+        case .idle, .advertising: return false
+        }
     }
 }

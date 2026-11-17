@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// P02 Path A step 1 — the Mac advertises and echoes.
@@ -30,6 +31,17 @@ struct AdvertisementView: View {
                 Text(model.statusText)
                     .font(.system(.callout, design: .monospaced))
                     .foregroundStyle(model.isAdvertising ? .green : .secondary)
+            }
+
+            Text("Starting Bonjour advertising may trigger macOS Local Network permission. "
+                 + "If access is denied, allow DroidBridge in System Settings → Privacy & Security → Local Network.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if model.state.shouldOfferLocalNetworkSettings {
+                Button("Open System Settings") {
+                    NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/System Settings.app"))
+                }
             }
 
             GroupBox("Service") {
@@ -132,6 +144,7 @@ final class AdvertisementModel: ObservableObject {
         switch state {
         case .idle: return "idle"
         case .advertising(let name, let port): return "advertising \(name) on port \(port)"
+        case .waiting(let reason): return "waiting: \(reason)"
         case .failed(let reason): return "failed: \(reason)"
         }
     }
