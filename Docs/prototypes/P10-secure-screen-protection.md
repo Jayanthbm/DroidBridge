@@ -1,6 +1,6 @@
 # P10 — Secure screen and screenshare-protection behaviour
 
-**Status: in progress (2026-11-12).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case now has captured mirrored pixels showing mask dots. Two cases are not closed: the notification shade does not mirror at all (the picture freezes and the receiver then closes the session on its control-frame guard — an open defect, section 3), which also blocks the two OTP-notification observations.
+**Status: in progress (2026-11-12 evidence; implementation update 2026-11-17).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case has captured mirrored pixels showing mask dots. The notification shade was previously reported to freeze the picture and close the session. A source-level receiver hardening update is now in place, but no fresh target-device reproduction has been completed, so shade behavior and both OTP observations remain **Awaiting Local Validation**.
 
 > This report records evidence only. No attempt is made to bypass `FLAG_SECURE`, DRM, banking-app protections or protected surfaces (prohibited by AGENTS.md / security policy).
 
@@ -52,7 +52,7 @@ NotificationShade}`, `isKeyguardShowing=false`, `exec-out screencap` shows the Q
 Re-capturing the window region at 11:52, 11:53 and after collapsing the shade all returned the same
 frozen frame with the phone's screen obviously changing, so this is not a lag artefact.
 
-**Then the session was closed by the receiver:** the Mac's own guard ended it twice, with
+**Then the session was closed by the receiver (historical 2026-11-12 runs):** the Mac's guard ended it twice, with
 
 ```
 CLOSED framing/protocol violation: peer exceeded 120 control frames per second
@@ -61,18 +61,22 @@ state=stopped received=2840 enqueued=2840 dropped=0
 
 while the phone's last stats line stayed at `frames=1240 … keyframes=21 fps=10.3 dropped=0` and the
 final teardown recorded `frames=1551 keyframes=26` (`receive stopped: SessionException: peer closed
-the connection`). Frames kept being counted by the receiver while the picture never advanced, and the
-control-frame budget (`maxFramesPerSecond = 120` in `SecureListener.enforceRateLimit`) blew out.
+the connection`). Frames kept being counted by the receiver while the picture never advanced. The
+historical report labels the budget a control-frame budget; later code inspection showed media is
+classified separately, so that old diagnosis is not reliable and must not be treated as a confirmed
+root cause.
 
-**Verdict: not a pass and not a P10 security result — an open P08/P10 defect.** Nothing protected was
-leaked (the shield is the opposite problem: the new content never reaches the mirror), but the shade
-cannot be observed in the mirror at all until this is fixed, so the "shade is ordinary system UI and
-mirrors normally" statement this document made earlier is **withdrawn**: it was inferred from
-`mCurrentFocus` plus a rising `frames=` counter, not from watching the picture. Watching the picture
-shows a freeze.
+**Verdict (historical run): not a pass and not a P10 security result.** Nothing protected was
+leaked (the shield is the opposite problem: the new content never reaches the mirror). The
+"shade is ordinary system UI and mirrors normally" statement this document made earlier is
+**withdrawn**: it was inferred from `mCurrentFocus` plus a rising `frames=` counter, not from watching
+the picture. Watching the picture showed a freeze.
 
 Reproduction on 2026-11-12: session #1 froze at `frames=1240` and closed at 1550; session #2 (fresh
-pairing, same app run) froze and closed the same way. Both closures name the control-frame limit.
+pairing, same app run) froze and closed the same way. Both historical log lines named the same
+rate-limit message, but code review found that the logged `control` classification does not match the
+current media/control accounting; the old error text is preserved here as evidence, not accepted as a
+reliable root-cause diagnosis.
 
 **Lock, for contrast:** locking the device revokes the projection outright (`KEYCODE_SLEEP`,
 `isKeyguardShowing=true` → `system onStop`, Mac `MIRROR_STOP`), so a lock screen leaves nothing to
@@ -91,12 +95,10 @@ Both controls ran against the live session and are confirmed at the notification
 - App log: `P10 synthetic OTP notification posted publicVersion=true` (11:23:49) and
   `… publicVersion=false` (11:23:59).
 
-What the *mirror* displays for each is a visual observation, and it is **blocked by the shade defect
-in section 3**: every attempt to look at a notification ended with the mirrored picture frozen on the
-pre-shade frame and the session closed by the control-frame guard. A heads-up banner without opening
-the shade was tried as well and ended the same way. The notification state itself is confirmed
-(dumpsys), so only the last mile — what a viewer sees — is missing, and it cannot be seen until the
-freeze is fixed.
+What the *mirror* displayed for each was not visually captured. Historical attempts coincided with
+the shade freeze/session closure described in section 3; the notification state itself is confirmed
+(`dumpsys`), but only the last mile — what a viewer sees — remains **Awaiting Local Validation** after
+the receiver hardening.
 
 ### 5) Password field — **pass, with the mirrored pixels captured**
 
@@ -124,10 +126,8 @@ own storage; it does not audit other processes or the system's own buffers.)
 
 ## Not yet tested (P10 remaining)
 
-- **The shade freeze defect (section 3)** — root cause unknown. The receiver counts control frames
-  from the phone at >120/s and closes the session, while the phone's picture stops advancing. Until it
-  is fixed, the shade and every notification observation (including both OTP variants) is unobservable
-  in the mirror.
+- **Fresh notification-shade run after receiver hardening:** AWAITING LOCAL VALIDATION. The Mac now uses a monotonic bounded-burst token bucket, bounded-rate frame-counter publication, reduced media log volume, strict PTS/IDR tracking, and stream-epoch handling. This is not yet evidence the historical freeze or closure is fixed; physical reproduction/root cause remains unknown.
+- **Synthetic OTP notification with/without `setPublicVersion()`:** AWAITING LOCAL VALIDATION. The 2026-11-12 posts were confirmed via `dumpsys`, but mirrored visibility remains unobserved.
 - Additional banking/DRM apps by **non-invasive observation only** (no interaction, no bypass).
 - Correlated evidence runs for each case with USB/USB-debugging/wireless-debugging state recorded per
   run (this session: USB not connected, wireless ADB on, `192.168.31.106:5555`).
@@ -135,10 +135,10 @@ own storage; it does not audit other processes or the system's own buffers.)
 ## Running the cases
 
 Mirroring must be live (Mac `P08 Mirror` listening, phone connected and capturing) before each case.
-All four steps below were executed on 2026-11-12 (see sections 3–5); they stay here as the
-reproduction procedure. **Capture the Mac window with `--p08-allow-capture`**, otherwise the video
-area photographs as black (the layer sets `preventsCapture`). Steps 2–3 remain blocked by the freeze
-in section 3:
+The steps below were attempted on 2026-11-12 (see sections 3–5) and remain the reproduction
+procedure. **Capture the Mac window with `--p08-allow-capture`**, otherwise the video area photographs
+as black (the layer sets `preventsCapture`). Steps 2–3 remain **Awaiting Local Validation** after the
+2026-11-17 receiver changes:
 
 1. **Password field** — tap *P10: Open password-field test screen*, focus the field, type throwaway
    text, watch the Mac. Back to the controls with *Back to mirroring controls*.
@@ -176,9 +176,9 @@ off unless the argument is passed.
 
 ## Current assessment
 
-**In progress, two cases blocked.** Protected surfaces are withheld as required in every case that has
-actually been observed (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured
-pixels), and the lock screen cannot leak because locking stops the capture. P10 stays open for two
-reasons, neither of them a security answer: the shade freeze (a stream defect that must be fixed before
-any notification can be observed at all) and the resulting inability to see the OTP notifications in
-the mirror.
+**In progress.** Protected surfaces are withheld as required in every case that has actually been
+observed (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured pixels),
+and the lock screen cannot leak because locking stops capture. P10 remains open: the historical shade
+freeze has not been freshly reproduced after the 2026-11-17 source changes, and mirrored OTP visibility
+(with and without a public version) remains **Awaiting Local Validation**. Do not interpret the
+implemented mitigations as a device-verified fix or as OTP protection evidence.

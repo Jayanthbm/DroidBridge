@@ -106,11 +106,11 @@ public final class SecureListener {
     private var replayWindow = ReplayWindow()
     private var outboundSequence: UInt32 = 0
     private var lastActivity = Date()
-    private var rateWindowStart = Date()
-    private var rateWindowFrames = 0
-    private var videoWindowStart = Date()
-    private var videoWindowFrames = 0
+    private var controlRateLimiter: FrameRateLimiter
+    private var mediaRateLimiter: FrameRateLimiter
     private var authenticationFailures = 0
+    private var acceptedMediaFrames: UInt64 = 0
+    private var lastMediaSummaryAt = ProcessInfo.processInfo.systemUptime
 
     private let verdict = PeerVerdict()
 
@@ -158,6 +158,14 @@ public final class SecureListener {
         self.maxFramesPerSecond = maxFramesPerSecond
         self.maxVideoFramesPerSecond = maxVideoFramesPerSecond
         self.maxAuthenticationFailures = maxAuthenticationFailures
+        self.controlRateLimiter = FrameRateLimiter(
+            framesPerSecond: maxFramesPerSecond,
+            burstCapacity: maxFramesPerSecond
+        )
+        self.mediaRateLimiter = FrameRateLimiter(
+            framesPerSecond: maxVideoFramesPerSecond,
+            burstCapacity: maxVideoFramesPerSecond
+        )
     }
 
     // MARK: - Lifecycle
@@ -417,10 +425,10 @@ public final class SecureListener {
         decoder = FrameDecoder()
         replayWindow = ReplayWindow()
         outboundSequence = 0
-        rateWindowStart = Date()
-        rateWindowFrames = 0
-        videoWindowStart = Date()
-        videoWindowFrames = 0
+        controlRateLimiter.reset()
+        mediaRateLimiter.reset()
+        acceptedMediaFrames = 0
+        lastMediaSummaryAt = ProcessInfo.processInfo.systemUptime
         lastActivity = Date()
         locked { peerPinValue = nil; pairingCodeValue = nil }
         setState(.idle)
@@ -535,7 +543,16 @@ public final class SecureListener {
         try enforceRateLimit(isMedia: message.type.isMedia)
         lastActivity = Date()
 
-        emit("frame \(message.summary)")
+        if message.type.isMedia {
+            acceptedMediaFrames &+= 1
+            let now = ProcessInfo.processInfo.systemUptime
+            if now - lastMediaSummaryAt >= 1 {
+                emit("media frames accepted=\(acceptedMediaFrames)")
+                lastMediaSummaryAt = now
+            }
+        } else {
+            emit("frame \(message.summary)")
+        }
 
         if message.type == .close {
             if let connection {
@@ -547,14 +564,12 @@ public final class SecureListener {
     }
 
     private func enforceRateLimit(isMedia: Bool) throws {
-        let now = Date()
+        // Use monotonic uptime instead of wall-clock Date. The limiter permits only a bounded burst
+        // and refills at the configured sustained rate, so TCP scheduling/coalescing cannot turn a
+        // healthy buffered batch into an immediate one-second-window violation.
+        let now = ProcessInfo.processInfo.systemUptime
         if isMedia {
-            if now.timeIntervalSince(videoWindowStart) >= 1 {
-                videoWindowStart = now
-                videoWindowFrames = 0
-            }
-            videoWindowFrames += 1
-            guard videoWindowFrames <= maxVideoFramesPerSecond else {
+            guard mediaRateLimiter.admit(at: now) else {
                 throw SecureListenerError.rateLimited(
                     maxPerSecond: maxVideoFramesPerSecond, kind: "media"
                 )
@@ -562,15 +577,18 @@ public final class SecureListener {
             return
         }
 
-        if now.timeIntervalSince(rateWindowStart) >= 1 {
-            rateWindowStart = now
-            rateWindowFrames = 0
-        }
-        rateWindowFrames += 1
-        guard rateWindowFrames <= maxFramesPerSecond else {
+        guard controlRateLimiter.admit(at: now) else {
             throw SecureListenerError.rateLimited(
                 maxPerSecond: maxFramesPerSecond, kind: "control"
             )
+        }
+    }
+
+    /// Closes the authenticated connection on a protocol/stream validation failure.
+    public func fail(reason: String) {
+        queue.sync {
+            guard let connection else { return }
+            close(connection, reason: reason)
         }
     }
 

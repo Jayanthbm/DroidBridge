@@ -41,7 +41,7 @@ rotation is deterministic).
 - Rotating back at 10:13:18.128: `re-encode 1280x590 -> 590x1280`, new `mirror.format`, `formats=3 reEncodes=2`, still `active`.
 - **Mac side:** `MIRROR_FORMAT 1280x590` replaced the old description, `formats=2`, and `FigVideoQueueGMStats` kept reporting 27–75 frames enqueued per 6 s with `sbuf queue contains 0 frames`. No stall, no stuck black frame.
 - **SPS/PPS:** the sender emitted a new `mirror.format` on each change, so `mirror.format` is a recurring message, not stream-start only (answers the U19 question in that direction). Both post-rotation parameter sets log as `sps=18 pps=4`, i.e. the same lengths as at stream start; byte equality was not dumped, so "identical bytes" is not claimed.
-- **Observed robustness gap (not fixed):** rotation recreates `MirroringActivity` (`identity pin=…` re-logged) while `MirroringService` keeps streaming. The mirrored output is unaffected, but the recreated activity loses its session handle and displays `status: idle`, so restart controls are unavailable until reconnection. Tracked here rather than changed, because it is P08 UI state, not stream correctness.
+- **Observed rotation UI gap (2026-11-12):** rotation recreated `MirroringActivity` (`identity pin=…` re-logged) while `MirroringService` kept streaming. The earlier device run found the recreated UI lost its session handle and displayed idle. A process-owned `MirrorSessionHolder` reattachment fix is now implemented and covered by build/unit validation; it has **not yet been verified on the S24 Ultra**, so the rotation UI behavior remains Awaiting Local Validation.
 
 ## 3) Decoder flush → keyframe request → resume
 
@@ -128,12 +128,26 @@ thermal behaviour, reconnect time after a deliberate link drop.
 - **Scripted fault hook** (`29892b4`): `--p08-fault-after <seconds>` for the recovery case, inert unless passed.
 - Cosmetic: the `LISTENING` event logs `port=0` because the port is read before the listener is ready; the real port appears in the following `EVENT listening on port …` line.
 
+## Receiver/session hardening update (2026-11-17)
+
+Automated changes now cover protocol and lifecycle edge cases found during review:
+
+- The Mac receive limiter uses monotonic uptime and a bounded token bucket, retaining the configured sustained media/control rates while admitting only a finite burst. Media frames are no longer individually logged; accepted media totals are summarized once per second. This avoids both wall-clock discontinuity and per-frame logging cost without removing authentication, replay, framing, or sustained-rate checks.
+- The Mac UI publishes frame counters every 30 received frames while retaining exact internal totals for logs, so SwiftUI does not re-render synchronously for every video frame.
+- Video payload validation now reports IDR status, validates signed timestamp decoding without integer overflow, validates AVCC NAL boundaries/header classes, and the stream validator enforces non-negative strictly increasing PTS plus IDR after stream start/format change. A new encoder/format epoch resets PTS ordering; after decoder flush, non-IDR frames are dropped until recovery IDR. Protocol-invalid stream data closes the session; local sample-buffer construction failures instead request decoder recovery.
+- The Android sender also drops non-increasing PTS within each format epoch. Rotation resets that epoch as the new encoder is published.
+- Activity recreation reattaches to the process-held authenticated session instead of reporting an idle/disconnected UI while the service continues. This remains a prototype process-lifetime holder, not a production session ownership architecture.
+
+MacOS unit suite: **65 passed, 0 failed** (macOS 27.2.1, arm64). Android mirroring suite: **22 passed, 0 failed**; Debug APK assembled. These are automated results only. On 2026-11-17 the S24 Ultra was seen over USB (`RZCY81TKBSV`, SM-S928B, Android 17/API 37, build `CP2A.260605.016.S928BXXS6EZJ1`); `adb_enabled=1`, `adb_wifi_enabled=1`, no DroidBridge listener/service was running, and Outlook was foreground. No app was installed or device UI changed during this update.
+
+**Physical reproduction of the notification-shade freeze and real-device rotation/session restoration: AWAITING LOCAL VALIDATION.** The root cause has not been confirmed on the target device. The rate-limit/UI-path changes are a source-level mitigation hypothesis, not proof of the shade failure's cause or fix.
+
 ## Remaining P08 gaps
 
-1. **Final acceptance run with USB disconnected and both USB and wireless debugging disabled.** These runs were wireless-only (USB absent), but wireless debugging was necessarily on for scripted control. Owner action: disable Wireless debugging / USB debugging and re-run a manual 30-minute session.
+1. **Final acceptance run with USB disconnected and USB + wireless debugging disabled.** Not run in this update; remains Awaiting Local Validation.
 2. **Glass-to-glass latency, CPU/GPU, battery, thermal** not instrumented.
-3. **Corrupt-sample precondition for decoder failure** did not reproduce; recovery is proven via the flush + keyframe request branch and the explicit keyframe control.
-4. **Rotation UI state**: the recreated activity reports `idle` while the service keeps streaming; controls need a reconnect.
+3. **Corrupt-sample precondition for decoder failure** did not reproduce; the request/IDR/resume branch is proven via scripted flush and explicit keyframe control, not renderer failure from corrupt sample.
+4. **Rotation UI reattachment** implemented, but device test remains Awaiting Local Validation.
 
 P08 is therefore **not** marked complete: the stream itself meets the measured criteria, but item 1
 is acceptance evidence that has not been captured, and item 2 is not measured at all.

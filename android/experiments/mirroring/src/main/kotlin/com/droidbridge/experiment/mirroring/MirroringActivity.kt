@@ -131,6 +131,7 @@ class MirroringActivity : ComponentActivity() {
         identity = DeviceIdentity.loadOrCreate()
         pinStore = KeystorePinStore(applicationContext)
         storedPinText = pinStore.pinFor(PEER_ID) ?: "(none)"
+        restoreSessionAfterActivityRecreation()
         omitRepeatFrame = intent.getBooleanExtra(MirroringService.EXTRA_OMIT_REPEAT_FRAME, false)
         if (omitRepeatFrame) {
             record("P08 idle-cost comparison: repeat-previous-frame off for this run")
@@ -177,6 +178,26 @@ class MirroringActivity : ComponentActivity() {
         }
 
         uiHandler.post(refreshRunnable)
+    }
+
+    /**
+     * Activity instances are recreated on rotation, but the mirroring foreground service and its
+     * authenticated socket intentionally outlive the activity. Reattach the UI to that same
+     * process-owned session instead of presenting a false idle state while video continues.
+     */
+    private fun restoreSessionAfterActivityRecreation() {
+        val active = MirrorSessionHolder.session ?: return
+        session = active
+        if (active.isAuthenticated) {
+            statusText = "connected (stored pin verified)"
+            dataStateText = "available (authenticated)"
+            peerPinText = active.peerPin
+        } else {
+            statusText = "connected (awaiting code confirmation)"
+            dataStateText = "locked (compare the code)"
+            peerPinText = active.peerPin
+        }
+        record("restored authenticated session after activity recreation; mirroring=${MirroringService.isRunning}")
     }
 
     override fun onDestroy() {
@@ -269,13 +290,13 @@ class MirroringActivity : ComponentActivity() {
      */
     private fun connect() {
         val target = discovered
-        if (target?.host == null) {
+        val host = target?.host?.hostAddress
+        if (host == null) {
             record("connect refused: no resolved peer, run Discover first")
             return
         }
 
         val stored = pinStore.pinFor(PEER_ID)
-        val host = target.host!!.hostAddress
         val port = target.port
         record("connecting to $host:$port expectedPin=${stored ?: "(none, first pairing)"}")
 

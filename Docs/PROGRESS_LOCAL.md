@@ -5,7 +5,7 @@ device; P03 implemented and verified on loopback plus three physical S24 Ultra r
 drop and reconnect, and the final USB-disconnected acceptance run). All six P03 acceptance criteria
 are met.
 
-**Last updated:** 2026-11-12
+**Last updated:** 2026-11-17
 
 **Current gate:** Phase 1 (prototypes P00–P15). P00 baseline complete for both devices. **P01 is
 validated on the S24 Ultra (Android 17 / API 37)**: consent, foreground service, surface-fed H.264,
@@ -34,6 +34,22 @@ live image, and opening the Slice banking app (non-invasive observation only) al
 protected/black output. P10 remains in progress for its remaining cases; P08 acceptance (rotation,
 stop/teardown, keyframe recovery, 30-minute stability, final wireless-only run) is **not** closed.
 Evidence: `Docs/prototypes/P10-secure-screen-protection.md`.
+
+**2026-11-17 — P08/P10 receiver investigation (automated only; device validation pending).** The
+historical notification-shade freeze is not attributed to a proven root cause: the old report called
+the 120 fps media limiter a control-frame guard, but code review showed that media and control are
+separately accounted. Implemented a monotonic bounded-burst token bucket (sustained limits retained),
+summary-only media logging, 30-frame cadence for SwiftUI counter publication, signed PTS decoding,
+AVCC/NAL validation with IDR detection, monotonic PTS and keyframe-boundary checks per encoder-format
+epoch, IDR-gated decoder recovery, and the Android side's non-increasing PTS rejection. Activity
+recreation reattaches to the service-owned process-held authenticated session. **Mac tests: 65/65**
+(macOS 27.2.1 arm64); **Android mirroring tests: 22/22**, Debug APK assembled. These results do not
+prove the shade defect is fixed. The S24 Ultra was connected over USB (`RZCY81TKBSV`, SM-S928B,
+Android 17/API 37, `CP2A.260605.016.S928BXXS6EZJ1`); USB and wireless debugging were enabled
+(`adb_enabled=1`, `adb_wifi_enabled=1`). Outlook was foreground, no DroidBridge listener/service was
+active, and no app was installed or device UI changed. Shade, OTP mirrored visibility, and rotation
+UI reattachment remain **Awaiting Local Validation**. P08 wireless-debugging-disabled final acceptance,
+glass-to-glass latency and device cost also remain open.
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -153,9 +169,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run the remaining P05 clipboard prototype (Android 12 + Android 17).
 - [x] Run P06 macOS pasteboard prompt prototype (completed on macOS 27.0.1 with a platform limitation).
 - [x] Run the P07 Mac video receiver prototype.
-- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; acceptance evidence (rotation, stop/teardown, keyframe recovery, 30-minute stability, wireless-only run) still open.
+- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists, and 2026-11-17 receiver/source hardening passes automated tests. Shade root cause/reproduction, device validation of UI restoration, debugging-disabled final acceptance, latency and device cost remain open.
 - [x] Run P09 remote-input confirmation experiment (completed as NO-GO).
-- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress (2026-11-12):** synthetic `FLAG_SECURE` toggle and Slice (non-invasive) showed protected/black in the mirror; lock screen/shade, password field, OTP notification, `setPublicVersion()`, cache check and correlated evidence runs remain.
+- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. Source-level receiver mitigations passed automated tests (2026-11-17), but shade and mirrored OTP visibility remain **Awaiting Local Validation**; they are not counted as fixed or passed.
 - [ ] Run P11 macOS local-network permission tests.
 - [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
@@ -181,10 +197,14 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
   `c2.qti.avc.encoder` at `590x1280` from `1080x2340` content, `dropped=0`, `stopReason=active`.
   P10 synthetic check (`899cc87`): `P10 FLAG_SECURE test: ON` (09:51:59.219) → Mac **black**;
   `OFF` (09:52:01.307) → live image restored. Slice banking app observed non-invasively → black.
-  **ADB state at log capture:** device reachable at `192.168.31.106:5555` (Wi-Fi ADB); no USB
-  transport listed by `adb devices -l` on this host at that moment. Not yet run: rotation, stop/
-  teardown, keyframe recovery, 30-minute stability, wireless-only acceptance, and the remaining P10
-  cases. See `Docs/prototypes/P10-secure-screen-protection.md`.
+  **ADB state at 2026-11-12 log capture:** device reachable at `192.168.31.106:5555` (Wi-Fi ADB);
+  no USB transport listed by `adb devices -l` on this host at that moment. P08 rotation, stop/teardown,
+  keyframe recovery, 30-minute stability and screen-off/keyguard stops were subsequently measured and
+  are detailed in `Docs/prototypes/P08-live-mirroring.md`; P08 final debugging-disabled acceptance,
+  latency/device-cost measurement and device re-test of rotation UI remain open. P10 password pixels,
+  shade freeze and notification-service OTP posting were evidenced; shade and mirrored OTP visibility
+  remain Awaiting Local Validation after the 2026-11-17 source hardening. See
+  `Docs/prototypes/P10-secure-screen-protection.md`.
 - **2026-11-09 (Phase 0):** 31/31 shared protocol tests (JVM); Android `assembleDebug`,
   `testDebugUnitTest`, `lintDebug` all pass; macOS Debug + Release builds and 4/4 unit tests pass;
   clean-checkout rebuild of all three passes; APK installed and launched on OnePlus Nord CE
@@ -705,7 +725,7 @@ Not done, so P08 stays open: the final run with USB disconnected and both debugg
 (these runs were wireless-only but needed wireless debugging on), and glass-to-glass latency plus
 CPU/GPU/battery/thermal numbers.
 
-## P10 — password case captured, shade defect found (2026-11-12)
+## P10 — password case captured, shade defect found (2026-11-12; source update 2026-11-17)
 
 The Mac app sets `preventsCapture` on its display layer, which is why every earlier `screencapture` of
 the mirror came back black. A `--p08-allow-capture` switch now turns that off for evidence runs, and
@@ -714,17 +734,17 @@ with it the mirrored pixels are recordable (evidence:
 
 - **Password field — pass.** `PELICAN-7731` typed into the `password="true"` field, stream live, and
   the mirrored frame shows eight mask dots. Captured from the Mac window, not inferred.
-- **Notification shade — defect, not a pass.** Opening the shade freezes the mirrored picture on the
-  pre-shade frame (verified by re-capturing after collapsing the shade), and the receiver then closes
-  the session with `CLOSED framing/protocol violation: peer exceeded 120 control frames per second`
-  (`received=2840 enqueued=2840 dropped=0`), twice in a row on fresh sessions. The phone's own stats
-  freeze at `frames=1240` and end at `frames=1551 keyframes=26`. The earlier "shade streams normally"
-  line in the P10 doc was inferred from `mCurrentFocus` plus a rising frame counter and is withdrawn.
-- **OTP notifications — blocked.** Both variants are confirmed at the notification service (`id=102`
-  carries a `publicVersion` reading "Synthetic notification (no code shown)", `id=101` has none), but
-  with the shade unobservable and heads-up banners ending the session the same way, nobody can yet see
-  what the mirror displays for them.
+- **Notification shade — historical defect, not a pass.** Opening the shade froze the mirrored picture on the
+  pre-shade frame (verified by re-capturing after collapsing the shade), and the receiver then closed
+  the session twice on fresh sessions. The historical log named a 120 fps guard, but subsequent code
+  review found media and control rates are separately classified, so that log does not confirm a
+  control-frame flood or root cause. The phone's own stats froze at `frames=1240` and ended at
+  `frames=1551 keyframes=26`. The earlier "shade streams normally" line in the P10 doc was inferred
+  from `mCurrentFocus` plus a rising frame counter and is withdrawn.
+- **OTP notifications — mirrored visibility not observed.** Both variants are confirmed at the notification service (`id=102`
+  carries a `publicVersion` reading "Synthetic notification (no code shown)", `id=101` has none). The
+  2026-11-12 visual attempts coincided with the shade/session failure; after the source changes,
+  mirrored OTP visibility remains Awaiting Local Validation.
 - No frames cached in app storage still holds (`files/` holds only `profileInstalled`, `cache/` empty).
 
-Open: find why the shade produces a control-frame flood on the receiver's side while the picture stops
-advancing, then redo the shade and OTP observations.
+**2026-11-17 source update (not device evidence):** macOS now has bounded-burst monotonic rate limiters, batched media logging, bounded-rate UI counter publication, strict AVCC/IDR/PTS validation per format epoch, and IDR-gated recovery; Android drops non-increasing encoder PTS per epoch and restores the process-held session reference after Activity recreation. Mac unit tests: 65/65 passed; Android mirroring tests: 22/22 passed and Debug APK assembled. On this date the S24 Ultra was reachable over USB with USB and wireless debugging enabled, but Outlook was foreground, no listener/service was running, and no app installation or UI action occurred. The shade freeze has not been reproduced again; no root cause or fix is claimed. Shade, both OTP mirrored observations, and rotation UI restoration are **Awaiting Local Validation**. P08's final debugging-disabled session and latency/device-cost measurements also remain open. See [P08](prototypes/P08-live-mirroring.md) and [P10](prototypes/P10-secure-screen-protection.md).

@@ -43,11 +43,9 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var identity: MacIdentity?
     private var format: CMVideoFormatDescription?
     private var formatDescription: MirrorFormatPayload?
-    private var pendingParameterSets = false
-    private var needsKeyframe = true
+    private var streamValidator = MirrorStreamValidator()
     private var firstFrameAt: Date?
     private var streamStartedAt: Date?
-    private var lastPtsUs: Int64 = -1
 
     // Live mirroring: sender encoder PTS are in an arbitrary clock domain. Rebase onto a local
     // control timebase so frames present continuously instead of stalling in a different epoch.
@@ -74,10 +72,15 @@ public final class LiveMirrorReceiver: ObservableObject {
     @Published public private(set) var state: State = .idle
     @Published public private(set) var lastEvent = "idle"
     @Published public private(set) var events: [String] = []
+    /// UI-facing counters publish at a bounded cadence; totals remain exact for evidence.
     @Published public private(set) var framesReceived: Int = 0
     @Published public private(set) var framesEnqueued: Int = 0
     @Published public private(set) var framesDropped: Int = 0
     @Published public private(set) var keyframeRequests: Int = 0
+    private var totalFramesReceived = 0
+    private var totalFramesEnqueued = 0
+    private var totalFramesDropped = 0
+    private var lastPublishedFrameCount = 0
     @Published public private(set) var formatChanges: Int = 0
     @Published public private(set) var pairingCode: String?
     @Published public private(set) var peerPin: String?
@@ -154,8 +157,9 @@ public final class LiveMirrorReceiver: ObservableObject {
     public func stop() {
         listener?.stop()
         listener = nil
+        publishFrameCounters(force: true)
         state = .stopped
-        emit("STOPPED framesReceived=\(framesReceived) framesEnqueued=\(framesEnqueued) dropped=\(framesDropped)")
+        emit("STOPPED framesReceived=\(totalFramesReceived) framesEnqueued=\(totalFramesEnqueued) dropped=\(totalFramesDropped)")
     }
 
     private func wire(_ secure: SecureListener) {
@@ -196,8 +200,7 @@ public final class LiveMirrorReceiver: ObservableObject {
         case .mirrorStarted:
             state = .streaming
             streamStartedAt = Date()
-            needsKeyframe = true
-            lastPtsUs = -1
+            streamValidator.streamStarted()
             resetPtsAnchor()
             emit("MIRROR_STARTED")
         case .mirrorFormat:
@@ -210,9 +213,8 @@ public final class LiveMirrorReceiver: ObservableObject {
                     nalLengthSize: fmt.nalLengthSize
                 )
                 formatChanges += 1
-                pendingParameterSets = false
-                needsKeyframe = false
                 renderer.flush()
+                streamValidator.formatChanged()
                 resetPtsAnchor()
                 emit("MIRROR_FORMAT \(fmt.width)x\(fmt.height) rotation=\(fmt.rotation) nalLengthSize=\(fmt.nalLengthSize) sps=\(fmt.sps.count) pps=\(fmt.pps.count)")
             } catch {
@@ -237,39 +239,61 @@ public final class LiveMirrorReceiver: ObservableObject {
     }
 
     private func handleVideo(_ payload: Data) {
-        framesReceived += 1
+        totalFramesReceived += 1
+        publishFrameCounters()
         guard let format else {
-            framesDropped += 1
-            if framesDropped <= 3 || framesDropped % 60 == 0 {
+            totalFramesDropped += 1
+            publishFrameCounters()
+            if totalFramesDropped <= 3 || totalFramesDropped % 60 == 0 {
                 requestKeyframeIfNeeded(reason: "no-format")
             }
             return
         }
+
+        let video: VideoPayload
+        do {
+            // Validate every received frame even while the renderer is backpressured or failed.
+            // Otherwise malformed media could evade protocol checks simply because it was dropped.
+            video = try VideoPayload.parse(payload)
+            switch try streamValidator.validate(ptsUs: video.ptsUs, isIDR: video.isKeyframe) {
+            case .enqueue:
+                break
+            case .waitForRecoveryIDR:
+                totalFramesDropped += 1
+                publishFrameCounters()
+                return
+            }
+        } catch {
+            totalFramesDropped += 1
+            publishFrameCounters()
+            let reason = "invalid video stream: \(error)"
+            emit("VIDEO_REJECT \(reason)")
+            listener?.fail(reason: reason)
+            return
+        }
+
         if renderer.status == .failed || renderer.requiresFlushToResumeDecoding {
-            framesDropped += 1
+            totalFramesDropped += 1
+            publishFrameCounters()
             renderer.flush()
-            needsKeyframe = true
+            streamValidator.decoderFlushed()
             resetPtsAnchor()
             requestKeyframeIfNeeded(reason: "renderer-failed")
             return
         }
         guard renderer.isReadyForMoreMediaData else {
-            framesDropped += 1
-            if framesDropped % 30 == 0 { emit("BACKPRESSURE dropped=\(framesDropped)") }
+            totalFramesDropped += 1
+            publishFrameCounters()
+            if totalFramesDropped % 30 == 0 { emit("BACKPRESSURE dropped=\(totalFramesDropped)") }
             return
         }
+
         do {
-            let video = try VideoPayload.parse(payload)
-            if needsKeyframe {
-                // Cannot reliably detect IDR without parsing NAL types from AVCC payload in detail
-                // here, but a fresh format always precedes decodable stream from this sender.
-                needsKeyframe = false
-            }
-            lastPtsUs = video.ptsUs
             let presentation = presentationTime(for: video.ptsUs)
             let sample = try makeSampleBuffer(avcc: video.avcc, format: format, presentation: presentation)
             renderer.enqueue(sample)
-            framesEnqueued += 1
+            totalFramesEnqueued += 1
+            publishFrameCounters()
             if firstFrameAt == nil {
                 firstFrameAt = Date()
                 if let started = streamStartedAt {
@@ -279,15 +303,21 @@ public final class LiveMirrorReceiver: ObservableObject {
                     emit("FIRST_FRAME ptsUs=\(video.ptsUs)")
                 }
             }
-            if framesEnqueued % 60 == 0 {
-                emit("FRAMES received=\(framesReceived) enqueued=\(framesEnqueued) dropped=\(framesDropped) ptsUs=\(video.ptsUs) status=\(statusName())")
+            if totalFramesEnqueued % 60 == 0 {
+                emit("FRAMES received=\(totalFramesReceived) enqueued=\(totalFramesEnqueued) dropped=\(totalFramesDropped) ptsUs=\(video.ptsUs) status=\(statusName())")
             }
             maybeInjectScriptedFault()
         } catch {
-            framesDropped += 1
-            if framesDropped <= 5 || framesDropped % 30 == 0 {
-                emit("VIDEO_DROP \(error) received=\(framesReceived) dropped=\(framesDropped)")
-            }
+            // Sample-buffer construction is local renderer failure, not malformed wire protocol.
+            // Drop this frame and request a fresh IDR; don't misclassify a platform error as peer
+            // misconduct or close the authenticated session.
+            totalFramesDropped += 1
+            publishFrameCounters()
+            emit("SAMPLE_BUFFER_FAILED \(error) received=\(totalFramesReceived) dropped=\(totalFramesDropped)")
+            renderer.flush()
+            streamValidator.decoderFlushed()
+            resetPtsAnchor()
+            requestKeyframeIfNeeded(reason: "sample-buffer-failed")
         }
     }
 
@@ -318,7 +348,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             let sample = try makeSampleBuffer(
                 avcc: garbage,
                 format: format,
-                presentation: presentationTime(for: max(lastPtsUs, 0))
+                presentation: presentationTime(for: max(streamValidator.lastPTSUs ?? 0, 0))
             )
             renderer.enqueue(sample)
             emit("FAULT_INJECTED method=corrupt-sample bytes=\(garbage.count) " +
@@ -339,7 +369,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             }
             self.emit("FAULT_FALLBACK scripted-flush status=\(self.statusName())")
             self.renderer.flush()
-            self.needsKeyframe = true
+            self.streamValidator.decoderFlushed()
             self.resetPtsAnchor()
             self.requestKeyframeIfNeeded(reason: "scripted-fault")
         }
@@ -416,6 +446,15 @@ public final class LiveMirrorReceiver: ObservableObject {
         CMTimebaseSetRate(tb, rate: 1.0)
         timebase = tb
         layer.controlTimebase = tb
+    }
+
+    private func publishFrameCounters(force: Bool = false) {
+        let receivedDelta = totalFramesReceived - lastPublishedFrameCount
+        guard force || receivedDelta >= 30 else { return }
+        framesReceived = totalFramesReceived
+        framesEnqueued = totalFramesEnqueued
+        framesDropped = totalFramesDropped
+        lastPublishedFrameCount = totalFramesReceived
     }
 
     private func resetPtsAnchor() {

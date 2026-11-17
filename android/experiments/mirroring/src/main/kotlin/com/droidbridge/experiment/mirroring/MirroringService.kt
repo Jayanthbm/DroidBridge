@@ -122,6 +122,7 @@ class MirroringService : Service() {
 
     /** Set once a format message has been sent; the receiver needs one before any frame. */
     private val formatSent = AtomicBoolean(false)
+    private val timestampGate = MonotonicTimestampGate()
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -312,6 +313,7 @@ class MirroringService : Service() {
                 format.toJsonPayload().toByteArray(Charsets.UTF_8),
             )
             stats.formatMessages.incrementAndGet()
+            timestampGate.reset()
             formatSent.set(true)
             Log.i(TAG, "mirror.format $format sps=${sets.sps.size} pps=${sets.pps.size}")
         } catch (e: Exception) {
@@ -324,6 +326,10 @@ class MirroringService : Service() {
         // Frames before the first format message are undecodable by the Mac; the gate already drops
         // them until an IDR, and the encoder only starts producing after its parameter sets exist.
         if (!formatSent.get()) return
+        if (!timestampGate.admit(unit.ptsUs)) {
+            Log.w(TAG, "dropping negative, duplicate, or non-increasing encoder PTS=${unit.ptsUs}")
+            return
+        }
         if (!gate.admit(unit.isKeyframe)) return
 
         val entry = FrameQueue.Entry(ptsUs = unit.ptsUs, payload = unit.payload, isKeyframe = unit.isKeyframe)

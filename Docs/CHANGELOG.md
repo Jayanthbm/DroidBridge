@@ -4,6 +4,13 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Changed — P08/P10 receiver investigation (2026-11-17, automated verification only)
+- Replaced the macOS wall-clock one-second frame counter with monotonic bounded-burst token buckets; the sustained media/control limits remain. Media events are summarized instead of emitted once per frame, and receiver UI counters publish at a bounded cadence.
+- Hardened H.264 access-unit parsing and stream sequencing: signed PTS decode, AVCC/NAL validation and IDR detection, monotonic PTS within each format epoch, IDR after stream/format boundaries, IDR-gated decoder recovery, and local renderer errors separated from invalid peer traffic.
+- Android now drops non-increasing encoder timestamps within a format epoch (reset on rotation/new format) and reattaches the activity to the process-held session after recreation.
+- Added macOS unit coverage for rate limiting, AVCC parsing, monotonic timestamps, format/rotation epochs and keyframe recovery. macOS: 65 tests passed; Android mirroring: 22 passed and Debug APK assembled.
+- **No physical-device verification of the notification-shade behavior was performed; no root cause or resolution is claimed.** Shade/OTP and rotation UI checks remain Awaiting Local Validation.
+
 ### Fixed — P08 receiver identity (2026-11-12)
 - The macOS receiver minted a new identity every time Listen was pressed, so the phone's stored pin
   went stale on each restart: reconnecting always meant Forget stored pin plus a fresh six-digit
