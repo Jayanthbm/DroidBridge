@@ -190,3 +190,17 @@ idle during a consent dialog had been closed by the receiver, so `start` failed 
 `send failed: ConnectionResetException` / `stopReason=start failed` when the capture started. The
 failure is loud and correct (no stale socket was presented as live), but it means any automated run
 must open the session and start the capture inside two minutes.
+
+## 9) Later owner-reported observations (2026-11-17; not instrumented)
+
+The owner subsequently reported that, with the S24 unplugged and Developer options disabled, rotating
+the phone through all directions left it showing connected/mirroring while the Mac mirror continued
+to update. This is user-reported evidence only: no captured logs or measurements establish UI
+reattachment, exact rotation count, or uninterrupted duration, so it does not close the rotation
+acceptance item.
+
+The owner also reported that mirroring stopped after the phone locked. The cause and exact trigger
+were not diagnosed in that attempt. This is consistent with earlier observed MediaProjection stop
+on lock but does not establish a new controlled reproduction. A later unattended stability attempt
+also ended after the phone locked; no successful 30-minute awake stability run is established from
+these later attempts. Do not leave the phone unlocked unattended to complete one.

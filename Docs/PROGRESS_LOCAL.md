@@ -17,8 +17,7 @@ is deferred to P08. **P07 is completed:** the Annex-B → AVCC → format-descri
 pipeline decoded and displayed a generated 640×360 fixture (`readyForDisplay=true`,
 `status=rendering`), recovered after a flush, measured 496.6 ms startup latency, rendered 480×640
 and 1280×720 fixtures, and was verified with a screen capture: the app UI was captured but the video
-area was black (`preventsCapture=true`). **P15 is in progress:** the Release sandbox/entitlements dry run passes;
-Developer ID signing and notarisation are blocked by the Apple membership.
+area was black (`preventsCapture=true`). **P15 personal-use identity persistence is verified locally:** on 2026-11-17 the Release app built and launched locally; its ad-hoc signature, sandbox entitlements, hardened-runtime flag and absent `get-task-allow` were verified. Gatekeeper rejected the ad-hoc build as expected. The corrected app-specific login-Keychain implementation produced the same identity pin in two separate Release harness processes. Disposable-Keychain persistence and orphan-key fail-closed tests pass, as does the full macOS suite (67/67); the Release build succeeds. Android reconnect without re-pairing and Keychain ACL behavior across code-signing changes remain untested. The earlier generated key item remains untouched and is not adopted by the new versioned tag. The owner confirmed personal-use-only scope and deferred Developer ID signing, notarisation and quarantined distribution checks; see [ADR-033](TECHNICAL_DECISIONS.md#adr-033--defer-macos-developer-id-distribution-while-droidbridge-is-personal-use-only), [ADR-034](TECHNICAL_DECISIONS.md#adr-034--persist-personal-use-mac-identity-in-the-login-keychain-until-a-profile-is-available), and [P15](prototypes/P15-signed-build.md).
 **P06 is completed on macOS 27.0.1 with a platform limitation:** `accessBehavior=alwaysAllow`, no
 prompt appears, self-write suppression works, and TCC logs contain no pasteboard service. Apple
 Development signing did not change it; the deny/ask UX must be re-tested on a macOS version that
@@ -180,8 +179,8 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [ ] Run P11 macOS local-network permission tests.
 - [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
-- [ ] Run P15 sandboxed, signed and notarised distribution prototype (entitlements, TCC, keychain after re-signing).
-- [ ] Confirm Apple Developer Program membership and Account Holder access for the Developer ID certificate.
+- [x] Implement and validate local Mac identity persistence for P15: two separate Release harness processes reported the same login-Keychain pin; disposable-Keychain persistence and fail-closed tests passed. Android reconnect without re-pairing remains outstanding; see [P15 evidence](prototypes/P15-signed-build.md).
+- [ ] **Deferred until distribution is a goal:** Developer ID signing, notarisation, stapling, quarantined-copy launch and Apple Developer Program membership/Account Holder access. Phase 9 release remains blocked; no distribution claim is made.
 - [x] Verify the owner-reported Android 17 / One UI 9 version on the device.
 
 ## Current blockers
@@ -468,8 +467,9 @@ Full record: `Docs/prototypes/P03-live-handshake-evidence.md` §7 Run P1.
 - The listening side learns of a drop only by its idle deadline, and a 30 s deadline drops a session
   a user pauses in. A production session needs a keepalive or a longer deadline.
 - Reconnect after a DHCP address change was not tested (the phone returned on the same IP).
-- Mac identity is ephemeral (ADR-025), so a Mac restart forces re-pairing; cross-launch known-peer
-  sessions cannot be claimed yet.
+- At the time of this 2026-11-09 run, the Mac identity was ephemeral (ADR-025), so a Mac restart
+  forced re-pairing. P15 later implemented and locally verified login-Keychain persistence; Android
+  reconnect after a Mac process restart remains untested.
 - On-device tamper/replay/oversize input has no UI; those paths remain loopback/unit-test evidence.
 - The acceptance run used `P03Harness --pair` for the Mac side; the GUI app's pairing path is not
   exercised yet.
@@ -643,16 +643,18 @@ access units into 4-byte-length AVCC `CMSampleBuffer`s and enqueues them on
   failure, real Android input.
 
 
-## P15 — signed/sandboxed macOS dry run (in progress, 2026-11-09)
+## P15 — Sandboxed macOS build for personal use (identity persistence verified; reconnect remains; 2026-11-17)
 
-Release build with the intended settings:
+On MacBook Air M1, macOS 27.2.1 (26B131), arm64, Xcode 27.2 (27B52):
 
-- `codesign --verify --deep --strict` valid; hardened runtime; ad-hoc signature.
-- Entitlements exactly `app-sandbox`, `network.client`, `network.server`; **no `get-task-allow`**.
-- Bundle identifier is now `com.droidbridge.macos`.
-- Gatekeeper rejects the ad-hoc build, as expected without notarisation.
-- Developer ID signing, notarisation and stapling are **blocked** by the missing Apple Developer
-  Program membership. P15 is partial, not passed.
+- Release build passed; the Release app launched from `macos/build/Build/Products/Release/DroidBridge.app` on this Mac.
+- `codesign --verify --deep --strict --verbose=2` passed: valid on disk and satisfies the Designated Requirement.
+- Signature is ad-hoc (“Sign to Run Locally”), hardened-runtime flag present, `TeamIdentifier=not set`.
+- Embedded entitlements are exactly `app-sandbox`, `network.client`, and `network.server`; `get-task-allow` is absent.
+- `spctl -a -vv` rejected the artifact (exit 3), expected for this unnotarized ad-hoc build. No Gatekeeper setting was changed.
+- The app now stores the identity in the user's login Keychain under a versioned key application tag. Two separate Release `--identity` harness processes exited 0 and reported the same pin (`2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb`). The earlier generated item from the failed experiment remains untouched and is not adopted by this new tag.
+- Isolated disposable-Keychain persistence and orphan-key fail-closed tests pass; full macOS suite passes **67/67**. Android reconnect without re-pairing and legacy Keychain ACL behavior across code-signing changes remain untested.
+- The owner confirmed personal-use-only scope and deferred Developer ID signing, notarisation, stapling, and quarantined-copy distribution testing. This is not release-ready and no distribution claim is made. See [P15 evidence](prototypes/P15-signed-build.md), [ADR-033](TECHNICAL_DECISIONS.md#adr-033--defer-macos-developer-id-distribution-while-droidbridge-is-personal-use-only), and [ADR-034](TECHNICAL_DECISIONS.md#adr-034--persist-personal-use-mac-identity-in-the-login-keychain-until-a-profile-is-available).
 
 
 ## P13 — Pinned TLS on Android 17 (completed, 2026-11-10)

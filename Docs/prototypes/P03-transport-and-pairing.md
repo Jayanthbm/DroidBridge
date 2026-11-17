@@ -120,10 +120,11 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
 
 ### Known limitations
 
-1. **Mac identity is ephemeral** (ADR-025). Every Mac launch is a new pin, so the phone must re-pair
-   after a Mac restart. The device run shows the phone correctly *refusing* the changed identity
-   rather than silently re-pinning, which is the safe behaviour, but persistent Mac identity is a
-   prerequisite for "reconnect without re-pairing across launches".
+1. **Mac identity persistence is now implemented locally under ADR-034/P15.** Separate Release
+   identity-harness processes produce the same login-Keychain pin, and isolated persistence and
+   fail-closed tests pass. Reconnecting the Android device after a Mac process restart with its
+   existing stored pin has not yet been tested; the earlier device run correctly refused a changed
+   Mac identity rather than silently re-pinning.
 2. **Reject is now gated on unauthenticated state.** A tap on "Codes don't match" after confirmation
    used to close the socket while leaving the pin stored behind a "rejected" label; `rejectPairing()`
    now refuses once authenticated.

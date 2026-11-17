@@ -35,9 +35,7 @@ signed build, and TCC logs contain no pasteboard service. The deny/ask UX must b
 macOS version that implements it. **P07 is completed** — parser, conversion
 tests, live viewer, flush/recovery, startup latency, resolution changes and `preventsCapture`
 (video area black in a screen capture) pass; backpressure false state and glass-to-glass latency are
-plan-only measurements. **P15 is in progress** — the
-Release sandbox/entitlement dry run passes; Developer ID/notarisation are blocked by the missing
-Apple Developer Program membership. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
+plan-only measurements. **P15 personal-use identity persistence is implemented and verified locally** — separate Release identity-harness processes retain one login-Keychain pin and macOS persistence/fail-closed tests pass. Peer reconnect without re-pairing and Keychain ACL behavior after signing changes remain open. Developer ID/notarisation are explicitly deferred while personal-use only. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
 and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09 is completed as
 NO-GO** — no public/accessible/root/Knox/HID remote-input path exists; mirroring ships view-only. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac

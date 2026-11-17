@@ -155,6 +155,17 @@ own storage; it does not audit other processes or the system's own buffers.)
   logged that the prior saved peer pin was forgotten and the new pin persisted after owner-confirmed
   pairing; no unrelated notification data was changed.
 
+## 8) Later owner-reported run (2026-11-17; inconclusive)
+
+In a later unplugged attempt with Developer options disabled, the owner could not see the synthetic
+notification in the shade for a direct phone/Mac comparison. They subsequently observed the
+notification contents hidden on the phone as well. The private-only notification's mirrored privacy
+outcome therefore remains inconclusive; do not interpret the absence of visible content in that
+attempt as proof of either redaction or a mirroring failure. The same later session's shade/mirror
+attempt ended after mirroring stopped, but the stop cause was not diagnosed. This is separate from
+the earlier controlled shade run in which the shade appeared on both displays and mirroring remained
+active through dismissal.
+
 ## Not yet tested (P10 remaining)
 
 - **Private-only synthetic OTP visual outcome:** AWAITING LOCAL VALIDATION. The record exists, but

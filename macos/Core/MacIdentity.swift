@@ -30,19 +30,18 @@ import os
 ///    scalar, PKCS#8 and RFC 5915 `ECPrivateKey` are all rejected with `errSecParam` — but the
 ///    resulting `SecKey` still cannot be added to a keychain with `SecItemAdd`.
 /// 2. **The certificate must be added to the same keychain** as the key, or the two never pair.
-/// 3. **`SecIdentityCreateWithCertificate` must be passed a nil keychain**, with the temporary
-///    keychain in the search list. Passing the keychain explicitly returns `errSecItemNotFound`
-///    even though the identity exists.
-/// 4. **The search list must be restored afterwards.** It is process-global, so leaving a deleted
-///    keychain in it breaks every later keychain lookup in the app.
+/// 3. **`SecIdentityCreateWithCertificate` must be passed a nil keychain**, with the target keychain
+///    in the search list. Passing the keychain explicitly returns `errSecItemNotFound` even though
+///    the identity exists.
+/// 4. **The search list must be restored afterwards.** It is process-global and must never retain a
+///    temporary/test keychain after identity resolution.
 ///
 /// ## Storage
 ///
-/// The key lives in a temporary keychain created for this process and deleted when the identity is
-/// released. ADR-025 specifies the production storage (data protection keychain under an embedded
-/// Developer ID profile) and that is deliberately **not** built here: P03 measures the handshake,
-/// and P15 owns signing and notarisation. What matters for P03 is that the *shape* of the identity
-/// is right, so the storage can change without the session code changing.
+/// Personal-use builds keep the identity in the user's login Keychain (ADR-034), so the key and
+/// certificate survive app relaunches without a restricted provisioning-profile entitlement. The
+/// data-protection Keychain under ADR-025 remains the distribution target when a profile is
+/// available. Keychain failures must fail closed; they must not silently create a different pin.
 public final class MacIdentity {
 
     /// The signing key, as the keychain holds it.
@@ -60,9 +59,7 @@ public final class MacIdentity {
     /// The identity, ready for `sec_protocol_options_set_local_identity`.
     public let secIdentity: SecIdentity
 
-    /// The temporary keychain holding the key and certificate.
-    ///
-    /// Held so it can be deleted in `deinit`; nothing is written outside it.
+    /// The keychain holding the key and certificate.
     private let keychain: SecKeychain
 
     private let log = Logger(subsystem: "com.droidbridge.macos", category: "identity")
@@ -82,53 +79,84 @@ public final class MacIdentity {
         self.keychain = keychain
     }
 
-    deinit {
-        // Best effort: the keychain is a temp file, and leaving it behind would be untidy rather
-        // than harmful. The search list was already restored in `generate`.
-        SecKeychainDelete(keychain)
+    /// Loads the persistent personal-use identity or creates it on first launch.
+    /// Missing items are created; all other Keychain errors or inconsistent existing items fail closed.
+    public static func generate() throws -> MacIdentity {
+        var keychainRef: SecKeychain?
+        let status = SecKeychainCopyDefault(&keychainRef)
+        guard status == errSecSuccess, let keychain = keychainRef else {
+            throw MacIdentityError.keychainUnavailable(status)
+        }
+        return try loadOrCreate(in: keychain, applicationTag: persistentKeyApplicationTag)
     }
 
-    /// Generates a fresh identity.
-    ///
-    /// Generating a new identity is a *new device identity*, not a refresh: every peer that pinned
-    /// the old one will see a changed pin and must re-pair. That is why this is called once and the
-    /// result is held, rather than called per connection.
-    public static func generate() throws -> MacIdentity {
-        let path = NSTemporaryDirectory() + "droidbridge-p03-\(UUID().uuidString).keychain"
+    /// Test seam: exercises the same persistence path in a caller-owned disposable keychain.
+    static func generate(in keychain: SecKeychain, applicationTag: Data) throws -> MacIdentity {
+        try loadOrCreate(in: keychain, applicationTag: applicationTag)
+    }
 
-        var keychainRef: SecKeychain?
-        let createStatus = SecKeychainCreate(path, 0, "", false, nil, &keychainRef)
-        guard createStatus == errSecSuccess, let keychain = keychainRef else {
-            throw MacIdentityError.keychainUnavailable(createStatus)
+    private static let persistentKeyApplicationTag = Data("com.droidbridge.macos.identity.p256.v2".utf8)
+
+    private static func loadOrCreate(in keychain: SecKeychain, applicationTag: Data) throws -> MacIdentity {
+        var query = keyQuery(in: keychain, applicationTag: applicationTag)
+        query[kSecReturnRef as String] = true
+        query[kSecMatchLimit as String] = kSecMatchLimitOne
+
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecItemNotFound {
+            return try create(in: keychain, applicationTag: applicationTag)
         }
+        guard status == errSecSuccess, let result,
+              CFGetTypeID(result) == SecKeyGetTypeID() else {
+            throw MacIdentityError.keychain(status == errSecSuccess ? errSecDecode : status)
+        }
+        let privateKey = unsafeBitCast(result, to: SecKey.self)
 
-        // 1. Generate the key into the keychain. Importing a CryptoKit key does not work.
-        let secKey = try generateKey(in: keychain)
+        let matchingCertificates = try certificates(matching: privateKey, in: keychain)
+        guard matchingCertificates.count == 1, let certificate = matchingCertificates.first else {
+            throw MacIdentityError.persistentIdentityIncomplete(matchingCertificates.count)
+        }
+        let identity = try identity(for: certificate, in: keychain)
+        let spki = subjectPublicKeyInfo(of: certificate)
+        guard !spki.isEmpty else { throw MacIdentityError.certificateRejectedBySecurityFramework }
+        return MacIdentity(
+            privateKey: privateKey,
+            certificate: certificate,
+            spki: spki,
+            secIdentity: identity,
+            keychain: keychain
+        )
+    }
 
-        // 2. Reconstruct the same key in CryptoKit so `swift-certificates` can sign with it.
+    private static func create(in keychain: SecKeychain, applicationTag: Data) throws -> MacIdentity {
+        let secKey = try generateKey(in: keychain, applicationTag: applicationTag)
         let cryptoKey = try cryptoKitKey(from: secKey)
-
-        // 3. Build and sign the self-signed certificate.
         let certDER = try selfSignedCertificateDER(for: cryptoKey)
         guard let secCert = SecCertificateCreateWithData(nil, Data(certDER) as CFData) else {
             throw MacIdentityError.certificateRejectedBySecurityFramework
         }
 
-        // 4. Add the certificate to the same keychain so it pairs with the key.
-        var certAttrs: [String: Any] = [kSecValueRef as String: secCert]
-        certAttrs[kSecUseKeychain as String] = keychain
+        // Explicit item class is required for the legacy file-based Keychain. Omitting it can leave
+        // a private-key item without its certificate, which makes persistent loads fail closed.
+        let certAttrs: [String: Any] = [
+            kSecClass as String: kSecClassCertificate,
+            kSecAttrLabel as String: "DroidBridge",
+            kSecValueRef as String: secCert,
+            kSecUseKeychain as String: keychain,
+            kSecUseDataProtectionKeychain as String: false,
+        ]
         let certStatus = SecItemAdd(certAttrs as CFDictionary, nil)
         guard certStatus == errSecSuccess else {
             throw MacIdentityError.certificateNotStored(certStatus)
         }
 
-        // 5. Resolve the identity. The nil keychain plus search list is the only combination that
-        //    works; see fact 3 in the type comment.
         let identity = try identity(for: secCert, in: keychain)
-
-        // 6. The SPKI, read from the certificate so both sides digest identical bytes.
         let spki = subjectPublicKeyInfo(of: secCert)
-
+        let matchingCertificates = try certificates(matching: secKey, in: keychain)
+        guard !spki.isEmpty, matchingCertificates.count == 1 else {
+            throw MacIdentityError.persistentIdentityMismatch
+        }
         return MacIdentity(
             privateKey: secKey,
             certificate: secCert,
@@ -136,6 +164,49 @@ public final class MacIdentity {
             secIdentity: identity,
             keychain: keychain
         )
+    }
+
+    private static func keyQuery(in keychain: SecKeychain, applicationTag: Data) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecAttrKeyClass as String: kSecAttrKeyClassPrivate,
+            kSecAttrApplicationTag as String: applicationTag,
+            kSecUseKeychain as String: keychain,
+            kSecUseDataProtectionKeychain as String: false,
+        ]
+    }
+
+    private static func certificates(matching privateKey: SecKey, in keychain: SecKeychain) throws -> [SecCertificate] {
+        guard let attributes = SecKeyCopyAttributes(privateKey) as? [String: Any],
+              let keyApplicationLabel = attributes[kSecAttrApplicationLabel as String] as? Data else {
+            throw MacIdentityError.keyAttributesUnavailable("public-key hash unavailable")
+        }
+        return try withKeychainOnSearchList(keychain, only: true) {
+            // Limit the certificate query to the selected Keychain, then require both the generated
+            // label and exact public-key application label. Security's identity resolver uses the
+            // regular merged search list separately after this bounded lookup.
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassCertificate,
+                kSecAttrLabel as String: "DroidBridge",
+                kSecReturnRef as String: true,
+                kSecMatchLimit as String: kSecMatchLimitAll,
+                kSecUseDataProtectionKeychain as String: false,
+            ]
+            var result: CFTypeRef?
+            let status = SecItemCopyMatching(query as CFDictionary, &result)
+            if status == errSecItemNotFound { return [] }
+            guard status == errSecSuccess else { throw MacIdentityError.keychain(status) }
+            guard let certificates = result as? [SecCertificate] else {
+                throw MacIdentityError.keychain(errSecDecode)
+            }
+            return certificates.filter { certificate in
+                guard let publicKey = SecCertificateCopyKey(certificate),
+                      let publicKeyAttributes = SecKeyCopyAttributes(publicKey) as? [String: Any],
+                      let certificateApplicationLabel = publicKeyAttributes[kSecAttrApplicationLabel as String] as? Data else { return false }
+                return keyApplicationLabel == certificateApplicationLabel
+            }
+        }
     }
 
     /// SHA-256 of arbitrary bytes, lowercase hex.
@@ -183,7 +254,7 @@ public final class MacIdentity {
 
     // MARK: - Internals
 
-    private static func generateKey(in keychain: SecKeychain) throws -> SecKey {
+    private static func generateKey(in keychain: SecKeychain, applicationTag: Data) throws -> SecKey {
         var error: Unmanaged<CFError>?
         let attrs: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
@@ -191,6 +262,7 @@ public final class MacIdentity {
             kSecAttrIsPermanent as String: true,
             kSecPrivateKeyAttrs as String: [
                 kSecAttrIsPermanent as String: true,
+                kSecAttrApplicationTag as String: applicationTag,
                 kSecUseKeychain as String: keychain,
             ],
         ]
@@ -264,38 +336,45 @@ public final class MacIdentity {
         return Data(try certificate.serializeAsPEM().derBytes)
     }
 
-    /// Resolves a `SecIdentity` for a certificate stored in a temporary keychain.
-    ///
-    /// The search list is process-global, so it is restored before returning. Leaving a deleted
-    /// keychain in it would break every later keychain lookup in the app, which is the kind of bug
-    /// that shows up somewhere unrelated an hour later.
-    private static func identity(for certificate: SecCertificate, in keychain: SecKeychain) throws -> SecIdentity {
+    /// Runs a Keychain query with `keychain` on the process search list, then restores the prior
+    /// list. Search-list state is process-global; it must never leak out of this operation.
+    private static func withKeychainOnSearchList<T>(
+        _ keychain: SecKeychain,
+        only: Bool = false,
+        operation: () throws -> T
+    ) throws -> T {
         var previous: CFArray?
-        SecKeychainCopySearchList(&previous)
-
-        var searchList: [SecKeychain] = [keychain]
-        if let previous = previous as? [SecKeychain] {
-            searchList.append(contentsOf: previous)
-        }
-        SecKeychainSetSearchList(searchList as CFArray)
-        defer {
-            if let previous {
-                SecKeychainSetSearchList(previous)
-            }
-        }
-
-        var identity: SecIdentity?
-        let status = SecIdentityCreateWithCertificate(nil, certificate, &identity)
-        guard status == errSecSuccess, let identity else {
-            throw MacIdentityError.identityUnavailable(status)
-        }
-        return identity
+        let copyStatus = SecKeychainCopySearchList(&previous)
+        guard copyStatus == errSecSuccess else { throw MacIdentityError.keychain(copyStatus) }
+        var searchList = only ? [keychain] : ((previous as? [SecKeychain]) ?? [])
+        if !only && !searchList.contains(where: { $0 == keychain }) { searchList.insert(keychain, at: 0) }
+        let setStatus = SecKeychainSetSearchList(searchList as CFArray)
+        guard setStatus == errSecSuccess else { throw MacIdentityError.keychain(setStatus) }
+        defer { if let previous { _ = SecKeychainSetSearchList(previous) } }
+        return try operation()
     }
+
+    /// Resolves a `SecIdentity` for a certificate stored in the target keychain.
+    /// Security's identity resolver requires the keychain to be in the search list and a nil
+    /// keychain argument; see the measured login-Keychain behavior in P15.
+    private static func identity(for certificate: SecCertificate, in keychain: SecKeychain) throws -> SecIdentity {
+        try withKeychainOnSearchList(keychain) {
+            var identity: SecIdentity?
+            let status = SecIdentityCreateWithCertificate(nil, certificate, &identity)
+            guard status == errSecSuccess, let identity else {
+                throw MacIdentityError.identityUnavailable(status)
+            }
+            return identity
+        }
+    }
+
 }
 
 /// Identity creation failed.
 public enum MacIdentityError: Error, CustomStringConvertible {
     case keychainUnavailable(OSStatus)
+    case keychain(OSStatus)
+    case keyAttributesUnavailable(String)
     case keyGenerationFailed(String)
     case keyExportFailed(String)
     case unexpectedKeyEncoding(Int)
@@ -303,11 +382,17 @@ public enum MacIdentityError: Error, CustomStringConvertible {
     case certificateRejectedBySecurityFramework
     case certificateNotStored(OSStatus)
     case identityUnavailable(OSStatus)
+    case persistentIdentityIncomplete(Int)
+    case persistentIdentityMismatch
 
     public var description: String {
         switch self {
         case .keychainUnavailable(let status):
-            return "could not create the temporary keychain (OSStatus \(status))"
+            return "could not access the default login Keychain (OSStatus \(status))"
+        case .keychain(let status):
+            return "Keychain operation failed (OSStatus \(status))"
+        case .keyAttributesUnavailable(let message):
+            return "could not read identity key attributes: \(message)"
         case .keyGenerationFailed(let message):
             return "could not generate the identity key: \(message)"
         case .keyExportFailed(let message):
@@ -322,6 +407,10 @@ public enum MacIdentityError: Error, CustomStringConvertible {
             return "could not store the certificate (OSStatus \(status))"
         case .identityUnavailable(let status):
             return "could not resolve a SecIdentity (OSStatus \(status))"
+        case .persistentIdentityIncomplete(let matchingCertificates):
+            return "persistent identity has no unique matching certificate (\(matchingCertificates) matches); refusing to replace it"
+        case .persistentIdentityMismatch:
+            return "persistent identity key does not match its certificate"
         }
     }
 }

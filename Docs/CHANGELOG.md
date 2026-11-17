@@ -4,12 +4,16 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
-### Changed — P08/P10 receiver investigation (2026-11-17, automated verification only)
+### Changed and verified — P08/P10 receiver investigation (2026-11-17)
 - Replaced the macOS wall-clock one-second frame counter with monotonic bounded-burst token buckets; the sustained media/control limits remain. Media events are summarized instead of emitted once per frame, and receiver UI counters publish at a bounded cadence.
 - Hardened H.264 access-unit parsing and stream sequencing: signed PTS decode, AVCC/NAL validation and IDR detection, monotonic PTS within each format epoch, IDR after stream/format boundaries, IDR-gated decoder recovery, and local renderer errors separated from invalid peer traffic.
 - Android now drops non-increasing encoder timestamps within a format epoch (reset on rotation/new format) and reattaches the activity to the process-held session after recreation.
-- Added macOS unit coverage for rate limiting, AVCC parsing, monotonic timestamps, format/rotation epochs and keyframe recovery. macOS: 65 tests passed; Android mirroring: 22 passed and Debug APK assembled.
-- **No physical-device verification of the notification-shade behavior was performed; no root cause or resolution is claimed.** Shade/OTP and rotation UI checks remain Awaiting Local Validation.
+- Automated tests: macOS 65 passed; Android mirroring 22 passed and Debug APK assembled.
+- One live S24 run showed the notification shade in the Mac mirror and remained active through dismissal; the historical freeze remains unexplained and no general fix is claimed. The public-version synthetic notification showed redacted text on both screens. The private-only result remains inconclusive. Later user-reported unlocked/unplugged attempts ended after the phone locked or mirroring stopped; they do not establish an awake stability run or resolve the private-only result. USB/debugging state and detailed evidence are recorded in the P08/P10 reports.
+
+### Verified locally — P15 personal-use identity persistence (2026-11-17)
+- Implemented app-specific, versioned login-Keychain identity storage. Two separate Release `--identity` processes reported the same pin. Isolated disposable-Keychain tests verify persistence and fail-closed handling of an orphan key; full macOS suite passes 67/67, and the Release build succeeds.
+- Release signature audit remains pass: ad-hoc with hardened runtime, exactly the sandbox/network-client/network-server entitlements, and no `get-task-allow`. Gatekeeper rejects the unnotarized ad-hoc app as expected. Android reconnect without re-pairing and Keychain ACL behavior across code-signing changes remain untested. The earlier generated key item remains untouched. Developer ID signing, notarization, stapling and quarantined distribution checks are deferred by the owner while personal-use only; see [P15](prototypes/P15-signed-build.md), [ADR-033](TECHNICAL_DECISIONS.md#adr-033--defer-macos-developer-id-distribution-while-droidbridge-is-personal-use-only) and [ADR-034](TECHNICAL_DECISIONS.md#adr-034--persist-personal-use-mac-identity-in-the-login-keychain-until-a-profile-is-available).
 
 ### Fixed — P08 receiver identity (2026-11-12)
 - The macOS receiver minted a new identity every time Listen was pressed, so the phone's stored pin
