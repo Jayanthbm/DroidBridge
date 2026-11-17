@@ -35,21 +35,26 @@ protected/black output. P10 remains in progress for its remaining cases; P08 acc
 stop/teardown, keyframe recovery, 30-minute stability, final wireless-only run) is **not** closed.
 Evidence: `Docs/prototypes/P10-secure-screen-protection.md`.
 
-**2026-11-17 — P08/P10 receiver investigation (automated only; device validation pending).** The
-historical notification-shade freeze is not attributed to a proven root cause: the old report called
-the 120 fps media limiter a control-frame guard, but code review showed that media and control are
-separately accounted. Implemented a monotonic bounded-burst token bucket (sustained limits retained),
+**2026-11-17 — P08/P10 receiver hardening and live-device follow-up.** The historical
+notification-shade freeze is not attributed to a proven root cause: the old report called the
+120 fps media limiter a control-frame guard, but code review showed media and control are separately
+accounted. Implemented a monotonic bounded-burst token bucket (sustained limits retained),
 summary-only media logging, 30-frame cadence for SwiftUI counter publication, signed PTS decoding,
 AVCC/NAL validation with IDR detection, monotonic PTS and keyframe-boundary checks per encoder-format
-epoch, IDR-gated decoder recovery, and the Android side's non-increasing PTS rejection. Activity
-recreation reattaches to the service-owned process-held authenticated session. **Mac tests: 65/65**
-(macOS 27.2.1 arm64); **Android mirroring tests: 22/22**, Debug APK assembled. These results do not
-prove the shade defect is fixed. The S24 Ultra was connected over USB (`RZCY81TKBSV`, SM-S928B,
-Android 17/API 37, `CP2A.260605.016.S928BXXS6EZJ1`); USB and wireless debugging were enabled
-(`adb_enabled=1`, `adb_wifi_enabled=1`). Outlook was foreground, no DroidBridge listener/service was
-active, and no app was installed or device UI changed. Shade, OTP mirrored visibility, and rotation
-UI reattachment remain **Awaiting Local Validation**. P08 wireless-debugging-disabled final acceptance,
-glass-to-glass latency and device cost also remain open.
+epoch, IDR-gated decoder recovery, and Android non-increasing PTS rejection. Activity recreation
+reattaches to the service-owned process-held authenticated session. **Automated:** Mac tests 65/65
+(macOS 27.2.1 arm64); Android mirroring tests 22/22 and Debug APK assembled. These results alone do
+not prove the shade defect fixed. In a later live S24 Ultra run (`RZCY81TKBSV`, SM-S928B, Android
+17/API 37, `CP2A.260605.016.S928BXXS6EZJ1`), the shade appeared on the Mac mirror and was dismissed
+without session closure; this is one non-failure reproduction, not a confirmed root-cause fix. The
+synthetic notification with a public version showed its redacted public text on phone and Mac. The
+private-only synthetic notification was posted, but its contents were not visible in the captures,
+so that result is inconclusive. Rotation UI reattachment remains untested on-device. **Device test
+transport/state:** USB connected; USB debugging enabled (`adb_enabled=1`); wireless debugging
+enabled (`adb_wifi_enabled=1`); ADB connected over USB. P08's final USB-disconnected/debugging-off
+acceptance, glass-to-glass latency and device-cost measurements remain open. No device settings or
+app data were changed; mirroring was left active. See [P08](prototypes/P08-live-mirroring.md) and
+[P10](prototypes/P10-secure-screen-protection.md).
 
 **P02 is validated and accepted on the target device (2026-11-09).** Picker approval, approved-only
 rediscovery, 60-second sustained duplex (198/198 messages, 0 mismatches), recovery from a real
@@ -169,9 +174,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run the remaining P05 clipboard prototype (Android 12 + Android 17).
 - [x] Run P06 macOS pasteboard prompt prototype (completed on macOS 27.0.1 with a platform limitation).
 - [x] Run the P07 Mac video receiver prototype.
-- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists, and 2026-11-17 receiver/source hardening passes automated tests. Shade root cause/reproduction, device validation of UI restoration, debugging-disabled final acceptance, latency and device cost remain open.
+- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists. On 2026-11-17, one physical shade run mirrored normally and the session remained active; historical freeze root cause, rotation UI restoration, debugging-disabled final acceptance, latency and device cost remain open.
 - [x] Run P09 remote-input confirmation experiment (completed as NO-GO).
-- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. Source-level receiver mitigations passed automated tests (2026-11-17), but shade and mirrored OTP visibility remain **Awaiting Local Validation**; they are not counted as fixed or passed.
+- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. On 2026-11-17 one shade run mirrored normally; the synthetic OTP with a public version showed its redacted text. The private-only notification content was not visible in the captures, so that outcome remains inconclusive. See P10 evidence; do not generalize these observations.
 - [ ] Run P11 macOS local-network permission tests.
 - [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).
@@ -202,9 +207,9 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
   keyframe recovery, 30-minute stability and screen-off/keyguard stops were subsequently measured and
   are detailed in `Docs/prototypes/P08-live-mirroring.md`; P08 final debugging-disabled acceptance,
   latency/device-cost measurement and device re-test of rotation UI remain open. P10 password pixels,
-  shade freeze and notification-service OTP posting were evidenced; shade and mirrored OTP visibility
-  remain Awaiting Local Validation after the 2026-11-17 source hardening. See
-  `Docs/prototypes/P10-secure-screen-protection.md`.
+  historical shade freeze and notification-service OTP posting were evidenced. The 2026-11-17 live
+  follow-up observed one shade run with continuous mirroring and public-version redaction; private-only
+  OTP visual outcome remains inconclusive. See `Docs/prototypes/P10-secure-screen-protection.md`.
 - **2026-11-09 (Phase 0):** 31/31 shared protocol tests (JVM); Android `assembleDebug`,
   `testDebugUnitTest`, `lintDebug` all pass; macOS Debug + Release builds and 4/4 unit tests pass;
   clean-checkout rebuild of all three passes; APK installed and launched on OnePlus Nord CE
@@ -743,8 +748,9 @@ with it the mirrored pixels are recordable (evidence:
   from `mCurrentFocus` plus a rising frame counter and is withdrawn.
 - **OTP notifications — mirrored visibility not observed.** Both variants are confirmed at the notification service (`id=102`
   carries a `publicVersion` reading "Synthetic notification (no code shown)", `id=101` has none). The
-  2026-11-12 visual attempts coincided with the shade/session failure; after the source changes,
-  mirrored OTP visibility remains Awaiting Local Validation.
+  2026-11-12 visual attempts coincided with the shade/session failure. The 2026-11-17 follow-up
+  visually confirmed public-version redaction; the private-only OTP result remains inconclusive, as
+  detailed below.
 - No frames cached in app storage still holds (`files/` holds only `profileInstalled`, `cache/` empty).
 
-**2026-11-17 source update (not device evidence):** macOS now has bounded-burst monotonic rate limiters, batched media logging, bounded-rate UI counter publication, strict AVCC/IDR/PTS validation per format epoch, and IDR-gated recovery; Android drops non-increasing encoder PTS per epoch and restores the process-held session reference after Activity recreation. Mac unit tests: 65/65 passed; Android mirroring tests: 22/22 passed and Debug APK assembled. On this date the S24 Ultra was reachable over USB with USB and wireless debugging enabled, but Outlook was foreground, no listener/service was running, and no app installation or UI action occurred. The shade freeze has not been reproduced again; no root cause or fix is claimed. Shade, both OTP mirrored observations, and rotation UI restoration are **Awaiting Local Validation**. P08's final debugging-disabled session and latency/device-cost measurements also remain open. See [P08](prototypes/P08-live-mirroring.md) and [P10](prototypes/P10-secure-screen-protection.md).
+**2026-11-17 receiver hardening and live device evidence:** macOS has bounded-burst monotonic rate limiters, batched media logging, bounded-rate UI counter publication, strict AVCC/IDR/PTS validation per format epoch, and IDR-gated recovery; Android drops non-increasing encoder PTS per epoch and restores the process-held session reference after Activity recreation. Automated tests: Mac 65/65; Android mirroring 22/22 and Debug APK assembled. In a separate live S24 Ultra run, USB was connected, USB debugging and wireless debugging were enabled (`adb_enabled=1`, `adb_wifi_enabled=1`), and ADB used USB. The shade appeared on the Mac mirror and the stream stayed active through dismissal; this single run does not confirm a fix for the historical freeze. The public-version synthetic notification's redacted text appeared on phone and Mac. The private-only test was posted, but its contents were not visible in the captures, so its mirrored privacy outcome is inconclusive. Rotation UI restoration remains untested on-device. P08's final debugging-disabled session and latency/device-cost measurements also remain open. See [P08](prototypes/P08-live-mirroring.md) and [P10](prototypes/P10-secure-screen-protection.md).

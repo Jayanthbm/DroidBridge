@@ -138,9 +138,40 @@ Automated changes now cover protocol and lifecycle edge cases found during revie
 - The Android sender also drops non-increasing PTS within each format epoch. Rotation resets that epoch as the new encoder is published.
 - Activity recreation reattaches to the process-held authenticated session instead of reporting an idle/disconnected UI while the service continues. This remains a prototype process-lifetime holder, not a production session ownership architecture.
 
-MacOS unit suite: **65 passed, 0 failed** (macOS 27.2.1, arm64). Android mirroring suite: **22 passed, 0 failed**; Debug APK assembled. These are automated results only. On 2026-11-17 the S24 Ultra was seen over USB (`RZCY81TKBSV`, SM-S928B, Android 17/API 37, build `CP2A.260605.016.S928BXXS6EZJ1`); `adb_enabled=1`, `adb_wifi_enabled=1`, no DroidBridge listener/service was running, and Outlook was foreground. No app was installed or device UI changed during this update.
+MacOS unit suite: **65 passed, 0 failed** (macOS 27.2.1, arm64). Android mirroring suite: **22 passed, 0 failed**; Debug APK assembled. These are automated results only. The initial 2026-11-17 S24 Ultra check was over USB (`RZCY81TKBSV`, SM-S928B, Android 17/API 37, build `CP2A.260605.016.S928BXXS6EZJ1`); `adb_enabled=1`, `adb_wifi_enabled=1`, no DroidBridge listener/service was running, and Outlook was foreground. A later, separate live-device validation run is recorded below.
 
-**Physical reproduction of the notification-shade freeze and real-device rotation/session restoration: AWAITING LOCAL VALIDATION.** The root cause has not been confirmed on the target device. The rate-limit/UI-path changes are a source-level mitigation hypothesis, not proof of the shade failure's cause or fix.
+**Notification-shade reproduction after the receiver hardening: reproduced without a freeze or session closure in one 2026-11-17 run.** This is evidence for that run only; the historical root cause remains unconfirmed. Real-device rotation/session restoration is still **AWAITING LOCAL VALIDATION**. The rate-limit/UI-path changes remain a source-level mitigation hypothesis, not proof of the historical shade failure's cause or a general fix.
+
+## 8) 2026-11-17 live-device follow-up
+
+Samsung Galaxy S24 Ultra **SM-S928B** (`RZCY81TKBSV`), Android **17 / API 37**, build
+`CP2A.260605.016.S928BXXS6EZJ1`; MacBook Air M1, macOS **27.2.1**. The Debug phone app and
+`DroidBridge.app --p08-mirror --p08-allow-capture` were used on the same Wi-Fi LAN. The phone's
+log records owner-confirmed pairing (TLS 1.3, new peer pin persisted) and MediaProjection consent
+granted before capture. No real OTP was used; notification checks used only
+the experiment's fixed synthetic string. No device settings or unrelated notifications were changed.
+
+**USB/debugging state for this run:** USB connected **yes**; USB debugging **enabled**
+(`adb_enabled=1`); wireless debugging **enabled** (`adb_wifi_enabled=1`); ADB itself was connected
+through the USB transport. This is development evidence, not the required debugging-disabled P08
+acceptance run.
+
+- Live session: `590x1280` H.264 from `1080x2340` display content, encoder `c2.qti.avc.encoder`.
+  MediaProjection display 32 and the mirroring foreground service were present throughout the
+  checks. Android sampled stats show `stopReason=active`, `dropped=0`; at the shade screenshot the
+  Mac receiver showed `state=streaming` and `received=5160 enqueued=5159 dropped=0`.
+- Notification shade: opening Quick Settings/notifications visibly changed the phone display and
+  the same shade appeared in the Mac mirror. After the shade was dismissed, the phone returned to
+  `MirroringActivity`, MediaProjection/service remained active and the Mac image advanced to the
+  experiment controls. **No freeze or session closure was observed in this run.** This does not
+  disprove the historical freeze or establish its root cause. During the much longer follow-up
+  session the Mac receiver later accumulated 93 dropped/enqueue differences; do not attribute those
+  later totals to the short shade reproduction.
+- No rotation was induced in this run; device-side activity/session restoration after rotation is
+  still untested here.
+- The mirroring session was left active at the end of validation. No final USB-disconnected /
+  USB-debugging-disabled / wireless-debugging-disabled run, glass-to-glass latency measurement or
+  device-cost measurement was performed.
 
 ## Remaining P08 gaps
 

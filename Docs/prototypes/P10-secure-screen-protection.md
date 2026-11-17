@@ -1,6 +1,6 @@
 # P10 — Secure screen and screenshare-protection behaviour
 
-**Status: in progress (2026-11-12 evidence; implementation update 2026-11-17).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case has captured mirrored pixels showing mask dots. The notification shade was previously reported to freeze the picture and close the session. A source-level receiver hardening update is now in place, but no fresh target-device reproduction has been completed, so shade behavior and both OTP observations remain **Awaiting Local Validation**.
+**Status: in progress (2026-11-17 live-device follow-up).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case has captured mirrored pixels showing mask dots. The 2026-11-12 notification-shade freeze remains historical evidence with no confirmed root cause; in one fresh 2026-11-17 run after receiver hardening, the shade was visible on the Mac and the session remained active. The public-version synthetic OTP rendered its redacted public text on the Mac. The private-only synthetic notification was posted but its content was not visible in the captured shade/mirror, so its privacy result remains **Awaiting Local Validation**.
 
 > This report records evidence only. No attempt is made to bypass `FLAG_SECURE`, DRM, banking-app protections or protected surfaces (prohibited by AGENTS.md / security policy).
 
@@ -40,7 +40,7 @@
 
 **Result:** **Consistent with expected protected behavior** (protected/secure surface withheld from capture/mirror). Detailed session timing/log correlation for this specific observation was not captured in the log excerpt above; treat as a user-reported non-invasive observation pending a fully correlated evidence run if needed.
 
-### 3) Notification shade while mirroring — **the stream freezes and the session dies**
+### 3) Historical notification-shade freeze — 2026-11-12 (not reproduced in the 2026-11-17 run)
 
 **Setup:** live session (`590x1280` from `1080x2340` rendering correctly — the same session had just
 shown the password case below), then the shade opened with a down-swipe from the status bar.
@@ -82,23 +82,29 @@ reliable root-cause diagnosis.
 `isKeyguardShowing=true` → `system onStop`, Mac `MIRROR_STOP`), so a lock screen leaves nothing to
 mirror at all — recorded in full in the [P08 report](P08-live-mirroring.md#5-session-stops-when-mediaprojection-stops-u10).
 
-### 4) Synthetic OTP notifications, with and without `setPublicVersion()` — posted, verdict pending
+### 4) Synthetic OTP notifications, with and without `setPublicVersion()` — partial visual result
 
-Both controls ran against the live session and are confirmed at the notification-service level with
-`dumpsys notification --noredact`:
+Both experiment controls were exercised on the live 2026-11-17 session using only the experiment's
+fixed synthetic test token; no real OTP was used. `dumpsys notification --noredact` confirmed both
+records:
 
-- **With public version** (`id=102`): the record carries
-  `publicVersion=Notification(channel=p10-test … flags=0 …)`; the public version's content is
-  `P10 notification` / `Synthetic notification (no code shown)`, while the private version holds
-  `OTP-TEST-482913`.
-- **Without public version** (`id=101`): the record has no `publicVersion` field at all.
-- App log: `P10 synthetic OTP notification posted publicVersion=true` (11:23:49) and
-  `… publicVersion=false` (11:23:59).
+- **With public version** (`id=102`): `publicVersion` is present. Its public title/text are
+  `P10 notification` / `Synthetic notification (no code shown)`; the private payload contains the
+  synthetic test string. The phone shade and Mac mirror visibly showed the redacted public text and
+  not the synthetic code in the captured view.
+- **Without public version** (`id=101`): the record has no `publicVersion` field and its private
+  payload contains the same synthetic test string. The notification was posted again for an
+  isolated observation, but the captured phone shade did not show its content and the Mac capture
+  showed the experiment controls rather than that notification. This is **inconclusive**: it does
+  not establish that the private text was hidden by Android or by DroidBridge, nor that the two
+  displays were showing the same frame at capture time.
+- App logs confirm `P10 synthetic OTP notification posted publicVersion=true/false`; notification
+  records, captures and per-run observations are summarized below. No real notification was
+  dismissed or cleared, and no settings/app data were changed.
 
-What the *mirror* displayed for each was not visually captured. Historical attempts coincided with
-the shade freeze/session closure described in section 3; the notification state itself is confirmed
-(`dumpsys`), but only the last mile — what a viewer sees — remains **Awaiting Local Validation** after
-the receiver hardening.
+Therefore the public-version redaction is visually observed for this run. The private-only case
+remains **Awaiting Local Validation**; do not generalize the public-version result to notifications
+without a public version.
 
 ### 5) Password field — **pass, with the mirrored pixels captured**
 
@@ -124,21 +130,46 @@ what a viewer sees on this Mac. It does not prove anything about other capture s
 the app's sandbox, so nothing from the capture path is persisted by this app. (This covers the app's
 own storage; it does not audit other processes or the system's own buffers.)
 
+## 7) 2026-11-17 live-device follow-up and test state
+
+- **Device:** Samsung Galaxy S24 Ultra, `SM-S928B` / `RZCY81TKBSV`, Android 17 / API 37,
+  build `CP2A.260605.016.S928BXXS6EZJ1`; MacBook Air M1, macOS 27.2.1. Both apps were Debug
+  builds on the same Wi-Fi LAN. Android log confirms the prior saved peer pin was forgotten before
+  first pairing, then the owner compared/confirmed the new pairing code and granted MediaProjection
+  consent before the capture service started. I did not invoke the forget action or confirm pairing.
+- **USB connected:** yes. **USB debugging:** enabled (`adb_enabled=1`). **Wireless debugging:**
+  enabled (`adb_wifi_enabled=1`); ADB transport used in this run was USB.
+- Shade opened with an ordinary swipe; the phone showed Quick Settings/notifications, and the Mac
+  mirror showed the same shade. The mirroring foreground service and MediaProjection remained
+  active; sampled Android stats had `dropped=0`, `stopReason=active`, and the receiver was streaming.
+  Dismissing the shade returned the phone to `MirroringActivity`; the service/projection remained
+  active and the Mac image advanced. **No freeze or session closure was observed in this run.**
+  This does not erase the 2026-11-12 historical failure or establish its root cause.
+- The synthetic public-version notification's redacted text was visible on the phone and Mac as
+  described in section 4. The private-only notification was posted and exists in Android's
+  notification service, but its content was not visible in the captured view; that case is
+  inconclusive and remains open.
+- The session was left running. The phone stayed USB-connected with both debugging settings enabled.
+  No rotation, debugging-disabled acceptance run, glass-to-glass latency, CPU/GPU, battery, or
+  thermal measurement was performed. No device settings or app data were cleared. The pairing flow
+  logged that the prior saved peer pin was forgotten and the new pin persisted after owner-confirmed
+  pairing; no unrelated notification data was changed.
+
 ## Not yet tested (P10 remaining)
 
-- **Fresh notification-shade run after receiver hardening:** AWAITING LOCAL VALIDATION. The Mac now uses a monotonic bounded-burst token bucket, bounded-rate frame-counter publication, reduced media log volume, strict PTS/IDR tracking, and stream-epoch handling. This is not yet evidence the historical freeze or closure is fixed; physical reproduction/root cause remains unknown.
-- **Synthetic OTP notification with/without `setPublicVersion()`:** AWAITING LOCAL VALIDATION. The 2026-11-12 posts were confirmed via `dumpsys`, but mirrored visibility remains unobserved.
+- **Private-only synthetic OTP visual outcome:** AWAITING LOCAL VALIDATION. The record exists, but
+  its content was not visible in the captured shade/mirror; no protection conclusion is made.
 - Additional banking/DRM apps by **non-invasive observation only** (no interaction, no bypass).
-- Correlated evidence runs for each case with USB/USB-debugging/wireless-debugging state recorded per
-  run (this session: USB not connected, wireless ADB on, `192.168.31.106:5555`).
+- Rotation UI restoration on the target device, and the separate P08 final debugging-disabled
+  acceptance/performance measurements remain open in the [P08 report](P08-live-mirroring.md).
 
 ## Running the cases
 
 Mirroring must be live (Mac `P08 Mirror` listening, phone connected and capturing) before each case.
-The steps below were attempted on 2026-11-12 (see sections 3–5) and remain the reproduction
-procedure. **Capture the Mac window with `--p08-allow-capture`**, otherwise the video area photographs
-as black (the layer sets `preventsCapture`). Steps 2–3 remain **Awaiting Local Validation** after the
-2026-11-17 receiver changes:
+The steps below are the reproduction procedure. The shade and public-version case were observed on
+2026-11-17; the private-only notification remains **Awaiting Local Validation**. **Capture the Mac
+window with `--p08-allow-capture`**, otherwise the video area photographs as black (the layer sets
+`preventsCapture`):
 
 1. **Password field** — tap *P10: Open password-field test screen*, focus the field, type throwaway
    text, watch the Mac. Back to the controls with *Back to mirroring controls*.
@@ -177,8 +208,10 @@ off unless the argument is passed.
 ## Current assessment
 
 **In progress.** Protected surfaces are withheld as required in every case that has actually been
-observed (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured pixels),
-and the lock screen cannot leak because locking stops capture. P10 remains open: the historical shade
-freeze has not been freshly reproduced after the 2026-11-17 source changes, and mirrored OTP visibility
-(with and without a public version) remains **Awaiting Local Validation**. Do not interpret the
-implemented mitigations as a device-verified fix or as OTP protection evidence.
+observed (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured pixels).
+The notification shade mirrored and remained live in one fresh run; public-version notification
+redaction was also observed. The private-only notification outcome is inconclusive and remains
+**Awaiting Local Validation**. The historical shade freeze remains valid historical evidence but was
+not reproduced in the 2026-11-17 run; its root cause and whether the receiver changes address it are
+unknown. Do not generalize a single shade run or the public-version notification result. The lock
+screen cannot leak in the tested P01 path because locking stops capture.
