@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-11-20
 **Current phase:** Phase 1 — feasibility prototypes (P00–P17)
-**Current position:** Phase 0 complete; P00–P07 and P13 accepted; P08, P10 and P11 in progress; P09 is historical for tested input routes; **P16 BLE HOGP is NO-GO for Android** (host classifies the dual-mode Mac and routes HID over Classic); **P17 Classic HIDP is a GO on the OnePlus with DroidBridge's own implementation** — SDP + L2CAP control/interrupt deliver arrow keys with USB disconnected, but S24 Ultra evidence and a both-debugging-modes-off pass are outstanding; P15 local identity persistence verified with peer reconnect outstanding; P14 pending; P12 approval-gated
+**Current position:** Phase 0 complete; P00–P07 and P13 accepted; P08, P10 and P11 in progress; P09 is historical for tested input routes; **P16 BLE HOGP is NO-GO for Android** (host classifies the dual-mode Mac and routes HID over Classic); **P17 Classic HIDP is a GO on the OnePlus with DroidBridge's own implementation** — SDP + L2CAP control/interrupt deliver arrow keys with USB disconnected, but S24 Ultra evidence and a both-debugging-modes-off pass are outstanding; P15 local identity persistence verified with peer reconnect outstanding; **P14 started** — foreground-service start paths measured, survival matrix blocked on device access; P12 approval-gated
 
 This file is the at-a-glance status dashboard. It is **not** a replacement for the evidence
 reports: detailed test evidence, limitations and decisions live in `Docs/PROGRESS_LOCAL.md`,

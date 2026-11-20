@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Added — P14 background session experiment (2026-11-20)
+- Added an isolated `connectedDevice` foreground-service experiment that reuses the production TLS session and pin store, heartbeats a real `PING`/`PONG` every 15 s, reconnects with backoff, and shows a persistent notification with a Disconnect action. No wake lock, no battery-optimisation exemption, no Bluetooth permission.
+- Measured: foreground start succeeds with no runtime prompt; a background start is accepted 6 s after backgrounding (post-visibility grace) and rejected at 30 s with `ForegroundServiceStartNotAllowedException`. `BOOT_COMPLETED`, the survival matrix, Doze, notification and battery tests remain outstanding — the reboot left the handset off Wi-Fi and out of ADB reach. See [P14](prototypes/P14-background-persistence.md).
+
 ### Added — P17 stability, reconnect and clean shutdown (2026-11-20)
 - Measured a **48-press burst** in one HID session: `+12` per arrow direction, so every report was delivered exactly once with no drops or duplicates.
 - Fixed shutdown leakage: the app now closes both L2CAP channels, closes the ACL and withdraws its HID SDP record from `applicationShouldTerminate`. Quitting while connected previously left a Mac-side stale session that refused the next connection with `0xE00002BC` until the phone's Bluetooth was cycled; an immediate relaunch now reconnects and delivers input.
