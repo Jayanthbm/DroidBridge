@@ -72,6 +72,62 @@ ConnectionState: STATE_CONNECTED
 Each direction was sent once and each counter advanced by exactly one, so the reports were
 well formed and none was duplicated or dropped.
 
+## Run 3 — 48-press stability burst (single session)
+
+Sequence `UP,DOWN,LEFT,RIGHT` repeated 12 times, 900 ms apart, over one control/interrupt pair:
+
+```
+20:18:57.903  opening ACL to 5c-17-cf-b4-1b-b9
+20:18:59.406  control channel open
+20:18:59.510  interrupt channel open
+20:19:05.581  harness sent UP   (first of 48)
+```
+
+```
+harness sent = 48
+BASELINE  UP: 3   DOWN: 1  / LEFT: 1  RIGHT: 1
+AFTER     UP: 15  DOWN: 13 / LEFT: 13 RIGHT: 13
+DELTA     +12      +12        +12        +12
+```
+
+Every press was delivered exactly once: zero drops and zero duplicates across 48 reports.
+
+## Run 4 — abrupt app exit leaves the session locked
+
+After killing the app while channels were open, the next launch of any process failed:
+
+```
+20:13:56.653  L2CAP control channel (0x0011) failed (0xE00002BC)
+20:15:53.657  L2CAP control channel (0x0011) failed (0xE00002BC)
+20:17:18.061  L2CAP control channel (0x0011) failed (0xE00002BC)
+```
+
+Android was **not** holding the link — `HidHostService` reported `STATE_DISCONNECTED`,
+`mTargetDevice: null`, `mInputDevices: 60:3E:5F:31:D0:6D : 0` — so the stale state was on the
+Mac side. It persisted for at least 8 minutes and was cleared only by cycling the phone's
+Bluetooth adapter:
+
+```
+svc bluetooth disable ; svc bluetooth enable
+20:16:39.862  control channel open
+20:16:39.963  interrupt channel open
+```
+
+The bond survived the cycle: `60:3E:5F:31:D0:6D [BR/EDR] Jayanth's MacBook Air`.
+
+## Run 5 — graceful quit now releases the session
+
+`stop()` (close channels, close ACL, withdraw the SDP record) is now called from
+`applicationShouldTerminate`. A quit while connected logs `stopped`, and an immediate relaunch
+reconnects with no Bluetooth cycle:
+
+```
+20:22:57.738  stopped                       (session 1, quit while connected)
+20:23:19.160  control channel open          (session 2, launched 2 s later)
+20:23:19.461  interrupt channel open
+20:23:25.721  harness sent UP
+```
+
 ## Failure modes observed while reaching this result
 
 1. **Bluetooth privacy consent (macOS 26).** Until `kTCCServiceBluetoothAlways` was granted,

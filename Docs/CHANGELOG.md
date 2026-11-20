@@ -4,6 +4,11 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Added — P17 stability, reconnect and clean shutdown (2026-11-20)
+- Measured a **48-press burst** in one HID session: `+12` per arrow direction, so every report was delivered exactly once with no drops or duplicates.
+- Fixed shutdown leakage: the app now closes both L2CAP channels, closes the ACL and withdraws its HID SDP record from `applicationShouldTerminate`. Quitting while connected previously left a Mac-side stale session that refused the next connection with `0xE00002BC` until the phone's Bluetooth was cycled; an immediate relaunch now reconnects and delivers input.
+- Recorded the remaining limitation: after a force-quit or crash, one phone Bluetooth adapter cycle is still required. Evidence: [p17 transcript](prototypes/evidence/p17/README.md).
+
 ### Added — P17 Classic HIDP delivers input from DroidBridge's own app (2026-11-20)
 - **DroidBridge's own implementation now delivers HID input to Android.** `P17ClassicHIDP` published the HID SDP record (`handle 1330188580`), applied Class of Device `0x2540`, opened L2CAP control `0x0011` and interrupt `0x0013`, and moved a focused receiver's counters from zero to `UP 2, DOWN 1, LEFT 1, RIGHT 1`, with Android reporting `STATE_CONNECTED` for `Jayanth's MacBook Air [BR/EDR]`. The Classic route no longer depends on the AGPL probe.
 - Added a numeric-comparison pairing panel that displays the code for manual verification and answers only on explicit **Codes match — Accept**, plus a manual *Connect / Pair* control with an address field — the previous build had no way to answer the comparison at all.
