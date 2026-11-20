@@ -5,6 +5,7 @@ import SwiftUI
 struct P17ClassicHIDPView: View {
     @ObservedObject var peripheral: ClassicHIDPeripheral
     @State private var receiverConfirmed = false
+    @State private var peerAddress = ""
 
     private let arrows: [(String, UInt8)] = [
         ("UP", 0x52), ("DOWN", 0x51), ("LEFT", 0x50), ("RIGHT", 0x4F)
@@ -38,6 +39,44 @@ struct P17ClassicHIDPView: View {
                     .disabled(peripheral.isSDPPublished)
                 Button("Stop / Disconnect", role: .destructive) { peripheral.stop() }
                 Button("Refresh peers") { peripheral.refreshPairedDevices() }
+            }
+
+            GroupBox("Connect by address") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Classic HIDP has no mDNS discovery: type the peer's Bluetooth address, then connect. An unbonded peer is paired first.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        TextField("5C-17-CF-B4-1B-B9", text: $peerAddress)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(maxWidth: 240)
+                        Button("Connect / Pair") { peripheral.connect(to: peerAddress) }
+                            .disabled(peerAddress.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            GroupBox("Pairing") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Confirm that the code below matches the code shown on the phone, then answer on both devices.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    if let state = peripheral.pairingState {
+                        Text("State: \(state)").font(.callout)
+                    }
+                    if let code = peripheral.pairingCode {
+                        Text(code)
+                            .font(.system(size: 34, weight: .semibold, design: .monospaced))
+                        HStack {
+                            Button("Codes match — Accept") { peripheral.confirmPairing(true) }
+                            Button("Decline") { peripheral.confirmPairing(false) }
+                        }
+                    } else {
+                        Text("No pairing code pending.").foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             GroupBox("Paired peers") {
@@ -110,7 +149,11 @@ struct P17ClassicHIDPView: View {
             Spacer(minLength: 0)
         }
         .padding(20)
-        .onAppear { peripheral.runHarnessIfRequested() }
+        .task {
+            await peripheral.warmUpIOBluetooth()
+            peripheral.refreshPairedDevices()
+            peripheral.runHarnessIfRequested()
+        }
     }
 
     private func statusRow(_ label: String, _ value: Bool) -> some View {

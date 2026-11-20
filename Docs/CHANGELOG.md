@@ -4,6 +4,13 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Added — P17 Classic HIDP delivers input from DroidBridge's own app (2026-11-20)
+- **DroidBridge's own implementation now delivers HID input to Android.** `P17ClassicHIDP` published the HID SDP record (`handle 1330188580`), applied Class of Device `0x2540`, opened L2CAP control `0x0011` and interrupt `0x0013`, and moved a focused receiver's counters from zero to `UP 2, DOWN 1, LEFT 1, RIGHT 1`, with Android reporting `STATE_CONNECTED` for `Jayanth's MacBook Air [BR/EDR]`. The Classic route no longer depends on the AGPL probe.
+- Added a numeric-comparison pairing panel that displays the code for manual verification and answers only on explicit **Codes match — Accept**, plus a manual *Connect / Pair* control with an address field — the previous build had no way to answer the comparison at all.
+- Fixed a main-thread deadlock in `IOBluetoothDevice.pairedDevices()` by warming IOBluetooth up off the main thread and refreshing peers on a background queue.
+- Documented three environment constraints that masquerade as HIDP faults: macOS 26's `kTCCServiceBluetoothAlways` consent (unconsented calls surface as `0xE00002BC`/`0xE00002D6`), the single Classic pairing-agent slot that made programmatic pairing fail `0x0000001F` while another app held it, and Android retaining the previous HID link after the Mac app exits. See [ADR-042](TECHNICAL_DECISIONS.md#adr-042--treat-macos-bluetooth-consent-the-single-pairing-agent-slot-and-one-hid-session-per-connection-as-environment-constraints) and R-36.
+- Not proven: S24 Ultra, a pass with both debugging modes disabled, reconnect/relaunch/bond-recovery, sustained typing, and the app's own programmatic pairing. Evidence: [P17](prototypes/P17-classic-hidp.md), [run transcript](prototypes/evidence/p17/README.md).
+
 ### Added — independent P17 Classic HIDP implementation and BLE NO-GO result (2026-11-20)
 - Recorded **macOS BLE HOGP → Android as NO-GO**. Android bonds the Mac but never creates a HID input device (`HidHostService.mInputDevices` empty, `mTargetDevice: null`) and the Mac receives no GATT traffic. The unmodified upstream BLE app behaves identically, so this is Android's `[ DUAL ]` transport routing of the Mac's shared public BR/EDR address, not a GATT-layout defect.
 - Recorded **Classic HIDP as a preliminary GO on OnePlus Nord AC2001 / Android 12 only**: SDP HID record published, L2CAP `0x0011`/`0x0013` opened from the Mac, four Android input devices registered, and arrow press/release pairs counted by a focused receiver with USB disconnected and wireless debugging off.

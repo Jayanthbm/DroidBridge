@@ -65,10 +65,18 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     @Published private(set) var pairedDevices: [Peer] = []
     @Published private(set) var lastError: String?
     @Published private(set) var activity: [String] = []
+    @Published private(set) var pairingCode: String?
+    @Published private(set) var pairingState: String?
 
     private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "", category: "P17ClassicHIDP")
     private var serviceRecord: IOBluetoothSDPServiceRecord?
     private var device: IOBluetoothDevice?
+    private var pairer: IOBluetoothDevicePair?
+    private var pendingAddress: String?
+    /// Set only for an automated run whose numeric value the owner has already verified.
+    private var autoAcceptPairing = false
+    /// Re-pairs even when a local bond record exists, for a peer that dropped its side.
+    private var forcePairing = false
     private var controlChannel: IOBluetoothL2CAPChannel?
     private var interruptChannel: IOBluetoothL2CAPChannel?
     private var lastReports: [UInt8: Data] = [
@@ -79,7 +87,6 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
     override init() {
         super.init()
-        refreshPairedDevices()
     }
 
     // MARK: - Service publication
@@ -107,14 +114,111 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
     // MARK: - Peers
 
-    func refreshPairedDevices() {
-        let devices = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice]) ?? []
-        pairedDevices = devices.compactMap { peer in
-            guard let address = peer.addressString else { return nil }
-            let name = peer.name ?? address
-            return Peer(id: normalize(address), name: name, isConnected: peer.isConnected())
+    /// Prepares IOBluetooth before any other call is made.
+    ///
+    /// The first touch of IOBluetooth initialises an internal CoreBluetooth coordinator whose init
+    /// waits on a semaphore signalled from the main thread. If that first touch happens on the main
+    /// thread the wait can never be satisfied, and touching IOBluetooth from two threads at once
+    /// makes them wait on each other's `dispatch_once`. Doing the very first call off the main
+    /// thread, with the run loop free, avoids both deadlocks.
+    func warmUpIOBluetooth() async {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.global(qos: .userInitiated).async {
+                _ = IOBluetoothDevice.pairedDevices()
+                continuation.resume()
+            }
         }
-        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// Loads paired peers off the main thread.
+    ///
+    /// `IOBluetoothDevice.pairedDevices()` initialises IOBluetooth's CoreBluetooth coordinator on
+    /// first use, which waits for the main thread, so it must never run on the main thread and must
+    /// not race another first-use call. Call `warmUpIOBluetooth()` first.
+    func refreshPairedDevices() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let devices = (IOBluetoothDevice.pairedDevices() as? [IOBluetoothDevice]) ?? []
+            let peers: [Peer] = devices.compactMap { peer in
+                guard let address = peer.addressString else { return nil }
+                let name = peer.name ?? address
+                return Peer(
+                    id: self.normalize(address),
+                    name: name,
+                    isConnected: peer.isConnected()
+                )
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+            Task { @MainActor in
+                self.pairedDevices = peers
+            }
+        }
+    }
+
+    // MARK: - Pairing
+
+    /// Starts Classic pairing so a bond exists before HIDP channels are opened.
+    ///
+    /// IOBluetooth documents that a numeric comparison value must be shown to the user and the
+    /// reply must carry their accept/decline decision, so the value is published for comparison
+    /// and confirmation comes from `confirmPairing(_:)`.
+    private func startPairing(with stored: IOBluetoothDevice, address: String) {
+        guard pairer == nil else { return }
+        publishService()
+        pendingAddress = address
+        pairingCode = nil
+        pairingState = "starting"
+        holdAgainstTermination()
+        note("not bonded yet: starting Classic pairing")
+
+        guard let attempt = IOBluetoothDevicePair(device: stored) else {
+            lastError = "Could not create a pairing session"
+            pairingState = "failed"
+            releaseTerminationHold()
+            return
+        }
+        attempt.delegate = self
+        pairer = attempt
+        let result = attempt.start()
+        if result != kIOReturnSuccess {
+            lastError = "Pairing start failed (\(Self.ioCode(result)))"
+            pairingState = "failed"
+            pairer = nil
+            releaseTerminationHold()
+        }
+    }
+
+    /// Sends the user's numeric-comparison decision and continues on success.
+    func confirmPairing(_ accept: Bool) {
+        guard let pairer else { return }
+        pairingState = accept ? "accepted by user" : "declined by user"
+        note("pairing confirmation: \(accept ? "accept" : "decline")")
+        pairer.replyUserConfirmation(accept)
+        if !accept {
+            pairer.stop()
+            self.pairer = nil
+            releaseTerminationHold()
+        }
+    }
+
+    private func finishPairing(error: IOReturn) {
+        pairer = nil
+        let address = pendingAddress
+        pendingAddress = nil
+        pairingCode = nil
+        guard error == kIOReturnSuccess else {
+            pairingState = "failed"
+            lastError = "Pairing failed (\(Self.ioCode(error)))"
+            note(lastError ?? "")
+            releaseTerminationHold()
+            return
+        }
+        pairingState = "paired"
+        note("pairing complete")
+        refreshPairedDevices()
+        if let address {
+            connect(to: address)
+        }
     }
 
     // MARK: - Connection
@@ -130,6 +234,13 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         guard let stored = IOBluetoothDevice(addressString: dashForm(normalized)) else {
             lastError = "Peer \(normalized) is not paired with this Mac"
             note("connect: unknown peer \(normalized)")
+            return
+        }
+        // HIDP requires an authenticated, encrypted link, so pair first when no bond exists.
+        // A bond can also be stale: the peer may have removed this Mac while the local record
+        // survives, and there is no public API to delete it. Pairing rewrites the link key.
+        if forcePairing || !stored.isPaired() {
+            startPairing(with: stored, address: normalized)
             return
         }
         disconnect(keepError: true)
@@ -245,6 +356,10 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
         publishService()
         if let connectionIndex, arguments.indices.contains(connectionIndex + 1) {
+            // Only an automated run whose operator has already verified the numeric value may
+            // answer the confirmation without a click.
+            autoAcceptPairing = ProcessInfo.processInfo.environment["P17_AUTO_ACCEPT_PAIRING"] == "1"
+            forcePairing = arguments.contains("--harness-force-pair")
             connect(to: arguments[connectionIndex + 1])
         }
 
@@ -255,18 +370,20 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     }
 
     private func sendHarnessArrow(named name: String) {
-        let usage: UInt8?
-        switch name {
-        case "UP": usage = 0x52
-        case "DOWN": usage = 0x51
-        case "LEFT": usage = 0x50
-        case "RIGHT": usage = 0x4F
-        default: usage = nil
+        let names = name.split(separator: ",").map { String($0).uppercased() }
+        var plan: [(String, UInt8)] = []
+        for entry in names {
+            switch entry {
+            case "UP": plan.append((entry, 0x52))
+            case "DOWN": plan.append((entry, 0x51))
+            case "LEFT": plan.append((entry, 0x50))
+            case "RIGHT": plan.append((entry, 0x4F))
+            default:
+                lastError = "Unknown harness arrow '\(entry)'"
+                return
+            }
         }
-        guard let usage else {
-            lastError = "Unknown harness arrow '\(name)'"
-            return
-        }
+        guard !plan.isEmpty else { return }
         Task { @MainActor in
             // Give the host time to finish HID discovery before the first report.
             try? await Task.sleep(nanoseconds: 6_000_000_000)
@@ -275,8 +392,13 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
                 self.note("harness send skipped (not ready)")
                 return
             }
-            self.sendArrow(usage)
-            self.note("harness sent \(name)")
+            // One HID session per connection: Android keeps the previous link until it times out,
+            // so every report is sent over this single control/interrupt pair.
+            for (label, usage) in plan {
+                self.sendArrow(usage)
+                self.note("harness sent \(label)")
+                try? await Task.sleep(nanoseconds: 900_000_000)
+            }
         }
     }
 
@@ -485,6 +607,66 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
     private static func ioCode(_ code: IOReturn) -> String {
         String(format: "0x%08X", UInt32(bitPattern: code))
+    }
+}
+
+extension ClassicHIDPeripheral: @preconcurrency IOBluetoothDevicePairDelegate {
+    func devicePairingStarted(_ sender: Any!) {
+        Task { @MainActor in
+            self.pairingState = "pairing"
+            self.note("pairing started")
+        }
+    }
+
+    func devicePairingConnecting(_ sender: Any!) {
+        Task { @MainActor in self.pairingState = "connecting" }
+    }
+
+    func devicePairingConnected(_ sender: Any!) {
+        Task { @MainActor in self.pairingState = "connected" }
+    }
+
+    func devicePairingPINCodeRequest(_ sender: Any!) {
+        Task { @MainActor in
+            // The experiment has no PIN UI; an unhandled PIN request must fail closed.
+            self.pairingState = "PIN requested"
+            self.lastError = "Peer requested a PIN code; the POC does not provide one"
+            (sender as? IOBluetoothDevicePair)?.stop()
+        }
+    }
+
+    func devicePairingUserConfirmationRequest(_ sender: Any!, numericValue: BluetoothNumericValue) {
+        Task { @MainActor in
+            let code = String(format: "%06u", numericValue)
+            self.pairingCode = code
+            self.pairingState = "awaiting confirmation"
+            self.note("numeric comparison value \(code)")
+            if self.autoAcceptPairing {
+                self.note("auto-accepting because the owner pre-verified this run")
+                self.confirmPairing(true)
+            }
+        }
+    }
+
+    func devicePairingUserPasskeyNotification(_ sender: Any!, passkey: BluetoothPasskey) {
+        Task { @MainActor in
+            let code = String(format: "%06u", passkey)
+            self.pairingCode = code
+            self.pairingState = "passkey notification"
+            self.note("passkey notification \(code)")
+        }
+    }
+
+    func devicePairingFinished(_ sender: Any!, error: IOReturn) {
+        Task { @MainActor in
+            self.finishPairing(error: error)
+        }
+    }
+
+    func deviceSimplePairingComplete(_ sender: Any!, status: BluetoothHCIEventStatus) {
+        Task { @MainActor in
+            self.note("simple pairing complete status \(status)")
+        }
     }
 }
 

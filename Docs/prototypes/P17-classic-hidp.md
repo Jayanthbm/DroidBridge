@@ -1,8 +1,8 @@
 # P17 — macOS Bluetooth Classic HIDP feasibility
 
-**Status:** **Preliminary GO on the OnePlus Nord (Android 12 / API 31) only.** A Mac acting as a Bluetooth Classic HID device publishes an HID SDP record, opens the HID L2CAP control (`0x0011`) and interrupt (`0x0013`) channels to Android, and delivers real arrow key press/release reports that Android's input system routes to a focused app. **No S24 Ultra evidence exists**, and the run used the unmodified upstream app as the test vehicle, not DroidBridge code. This is not final acceptance and not a production-input approval.
+**Status:** **GO on the OnePlus Nord (Android 12 / API 31) with DroidBridge's own independent implementation.** `P17ClassicHIDP`, authored from the HID Profile transaction set and Apple's public `IOBluetooth` surface, publishes the HID SDP record, opens the L2CAP control (`0x0011`) and interrupt (`0x0013`) channels to Android, and delivers arrow press/release reports that Android routes to a focused app (`UP 2, DOWN 1, LEFT 1, RIGHT 1` from a zeroed baseline). **No S24 Ultra evidence exists**, and the run had USB debugging enabled, so this is not final acceptance and not a production-input approval.
 
-**Related:** [P16 BLE HID](P16-ble-hid.md) (NO-GO on Android for BLE), ADR-041, R-35.
+**Related:** [P16 BLE HID](P16-ble-hid.md) (NO-GO on Android for BLE), [evidence](evidence/p17/README.md), ADR-041, ADR-042, R-35, R-36.
 
 ## Objective
 
@@ -25,9 +25,9 @@ Determine whether a macOS app can act as a standard Bluetooth **Classic** HID de
 
 This run therefore does **not** satisfy final acceptance, which requires USB disconnected *and* both debugging modes disabled.
 
-## Test vehicle and licensing
+## Test vehicle
 
-The run used the **unmodified upstream** `jqssun/darwin-bt-remote` app (commit `e64cae983b8816e7e2f067e79025ffc49faf7e2d`, AGPL-3.0-only), built locally, in its `classic` transport mode. It is an AGPL research artifact used only as a feasibility probe; **no upstream source may be adopted into DroidBridge**. DroidBridge's own independent P17 implementation remains outstanding.
+This run used **DroidBridge's own independent implementation**, `macos/Experiments/P17ClassicHIDP/` (target `P17ClassicHIDP`, bundle ID `com.droidbridge.experiment.p17classichidp`). An earlier feasibility pass used the unmodified upstream `jqssun/darwin-bt-remote` app (AGPL-3.0-only) purely as a probe; **no upstream source has been adopted**, and the AGPL-derived comparison artifact was deleted before it could be committed.
 
 ## Permissions and API surface used
 
@@ -92,37 +92,56 @@ Events: UP down / UP up / UP down / UP up / UP down / UP up
 
 Press **and** release pairs are present, so reports are well-formed and no key is stuck. Key events reached the app through Android's normal input pipeline — not through ADB.
 
-## Independent DroidBridge implementation (built; delivery not yet demonstrated)
+## Independent DroidBridge implementation — delivery demonstrated
 
-`macos/Experiments/P17ClassicHIDP/` — target `P17ClassicHIDP`, bundle ID `com.droidbridge.experiment.p17classichidp`. Independently authored from the HID Profile transaction set and Apple's public `IOBluetooth` surface; **no third-party implementation source is included**, and the earlier AGPL-derived comparison artifact was deleted before this work was committed.
+Independently authored from the HID Profile transaction set and Apple's public `IOBluetooth` surface; **no third-party implementation source is included**.
 
-Implemented: HID SDP record (service class `0x1124`, L2CAP control `0x0011` and interrupt `0x0013` protocol lists, `HIDDescriptorList` with the report descriptor, boot-device and normally-connectable flags); outbound ACL plus both L2CAP channels; HIDP transactions (`GET_REPORT`, `SET_REPORT`, `GET_PROTOCOL`, `SET_PROTOCOL`, `GET_IDLE`, `SET_IDLE`, `HID_CONTROL`, handshakes); `0xA1`-prefixed input reports with report ID in Report Protocol and the boot layout in Boot Protocol; temporary local Class of Device `0x2540`; and `disableAutomaticTermination`/`disableSuddenTermination` to prevent the silent disconnect observed with the upstream app.
+Implemented: HID SDP record (service class `0x1124`, L2CAP control `0x0011` and interrupt `0x0013` protocol lists, `HIDDescriptorList` with the report descriptor, boot-device and normally-connectable flags); outbound ACL plus both L2CAP channels; HIDP transactions (`GET_REPORT`, `SET_REPORT`, `GET_PROTOCOL`, `SET_PROTOCOL`, `GET_IDLE`, `SET_IDLE`, `HID_CONTROL`, handshakes); `0xA1`-prefixed input reports with report ID in Report Protocol and the boot layout in Boot Protocol; temporary local Class of Device `0x2540`; `disableAutomaticTermination`/`disableSuddenTermination`; a manual *Connect / Pair* control with an address field, a numeric-comparison panel that shows the code for verification, and an arrow send gate; and a harness mode (`--harness-connect <addr>`, `--harness-send UP,DOWN,LEFT,RIGHT`).
 
-Observed so far (OnePlus dozing, screen off):
+### Result (2026-11-20, OnePlus Nord AC2001 / Android 12)
 
 ```
-SDP published (handle 1330188580)
-class of device -> 0x2540
-opening ACL to 5c-17-cf-b4-1b-b9
-L2CAP control channel (0x0011) failed (0xE00002BC)
+19:54:51.413  SDP published (handle 1330188580)
+19:54:51.414  class of device -> 0x2540
+19:54:51.414  opening ACL to 5c-17-cf-b4-1b-b9
+19:54:52.922  control channel open        (PSM 0x0011)
+19:54:53.123  interrupt channel open      (PSM 0x0013)
+19:54:59.329  harness sent UP
 ```
 
-So the record publishes and the ACL opens, but the control channel is refused while the handset is asleep, and `HidHostService` keeps the device at state `0`. **Key delivery from this app is not demonstrated.** Build and strict `codesign --verify --deep --strict` pass. Manual UI is the default; a `--harness-publish` / `--harness-connect <addr>` / `--harness-send <ARROW>` launch mode exists for automated runs.
+Receiver counters on the phone:
+
+```
+BASELINE            UP: 0    DOWN: 0 / LEFT: 0  RIGHT: 0
+AFTER run 1 (UP)    UP: 1    DOWN: 0 / LEFT: 0  RIGHT: 0
+AFTER run 2 (all 4) UP: 2    DOWN: 1 / LEFT: 1  RIGHT: 1
+```
+
+Run 2 sent `UP, DOWN, LEFT, RIGHT` over a **single** control/interrupt pair, and Android's HID host reported `60:3E:5F:31:D0:6D [BR/EDR] … ConnectionState: STATE_CONNECTED`. Every counter advanced by exactly one per press, so reports were neither duplicated nor dropped. Full transcript: [evidence/p17](evidence/p17/README.md).
+
+### Host-side obstacles found and resolved
+
+1. **macOS 26 requires Bluetooth privacy consent.** Until `kTCCServiceBluetoothAlways` was granted, every IOBluetooth call blocked and surfaced as `L2CAP control channel (0x0011) failed (0xE00002BC)` / `openConnection failed (0xE00002D6)`. `tccd` logged `AUTHREQ_PROMPTING … service=kTCCServiceBluetoothAlways`, and re-signing the app invalidated the previous grant until a stable Apple Development identity was used. **These error codes are not protocol failures** — do not diagnose them as pairing or SDP faults. The target is ad-hoc signed like the other experiments, so for repeated runs it was re-signed with the owner's Apple Development identity after each build (`codesign --force --deep --sign … --entitlements … --options runtime`); otherwise every rebuild re-prompts. The grant itself is per bundle ID and is a manual, one-time user action.
+2. **`IOBluetoothDevice.pairedDevices()` deadlocks on the main thread.** Its first use initialises IOBluetooth's CoreBluetooth coordinator, which waits on a semaphore signalled from the main thread, and touching IOBluetooth from two threads at once makes them wait on each other's `dispatch_once`. The app now warms the framework up off the main thread and refreshes peers on a background queue.
+3. **Programmatic pairing loses the single Classic pairing-agent slot.** `bluetoothd` showed our session registering with `programmatic pairing disabled`, then `programmatic pairing enabled` → `Classic pairing agent already exist`, because CleanMyMac4's `bluetooth-device-fetch-xpcservice` re-registers a Classic agent about once per second. The numeric-comparison value arrived and the user accepted it, but `replyUserConfirmation(_:)` was never delivered: the bond failed with `0x0000001F` after the peer's SSP timeout and the Mac side also logged `BT_ERROR_AUTHENTICATION_FAILURE`. The bond that made this run work was **phone-initiated** (`btif_dm_create_bond`), which does not need that slot. Pairing is an OS-level concern here; HIDP itself is unaffected.
+4. **One HID session per connection.** After the Mac process exits, Android keeps the previous HID link until its own timeout, so reconnecting immediately is refused with `0xE00002BC`. All reports for a run must go over one control/interrupt pair.
+5. **A stale local bond blocks everything.** If the phone drops its half while the Mac keeps its record, the Mac reuses the dead link key, paging times out (`0xE00002D6`) or authentication fails, and there is no public API to delete the local record (`IOBluetoothDevice` exposes only `removeFromFavorites`). Forgetting the device on the Mac is a manual prerequisite.
 
 ## Known host-side fragility
 
-macOS **automatic termination** killed the Mac app 16 seconds after the channels opened in one attempt (`18:00:24 App termination approved`), which silently dropped the HID connection. The app must stay running and visible during use. An independent implementation must prevent this (e.g. disable sudden/automatic termination) and surface disconnect/reconnect state.
+macOS **automatic termination** killed the upstream probe 16 seconds after the channels opened in an earlier attempt (`18:00:24 App termination approved`), silently dropping the HID connection. The app must stay running and visible during use; the independent implementation suppresses automatic and sudden termination and surfaces connection state, and no termination occurred during the runs above.
 
 ## Limitations — what this does not prove
 
-- **No S24 Ultra evidence.** The target device is untested; OnePlus Android 12 behaviour is preliminary.
-- **Not DroidBridge code.** Feasibility was shown with the upstream app; the project's own implementation does not exist yet.
-- Keyboard arrows only. Pointer, consumer/system controls, text entry, drag, scroll, gestures and arbitrary touch-equivalent control are unproven.
+- **No S24 Ultra evidence.** The target device is untested; OnePlus Android 12 behaviour is preliminary and One UI may differ.
+- Keyboard arrows only. Pointer, consumer/system controls, text entry, drag, scroll, gestures and arbitrary touch-equivalent control are unproven. The receiver counts arrow keys; it does not show that a text field received characters.
+- Only four key presses were measured over two sessions. Sustained typing, modifier handling, rollover, key repeat and long-session stability are untested.
 - Android 17 / One UI 9 masks password characters from physical keyboards (R-19), so HID typing is not a password-entry path.
 - No claim about secure/`FLAG_SECURE` apps, banking apps, or protected surfaces.
-- Debugging was enabled during the run; final acceptance requires it disabled, and disconnect/reconnect, relaunch, Bluetooth-toggle and bond-recovery cycles were not measured.
-- The AGPL test vehicle cannot be shipped.
+- **Debugging was enabled** (`adb_enabled=1`) with ADB over Wi-Fi; final acceptance requires both debugging modes disabled. Disconnect/reconnect, relaunch, Bluetooth-toggle, out-of-range and bond-recovery cycles were not measured.
+- Pairing had to be phone-initiated. Programmatic pairing from this app could not be completed on this Mac while another app held the single Classic pairing agent, so the app's own `IOBluetoothDevicePair` flow is implemented but **not proven end-to-end** here.
+- The AGPL test vehicle from the earlier feasibility pass cannot be shipped; nothing from it is in the repository.
 
 ## Conclusion
 
-**CONDITIONAL GO** for the Classic HIDP route on Android, based on preliminary single-device evidence. **BLE HOGP from this Mac to Android is NO-GO** (see [P16](P16-ble-hid.md) and ADR-041). Next step is an independent DroidBridge P17 POC using public `IOBluetooth` APIs, reproduced on the **S24 Ultra**, with reconnect/relaunch coverage and a USB-disconnected, debugging-off acceptance pass.
+**GO** for the Classic HIDP route on Android using DroidBridge's own implementation, demonstrated on one OnePlus Nord AC2001 / Android 12 device with USB disconnected. **BLE HOGP from this Mac to Android is NO-GO** (see [P16](P16-ble-hid.md) and ADR-041). What remains before any production input claim: reproduce on the **S24 Ultra**, repeat with **both debugging modes disabled**, cover reconnect/relaunch/bond-recovery, and extend beyond arrow keys only if a requirement demands it. Treat the macOS Bluetooth privacy grant, the single pairing-agent slot and the one-session-per-connection rule as known environment constraints (ADR-042).
