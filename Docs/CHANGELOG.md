@@ -4,6 +4,12 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Changed — P14 re-run on the S24 Ultra: background session stays alive (2026-11-20)
+- On the **S24 Ultra (Android 17)** the same build kept the session alive while backgrounded for ten minutes, with the screen off, across a Wi-Fi off/on cycle, and across a real reboot (`BOOT_COMPLETED` reconnects within 450 ms). The OnePlus freeze recorded earlier is an OEM deviation, so ADR-023's premise holds on the target device and ADR-043 is revised: background sync is allowed on this device class, with stalled-session detection and foreground-only degradation elsewhere.
+- **API 37 requires `ACCESS_LOCAL_NETWORK`.** Without it every LAN connection failed as `SocketTimeoutException` — indistinguishable from a dead listener; the experiment now declares and requests it.
+- Fixed a watchdog that replaced a healthy worker during a genuine Wi-Fi outage; the stall check now applies only while the session claims to be connected. Re-verified with 0 false stalls.
+- Still unmeasured: deep Doze and overnight (the handset was charging, so `force-idle` was refused), notification dismissal and battery drain. See [P14](prototypes/P14-background-persistence.md).
+
 ### Changed — P14 measured; background sync is foreground-only by default (2026-11-20)
 - Measured the P14 matrix on the OnePlus. Foreground start, `BOOT_COMPLETED` start (reconnects within 500 ms of the broadcast) and foreground Wi-Fi-toggle recovery all pass; a background start is rejected once the post-visibility grace window has passed, with the exact `ForegroundServiceStartNotAllowedException`.
 - **Backgrounding the app freezes the process** and stops the session even though the platform accepts the service as a foreground service (`fg +50 … state: cur=FGS`), with `/proc/<pid>/cgroup` showing `6:freezer:/frozen`; foregrounding thaws it and the heartbeat resumes. Recorded as ADR-043 + R-37: background clipboard sync is **foreground-only by default** until the S24 Ultra is measured, and no battery-optimisation exemption or wake lock will be added to force it.

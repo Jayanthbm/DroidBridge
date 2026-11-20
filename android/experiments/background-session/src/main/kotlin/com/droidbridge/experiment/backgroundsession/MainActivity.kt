@@ -65,6 +65,11 @@ class MainActivity : ComponentActivity() {
             SessionLog.record("POST_NOTIFICATIONS granted=$granted")
         }
 
+    private val requestLocalNetwork =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            SessionLog.record("ACCESS_LOCAL_NETWORK granted=$granted")
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -74,6 +79,7 @@ class MainActivity : ComponentActivity() {
 
         bindConfigFromExtras(savedInstanceState)
         askForNotificationsIfNeeded()
+        askForLocalNetworkIfNeeded()
         handleHarnessExtras()
 
         setContent {
@@ -128,6 +134,18 @@ class MainActivity : ComponentActivity() {
             pin = extraPin ?: Prefs.pin(this) ?: ""
         }
         configBound = true
+    }
+
+    /** API 37 requires this before any connection to a LAN address; the failure looks like a timeout. */
+    private fun askForLocalNetworkIfNeeded() {
+        if (Build.VERSION.SDK_INT < 37) {
+            SessionLog.record("ACCESS_LOCAL_NETWORK not required on sdk=${Build.VERSION.SDK_INT}")
+            return
+        }
+        val granted = checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+            PackageManager.PERMISSION_GRANTED
+        SessionLog.record("ACCESS_LOCAL_NETWORK currently granted=$granted")
+        if (!granted) requestLocalNetwork.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
     }
 
     private fun askForNotificationsIfNeeded() {

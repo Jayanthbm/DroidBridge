@@ -43,6 +43,8 @@ class SessionService : Service() {
         private val BACKOFF_SECONDS = longArrayOf(2, 4, 8, 16, 32, 60)
         private const val SUPERVISION_INTERVAL_MS = 5_000L
         private const val STALL_TIMEOUT_MS = 50_000L
+        private const val STATE_CONNECTING = "connecting"
+        private const val STATE_CONNECTED = "connected"
     }
 
     private val running = AtomicBoolean(false)
@@ -116,7 +118,7 @@ class SessionService : Service() {
         }
         running.set(true)
 
-        SessionLog.setState("connecting")
+        SessionLog.setState(STATE_CONNECTING)
         startWorker(host, port, pin)
         startSupervision()
     }
@@ -141,7 +143,11 @@ class SessionService : Service() {
                 if (!running.get()) return
                 ServiceNotifications.update()
                 val age = SessionLog.heartbeatAgeMs()
-                if (age > STALL_TIMEOUT_MS) {
+                // Only a session that claims to be connected can be "stalled". Backoff after a real
+                // outage naturally has no heartbeat for longer than the threshold, and treating that
+                // as a stall restarted a healthy worker during a Wi-Fi outage.
+                val stalled = SessionLog.state == STATE_CONNECTED && age > STALL_TIMEOUT_MS
+                if (stalled) {
                     SessionLog.fail("worker stalled: no heartbeat for ${age}ms; restarting session")
                     abandonWorker()
                     val host = Prefs.host(this@SessionService)
@@ -174,7 +180,7 @@ class SessionService : Service() {
         var backoffIndex = 0
         while (running.get()) {
             try {
-                SessionLog.setState("connecting")
+                SessionLog.setState(STATE_CONNECTING)
                 SessionLog.record("connecting to $host:$port")
                 val active = SecureSession.connect(
                     host = host,
@@ -190,7 +196,7 @@ class SessionService : Service() {
                     store.remember(PEER_ID, pin)
                     SessionLog.record("stored peer pin for $PEER_ID")
                 }
-                SessionLog.setState("connected")
+                SessionLog.setState(STATE_CONNECTED)
                 backoffIndex = 0
                 heartbeatLoop(active)
             } catch (e: Exception) {

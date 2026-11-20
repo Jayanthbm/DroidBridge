@@ -14,6 +14,12 @@
       This experiment is a separate installable app that :app never depends on.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!--
+      API 37 gates local-network access behind ACCESS_LOCAL_NETWORK; without it a TCP connect to a
+      LAN address fails as a plain timeout, which reads like a server problem. Android 12 does not
+      enforce this, which is why the first P14 runs on the OnePlus needed no such permission.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
