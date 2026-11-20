@@ -7,7 +7,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import com.droidbridge.core.network.SecureSession
 import com.droidbridge.protocol.session.ControlMessage
 import com.droidbridge.core.security.DeviceIdentity
@@ -39,10 +41,13 @@ class SessionService : Service() {
         private const val PONG_TIMEOUT_MS = 14_000
         private const val IDLE_TIMEOUT_MS = 45_000
         private val BACKOFF_SECONDS = longArrayOf(2, 4, 8, 16, 32, 60)
+        private const val SUPERVISION_INTERVAL_MS = 5_000L
+        private const val STALL_TIMEOUT_MS = 50_000L
     }
 
     private val running = AtomicBoolean(false)
     private var worker: Thread? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     @Volatile
     private var session: SecureSession? = null
@@ -112,10 +117,53 @@ class SessionService : Service() {
         running.set(true)
 
         SessionLog.setState("connecting")
+        startWorker(host, port, pin)
+        startSupervision()
+    }
+
+    private fun startWorker(host: String, port: Int, pin: String) {
         worker = Thread({ runLoop(host, port, pin) }, "p14-session").apply {
             isDaemon = true
             start()
         }
+    }
+
+    /**
+     * Keeps the notification honest and catches a stalled worker.
+     *
+     * A worker that blocks inside a socket call does not throw, so without this the service would sit
+     * there showing "connected" with a dead session — the exact failure ADR-023 says must never be
+     * presented as reachable. The watchdog compares the heartbeat age against three intervals.
+     */
+    private fun startSupervision() {
+        val task = object : Runnable {
+            override fun run() {
+                if (!running.get()) return
+                ServiceNotifications.update()
+                val age = SessionLog.heartbeatAgeMs()
+                if (age > STALL_TIMEOUT_MS) {
+                    SessionLog.fail("worker stalled: no heartbeat for ${age}ms; restarting session")
+                    abandonWorker()
+                    val host = Prefs.host(this@SessionService)
+                    val port = Prefs.port(this@SessionService)
+                    val pin = Prefs.pin(this@SessionService)
+                    if (host != null && pin != null) startWorker(host, port, pin)
+                }
+                mainHandler.postDelayed(this, SUPERVISION_INTERVAL_MS)
+            }
+        }
+        mainHandler.postDelayed(task, SUPERVISION_INTERVAL_MS)
+    }
+
+    /** Stops the current loop without ending the service, so a fresh one can take over. */
+    private fun abandonWorker() {
+        running.set(false)
+        runCatching { session?.close("abandoned by watchdog") }
+        session = null
+        worker?.interrupt()
+        worker?.join(3_000)
+        worker = null
+        running.set(true)
     }
 
     private fun runLoop(host: String, port: Int, pin: String) {
@@ -147,6 +195,9 @@ class SessionService : Service() {
                 heartbeatLoop(active)
             } catch (e: Exception) {
                 SessionLog.fail("${e.javaClass.simpleName}: ${e.message}")
+            } catch (t: Throwable) {
+                // An Error would otherwise kill the thread and leave a "connected" service behind.
+                SessionLog.fail("worker aborted: ${t.javaClass.name}: ${t.message}")
             } finally {
                 runCatching { session?.close("p14 loop end") }
                 session = null
@@ -203,6 +254,7 @@ class SessionService : Service() {
         worker?.interrupt()
         worker = null
         SessionLog.setState("stopped")
+        mainHandler.removeCallbacksAndMessages(null)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }

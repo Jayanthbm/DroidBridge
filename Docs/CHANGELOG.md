@@ -4,6 +4,12 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Changed — P14 measured; background sync is foreground-only by default (2026-11-20)
+- Measured the P14 matrix on the OnePlus. Foreground start, `BOOT_COMPLETED` start (reconnects within 500 ms of the broadcast) and foreground Wi-Fi-toggle recovery all pass; a background start is rejected once the post-visibility grace window has passed, with the exact `ForegroundServiceStartNotAllowedException`.
+- **Backgrounding the app freezes the process** and stops the session even though the platform accepts the service as a foreground service (`fg +50 … state: cur=FGS`), with `/proc/<pid>/cgroup` showing `6:freezer:/frozen`; foregrounding thaws it and the heartbeat resumes. Recorded as ADR-043 + R-37: background clipboard sync is **foreground-only by default** until the S24 Ultra is measured, and no battery-optimisation exemption or wake lock will be added to force it.
+- Fixed two defects found while running the matrix: a start with a new host/port was ignored while a session ran (the whole run kept a stale target), and the notification was updated inside the synchronised log write, deadlocking the worker against the main thread so the session stalled while the notification still claimed "connected". Notification updates now run on a main-thread supervisor, the notification shows the age of the last heartbeat, and a watchdog restarts a worker that has not beaten for 50 s.
+- Doze, overnight, notification-dismissal and battery rows remain unmeasured. See [P14](prototypes/P14-background-persistence.md).
+
 ### Added — P14 background session experiment (2026-11-20)
 - Added an isolated `connectedDevice` foreground-service experiment that reuses the production TLS session and pin store, heartbeats a real `PING`/`PONG` every 15 s, reconnects with backoff, and shows a persistent notification with a Disconnect action. No wake lock, no battery-optimisation exemption, no Bluetooth permission.
 - Measured: foreground start succeeds with no runtime prompt; a background start is accepted 6 s after backgrounding (post-visibility grace) and rejected at 30 s with `ForegroundServiceStartNotAllowedException`. `BOOT_COMPLETED`, the survival matrix, Doze, notification and battery tests remain outstanding — the reboot left the handset off Wi-Fi and out of ADB reach. See [P14](prototypes/P14-background-persistence.md).

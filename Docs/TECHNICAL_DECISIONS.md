@@ -2,6 +2,15 @@
 
 Use newest entries at the top. Every change must include date, status, context, decision, alternatives and consequences.
 
+## ADR-043 — Do not claim background clipboard sync until a `connectedDevice` FGS is shown to survive backgrounding on the target device
+
+**Date:** 2026-11-20
+**Status:** Accepted, pending S24 Ultra evidence. Measured on OnePlus Nord AC2001 / Android 12.
+**Context:** P14 built an isolated `connectedDevice` foreground service that reuses the production TLS session and sends a real `PING`/`PONG` every 15 s. On the OnePlus, after the app left the foreground the worker stopped beating within ~40 s. The process remained alive with `isForeground=true`, and `dumpsys activity oom` reported `fg +50 F/S/FGS` with `state: cur=FGS set=FGS`, i.e. the platform accepted the service as a foreground service; yet `/proc/<pid>/cgroup` showed `6:freezer:/frozen`. Bringing the activity forward moved it to `freezer:/thaw` and beats resumed, and backgrounding again returned it to `/frozen`, so the freeze is caused by leaving the foreground and not by a session bug. Tests 1–3 and the foreground Wi-Fi-toggle case passed: foreground start needs no runtime prompt, a background start 30 s after backgrounding is rejected with `ForegroundServiceStartNotAllowedException`, `BOOT_COMPLETED` starts the service and it reconnects within 500 ms, and a Wi-Fi off/on cycle reconnects in one backoff cycle.
+**Decision:** Treat "the foreground service keeps the session alive while the app is backgrounded" as **unproven and device-specific**. Do not ship or advertise background clipboard sync on the strength of ADR-023 alone. Keep ADR-023's degradation path as the default — clipboard sync is foreground-only unless the target device is measured to keep a valid `connectedDevice` service unfrozen — and do not introduce a battery-optimisation exemption or wake lock to force it. Measure the S24 Ultra before changing any user-facing copy.
+**Alternatives:** Require `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (rejected: ADR-023 already rules it out as unjustifiable for a consumer app); hold a wake lock (rejected: same, and it does not stop the freezer); use `dataSync` instead of `connectedDevice` (rejected: capped at 6 h/24 h and restricted from boot); ship background sync as foreground-only and say so (chosen).
+**Consequences:** P14 remains the gate for background sync and its Doze/overnight rows are still unmeasured, because on the OnePlus the process is frozen before those conditions can be reached. User-facing copy must not promise clipboard sync while mirroring is off until a target device passes. The measurement procedure must record the process cgroup state alongside heartbeat counts, or an OEM freeze is easily misread as a protocol failure.
+
 ## ADR-042 — Treat macOS Bluetooth consent, the single pairing-agent slot and one HID session per connection as environment constraints
 
 **Date:** 2026-11-20
@@ -181,7 +190,7 @@ satisfy.
 
 ## ADR-023 — Background clipboard session runs in a `connectedDevice` foreground service
 - Date: 2026-11-08
-- Status: Proposed — pending `P14`
+- Status: **Proposed — P14 shows the premise fails on the OnePlus** (a valid `connectedDevice` FGS is frozen once the app is backgrounded); the S24 Ultra row is outstanding. See ADR-043.
 - Context: "Clipboard sync while mirroring is off" needs a live session, but MediaProjection is not available for clipboard-only work. The `connectedDevice` type covers network connections to external devices, has no documented timeout, is not blocked from `BOOT_COMPLETED`, and its runtime prerequisite can be met by **declaring** the normal `CHANGE_NETWORK_STATE` permission — so it needs no runtime prompt (`RESEARCH_AND_FEASIBILITY.md` R-20). Doze still suspends the network device-wide, so liveness is best-effort.
 - Decision: One `connectedDevice` foreground service owns the LAN session whenever background sync is enabled by the user; the mirroring session uses its own `mediaProjection` service and, when both run, shares the same connection. The service is started only from app UI or from `BOOT_COMPLETED`, shows a persistent notification with connection state and a disconnect action, and on any network change, Doze exit, socket error or app resume it reconnects with exponential backoff. Declare `POST_NOTIFICATIONS` and request it in context, and declare the `connectedDevice` type on the Play Console app-content page (R-21).
 - Alternatives: `dataSync` (rejected: 6 h/24 h cap and boot restriction); `specialUse` (rejected: Play subtype review for a covered use case); no background service at all (rejected for the P0 clipboard user story, retained as the degradation path if P14 fails); `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (rejected: not justifiable for a consumer app).

@@ -59,8 +59,11 @@ object ServiceNotifications {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
+        // The age is shown so a stale session is never presented as reachable (ADR-023).
+        val age = SessionLog.heartbeatAgeMs()
+        val ageText = if (age < 0) "no heartbeat yet" else "last heartbeat ${age / 1000}s ago"
         val detail = "${SessionLog.state} · ${SessionLog.heartbeats} heartbeats · " +
-            "${SessionLog.pongs} pongs · ${SessionLog.reconnects} reconnects"
+            "${SessionLog.pongs} pongs · ${SessionLog.reconnects} reconnects · $ageText"
 
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("DroidBridge background session")

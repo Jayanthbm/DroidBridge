@@ -49,6 +49,7 @@
 | Audio playback capture (media) | **CONDITIONAL** | Requires `RECORD_AUDIO` + MediaProjection consent + same user profile + app opt-in via capture policy |
 | Call audio / cellular call capture | **NO-GO** | Playback capture cannot capture `USAGE_VOICE_COMMUNICATION`; Telecom roles are out of scope |
 | Call notifications / answer-reject | **NO-GO** for MVP | Requires Telecom integration/role or a notification listener, both outside the approved permission set |
+| Background clipboard sync while mirroring is off | **CONDITIONAL / foreground-only by default** | A `connectedDevice` foreground service is accepted by the platform but was frozen within ~40 s of backgrounding on the OnePlus despite `state: cur=FGS`, so the session stops unless the app stays in the foreground; ADR-043 makes foreground-only the default until the S24 Ultra is measured (R-37) |
 | Bluetooth as optional supplement | **CONDITIONAL**, non-core | Must never gate Wi-Fi features; P16/P17 evaluate Mac-to-Android HID independently and Bluetooth remains opt-in |
 | Android release on Google Play | **GO** with defined release work | API 36 is the floor since 2026-08-31, so `targetSdk 37` is above it, not below; two FGS types each need a description, impact statement, use-case choice and a demo video; `ACCESS_LOCAL_NETWORK` would additionally need a Play declaration from 2027-08-25 (§2 R-25, R-26) |
 | macOS distribution to the owner | **CONDITIONAL** | Direct distribution requires a paid Apple Developer Program membership, a Developer ID certificate, hardened runtime, secure timestamp and notarisation; unnotarised apps are blocked by Gatekeeper with only an "Open Anyway" override (§2 R-27) |
@@ -249,6 +250,16 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Prototype:** original P09 (scoped checks); P16/P17 (current conditional Mac-HID feasibility).
 
 ---
+
+### R-37 — A valid `connectedDevice` foreground service was frozen after the app was backgrounded
+
+- **Checked:** 2026-11-20
+- **Targets:** OnePlus Nord AC2001 / Android 12 / API 31 (OxygenOS), app built against API 37 tools, `connectedDevice` FGS.
+- **Kind:** local device evidence, not vendor documentation.
+- **Findings:** The process was reported by `dumpsys activity oom` as `fg +50 F/S/FGS` with `state: cur=FGS set=FGS`, `isForeground=true` for its service, and `startForeground` raised no exception — and it was nevertheless moved to `6:freezer:/frozen` within ~40 s of the app leaving the foreground, which stopped a 15 s heartbeat. Foregrounding the activity moved it to `freezer:/thaw` and the heartbeat resumed; backgrounding returned it to `/frozen`. On AOSP a started foreground service keeps the process uncached, so this is OEM background management rather than a manifest or permission defect.
+- **Confidence:** High for this device; directly observed from the cgroup and adjacency state, and reproduced in an A/B within one minute.
+- **Alternatives considered:** battery-optimisation exemption (rejected by ADR-023/ADR-043); wake lock (does not affect the freezer); `dataSync` type (rejected — capped and boot-restricted).
+- **Next step:** measure the S24 Ultra (Android 17) before any user-facing claim; always record the process cgroup state next to heartbeat counts, because an OEM freeze otherwise looks like a session bug.
 
 ### R-36 — macOS Bluetooth consent and the single Classic pairing-agent slot gate HIDP bring-up
 

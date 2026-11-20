@@ -42,6 +42,11 @@ object SessionLog {
     var lastError: String? = null
         private set
 
+    /** When the last heartbeat was sent, so a stalled worker cannot look alive. */
+    @Volatile
+    var lastHeartbeatAtMs: Long = 0L
+        private set
+
     @Synchronized
     fun setState(newState: String) {
         state = newState
@@ -55,14 +60,18 @@ object SessionLog {
         entries.addLast(entry)
         while (entries.size > MAX_ENTRIES) entries.removeFirst()
         Log.i(TAG, entry)
-        ServiceNotifications.update()
     }
 
     @Synchronized
     fun countHeartbeat() {
         heartbeats += 1
+        lastHeartbeatAtMs = System.currentTimeMillis()
         Log.i(TAG, "HEARTBEAT n=$heartbeats")
     }
+
+    /** Milliseconds since the last heartbeat, or -1 when none has been sent yet. */
+    fun heartbeatAgeMs(): Long =
+        if (lastHeartbeatAtMs == 0L) -1 else System.currentTimeMillis() - lastHeartbeatAtMs
 
     @Synchronized
     fun countPong() {
