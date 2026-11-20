@@ -222,5 +222,5 @@ build for a release candidate: an unnotarised build is not one.
 | Permission and repository audits documented | **Met** — §6, §7 |
 | Focused commit pushed to `development` | **Met** — see the commit for this phase |
 
-Phase 0 is complete. Phase 1 (feasibility prototypes P00–P15) is next; P00's host/device half is
+Phase 0 is complete. Phase 1 (feasibility prototypes P00–P17) is next; P00's host/device half is
 done above, and the prototype work proper begins with P01 (MediaProjection).

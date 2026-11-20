@@ -27,8 +27,8 @@ The cloud agent must not:
 The local agent owns:
 - Android Kotlin/Compose and macOS Swift/SwiftUI implementation.
 - Native project shells, builds, automated tests and CI/build scripts.
-- All P00–P15 prototypes and physical-device validation.
-- ADB/logcat during development where appropriate.
+- All P00–P17 prototypes and physical-device validation.
+- ADB-based test setup during development: install/launch/stop test apps, open Android Settings, automate setup-only steps such as connecting an already-paired HID peripheral, run test suites, and collect sanitized diagnostics. Never use ADB to generate the functional input being evaluated (HID must be the only source in P16/P17), accept an unverified first-pairing code, capture screen/UI hierarchy, or read/write clipboard payloads. This is not a product/runtime dependency.
 - Actual test evidence and `Docs/PROGRESS_LOCAL.md`.
 - Permission/entitlement audits against `Docs/PERMISSIONS_MATRIX.md`.
 

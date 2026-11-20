@@ -39,7 +39,7 @@
 - Test `setPrimaryClip(ClipData.newPlainText(...))` in foreground and background separately; the system clipboard preview/copy UI is expected and must not be suppressed (R-09).
 - Mark clips written on behalf of a sensitive source with the `ClipDescription` sensitive flag so Android 13+ does not preview their content.
 - Never require default IME.
-- Never add Accessibility.
+- Never add an Accessibility Service. Remote control is being evaluated using macOS Bluetooth HID only; the Android app must not inspect accessibility nodes or intercept key events.
 - No clipboard history by default.
 - No automatic OTP extraction or SMS reading.
 - Provide maximum text length and optional sensitive-content policy.

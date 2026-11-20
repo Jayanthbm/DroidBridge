@@ -4,6 +4,7 @@
 
 Protect against:
 - Another device on the same Wi-Fi attempting to connect.
+- An untrusted Bluetooth peer pairing with or sending input to the Mac/phone.
 - Rogue/impersonated Bonjour services.
 - Replay or tampering of messages.
 - Clipboard leakage.
@@ -64,7 +65,7 @@ Defaults:
 The app must not:
 - Bypass secure flags.
 - Capture protected video.
-- Scrape UI/accessibility nodes.
+- Scrape UI/accessibility nodes or add an Android Accessibility Service.
 - Use root or privileged APIs to retrieve protected pixels.
 - Send protected frames over the network.
 - Cache protected frames.
@@ -108,5 +109,5 @@ Forbidden:
 - Disconnect.
 - Forget paired device.
 - Clear local app data/preferences.
-- Toggle optional Bluetooth.
+- Toggle optional Bluetooth; advertise/pair only after an explicit user action and expose a clear disconnect/stop control.
 - Review current permissions and active session.

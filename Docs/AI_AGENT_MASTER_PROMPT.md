@@ -46,7 +46,7 @@ After the research documentation is committed, the Local Development Agent begin
 
 ## Development USB allowance
 
-The developer may use USB/ADB for installing builds, logcat, profiling and debugging during development. This is not a product feature. Record the state for tests. The final acceptance test must pass with USB disconnected and both debugging modes disabled.
+ADB may install/launch/stop test apps, open Android settings, automate setup-only steps such as connecting an already-paired test HID peripheral, run tests and collect sanitized diagnostics during development. It is never a runtime dependency and must never generate the functional key/pointer/touch/text input under test, accept a first-pairing code the owner has not verified, capture screen/UI hierarchy, or read/write clipboard data. P16/P17 HID reports must be the sole source of tested functional input. Record transport/debugging state. Final acceptance must pass with USB disconnected and both debugging modes disabled.
 
 ## Research
 

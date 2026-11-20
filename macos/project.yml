@@ -80,6 +80,40 @@ targets:
       testTargets:
         - DroidBridgeTests
 
+  P16BLEHID:
+    type: application
+    platform: macOS
+    sources:
+      - path: Experiments/P16BLEHID
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.experiment.p16blehid
+        PRODUCT_NAME: P16 BLE HID Test
+        INFOPLIST_FILE: Experiments/P16BLEHID/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Experiments/P16BLEHID/P16BLEHID.entitlements
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+    dependencies:
+      - sdk: CoreBluetooth.framework
+
+  P17ClassicHIDP:
+    type: application
+    platform: macOS
+    sources:
+      - path: Experiments/P17ClassicHIDP
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.experiment.p17classichidp
+        PRODUCT_NAME: P17 Classic HIDP Test
+        INFOPLIST_FILE: Experiments/P17ClassicHIDP/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Experiments/P17ClassicHIDP/P17ClassicHIDP.entitlements
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+    dependencies:
+      - sdk: IOBluetooth.framework
+
   DroidBridgeTests:
     type: bundle.unit-test
     platform: macOS

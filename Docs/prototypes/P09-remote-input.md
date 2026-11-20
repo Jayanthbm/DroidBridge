@@ -1,8 +1,12 @@
-# P09 — Remote input feasibility (NO-GO confirmation)
+# P09 — Initial remote input feasibility checks (historical, scoped NO-GO)
 
-**Status: completed — full remote input is NO-GO.** The S24 Ultra and public Android/macOS APIs
-confirm the earlier research: no compliant path exists for arbitrary touch/key injection under the
-project's constraints. Mirroring ships view-only.
+**Status: completed for the mechanisms tested; not a final verdict on Mac Bluetooth HID.** On
+2026-11-10 the S24 Ultra and public Android/macOS APIs confirmed no generic touch/key injection
+path through the specific mechanisms tested. Later source review (R-32 / ADR-036, 2026-11-17)
+identified distinct BLE HOGP and Bluetooth Classic HIDP Mac-peripheral implementations in
+`jqssun/darwin-bt-remote`. P09 did not test that Classic HIDP route. P16/P17 now gate a separate,
+non-Accessibility Bluetooth HID feasibility decision. Until target evidence exists, DroidBridge
+claims no remote-control support and production mirroring remains view-only.
 
 | Field | Value |
 |---|---|
@@ -18,12 +22,12 @@ project's constraints. Mirroring ships view-only.
 
 | Mechanism | Result on this S24 | Why |
 |---|---|---|
-| **Accessibility Service** | **Prohibited by project / not used** | AGENTS.md and the product constraints forbid it. Accessibility is also disabled on the device. |
+| **Accessibility Service** | **Prohibited by project / not used** | Accessibility was disabled on the device and remains prohibited under ADR-036. |
 | `InputManager.injectInputEvent` | **Not available** | Requires the signature-level `android.permission.INJECT_EVENTS`; the app does not hold or request it, and a normal app cannot obtain it. |
 | `UiAutomation` | **Not available** | Shell/privileged instrumentation only. |
 | Knox `RemoteInjection` | **Not available** | Signature permission plus managed-device/MDM authorisation (ADR-017); the SDK permission is not held by the app. |
 | Android as Bluetooth HID peripheral | **Wrong direction** | `BluetoothHidDevice` makes Android the peripheral for a host (e.g. a phone as a keyboard for a PC), not a host that accepts a Mac's input. |
-| Mac as Bluetooth HID peripheral | **Unsupported** | CoreBluetooth refuses to publish the HID-over-GATT service; classic HID transport belongs to `bluetoothd` (R-12/ADR-016). |
+| Mac as Bluetooth HID peripheral | **Not tested in P09** | Later source review found separate BLE HOGP and Classic HIDP implementations; see R-32 and P16/P17. |
 | MediaProjection | **View-only** | Captures the screen; it grants no input injection. |
 | ADB / wireless debugging | **Development only** | Explicitly prohibited as a runtime dependency. |
 | Root | **Not available / prohibited** | `ro.build.type=user`; no `su`; root is forbidden. |
@@ -40,23 +44,22 @@ No `INJECT_EVENTS`, no Accessibility binding, no Knox remote-control permission.
 
 ## Exact decision
 
-- **Arbitrary touch/key injection from the Mac into other Android apps: NO-GO.**
+- **Arbitrary touch/key injection using the mechanisms tested in P09: NO-GO.** The Mac HIDP/Classic HID routes were not tested here.
 - Mirroring is **view-only** (ADR-015).
 - The only supported input interaction is the user touching the Android device itself.
 - Typing into a focused field on the phone is not remote injection and does not set the Android
   clipboard; no feature may claim otherwise.
-- The Mac cannot act as a Bluetooth HID peripheral, so there is no fallback path there either.
+- This report does not establish whether the Mac can act as a Bluetooth HID peripheral; P16/P17 test those paths.
 
 ## Acceptance
 
 | Criterion | Result |
 |---|---|
 | Exact supported inputs and refusals recorded | **Pass** — table above |
-| Full remote control marked NO-GO if no compliant path | **Pass** — NO-GO |
+| P09 conclusions limited to the mechanisms actually tested | **Pass** — Mac BLE/Classic HID remains open for P16/P17 |
 | Report states focused-field typing is not arbitrary injection and does not set the clipboard | **Pass** — stated above |
 
-P09 is completed as a **NO-GO decision**, not as a feature. Phase 5 still needs the owner to accept
-the view-only product direction explicitly; the technical answer is not in doubt.
+P09 is complete only for its original scope; its blanket remote-input wording is superseded by ADR-036. P16/P17 are pending and must provide target-device evidence before any control claim.
 
 ## Reproducing the checks
 

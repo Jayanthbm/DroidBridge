@@ -1,13 +1,10 @@
 # Prototype Plan and Feasibility Gates
 
-All prototypes are small, isolated and disposable. They should be implemented before production modules. Use USB/ADB only for development installation and diagnostics; every prototype must have a final wireless-only test.
+All prototypes are small, isolated and disposable. During development, ADB may install/launch/stop test apps, open Android Settings, automate setup-only actions (including connecting an already-paired test HID peripheral), run tests and collect sanitized diagnostics. ADB must never generate the functional input under test (`input`, `sendevent`, instrumentation or equivalent), capture screen/UI hierarchy, or read/write clipboard content. For HID experiments, Bluetooth HID is the only source of functional test reports. The owner must verify a first-pairing code before confirmation. Record ADB transport/debugging state and keep setup automation separate from HID-input observations. Final acceptance requires USB disconnected and both debugging modes disabled; perform setup and observations without ADB.
 
 **Research pass 2026-11-08:** the instructions below were expanded for the uncertainties identified in `RESEARCH_AND_FEASIBILITY.md` §3 (U1–U17). A prototype is only "complete" when its report contains real evidence.
 
-**Status 2026-11-09:** P00–P04 now have device evidence; see `PROGRESS_LOCAL.md` and the per-prototype
-reports. P01 is validated on the S24 Ultra (Android 17), and P02's picker path, 60 s duplex,
-network-loss recovery, process recreation and reboot are validated; P02's Mac sleep/wake and Mac
-advertiser restart remain open. P05 and later have not been started.
+**Status 2026-11-20:** P16 BLE HOGP is **closed as NO-GO for Android** and P17 Classic HIDP is a **preliminary GO on the OnePlus only**. Android bonds the Mac's BLE advertisement but never creates a HID input device — reproduced with both the project POC and the unmodified upstream BLE app — because the Mac advertises on its public BR/EDR address and Android lists it `[ DUAL ]`, routing HID over Classic. Upstream's Classic mode on the same hardware published an HID SDP record, opened L2CAP `0x0011`/`0x0013`, registered four Android input devices and delivered arrow press/release input to a focused receiver with USB disconnected and wireless debugging off. That used the AGPL upstream app, not DroidBridge code; the S24 Ultra, reconnect/relaunch cycles and a debugging-off acceptance run remain outstanding, and no upstream source may be adopted. Check `PHASE_STATUS.md` and `PROGRESS_LOCAL.md` for current P00–P17 evidence; see [P17](prototypes/P17-classic-hidp.md), [P16](prototypes/P16-ble-hid.md) and ADR-041.
 
 ## Rules that apply to every prototype
 
@@ -253,23 +250,23 @@ Acceptance:
 - record actual numbers; do not declare targets met without data.
 - recovery after a decoder flush is demonstrated end to end, including the keyframe request.
 
-## P09 — Remote input feasibility (expected NO-GO confirmation)
+## P09 — Initial remote input feasibility checks (historical; scoped NO-GO)
 
 Goal:
-- Confirm or refute ADR-015/ADR-016 with evidence rather than inference.
+- Record the original tests for public input injection, Android-as-HID-device direction, and BLE HID publication. This is not the final Mac-as-HID feasibility decision; R-32/ADR-036 reopened that question and P16/P17 now test it independently.
 
-Experiments:
-1. On macOS, create a `CBPeripheralManager`, build a `CBMutableService` with type `0x1812` (HID), add it, and record the exact error from `peripheralManager(_:didAdd:error:)`. Expected: `CBError.uuidNotAllowed` (code 8). Record the raw error domain/code/message.
-2. Repeat with the required companion services (Device Information `0x180A`, Battery `0x180F`) to see whether the refusal is specific to HID.
-3. Attempt classic Bluetooth HID: document that no public API exists to own the HID L2CAP PSMs; do not attempt private APIs.
-4. On Android, register `BluetoothHidDevice` and confirm it makes the phone the peripheral (i.e. it does not help a Mac drive Android). Record what happens when the app leaves the foreground.
-5. Pair a normal physical Bluetooth keyboard and mouse to the S24 Ultra and record what they can do: pointer visibility, click behaviour in ordinary apps, gesture limitations, and password-field masking (Android 17 `show_passwords_physical`, R-19). This documents the ceiling of any HID approach even if it were possible.
-6. Do not add Accessibility, ADB, root or Knox anything to make a test pass.
+Experiments already recorded in the historical report:
+1. Attempted to add a macOS `CBPeripheralManager` service `0x1812` (HID), recorded the result as a refusal.
+2. Considered companion Device Information (`0x180A`) and Battery (`0x180F`) services.
+3. Considered Classic Bluetooth HID transport constraints; the later upstream source review found a distinct HIDP route that P09 did not test.
+4. Confirmed Android `BluetoothHidDevice` makes Android the peripheral, not a Mac-driven host.
+5. Checked a physical keyboard/mouse ceiling and the Android 17 password masking behavior.
+6. No Accessibility, ADB, root or Knox was introduced.
 
 Acceptance:
-- Record exact supported inputs and exact refusals.
-- If (as expected) no compliant path exists, mark full remote control NO-GO and keep mirroring view-only.
-- Report must state that typing into a focused field is not arbitrary touch injection and does not set the Android clipboard.
+- Preserve P09 only as evidence for the mechanisms tested then.
+- Do not use P09 as the final NO-GO for Mac HID; complete P16/P17.
+- Typing into a focused field is not arbitrary touch injection and does not set the Android clipboard.
 
 ## P10 — Secure screen and screenshare-protection behaviour
 
@@ -414,6 +411,66 @@ Acceptance:
 - A recorded difference (or none) between ad-hoc and Developer ID builds, including the Local Network privilege behaviour.
 - The notarisation path proven end to end with a stapled ticket, or explicitly reported as not run for lack of a membership.
 - Definitive answers for U14 and U17.
+
+## P16 — macOS Bluetooth LE HID feasibility on the S24 Ultra
+
+**Implementation/result (2026-11-20):** P16 is **closed as NO-GO for Android**. Android bonds the Mac's BLE advertisement but never binds it as a HID input device (`HidHostService.mInputDevices` stays empty, `mTargetDevice: null`) and the Mac records zero GATT reads, writes or subscriptions. The identical outcome from the unmodified upstream BLE app shows this is Android host classification, not a GATT layout defect: the Mac advertises on public address `60:3E:5F:31:D0:6D`, which is also its BR/EDR address, so Android lists it `[ DUAL ]` and routes HID over Classic. Canonical UUIDs, the required Battery/Device Information/PnP ID services and the Boot-only Report Map stay in the record but cannot change routing, and public `CBMutableDescriptor` still cannot express Report Reference `0x2908`. BLE HOGP remains recorded as an iOS-host path only. The Mac→Android route moved to [P17 Classic HIDP](prototypes/P17-classic-hidp.md). See R-33/R-34 and ADR-038/ADR-039/ADR-041.
+
+Goal:
+- Test whether an independently implemented, standard Bluetooth HID over GATT peripheral from macOS can pair with and provide useful input to the target Android phone. This is a feasibility POC only, not production code and not a full-control claim.
+
+Reference:
+- `jqssun/darwin-bt-remote` public repository, reviewed at commit `e64cae983b8816e7e2f067e79025ffc49faf7e2d` (2026-11-04), describes a `CBPeripheralManager` HID-over-GATT implementation. Its optional Direct Input mode uses macOS Accessibility and is excluded. Its AGPL-3.0-only license means no copying/vendor integration without a separate licensing decision.
+- Samsung compatibility report: https://github.com/jqssun/darwin-bt-remote/issues/13 (open when checked 2026-11-17; iPhone 16 + Galaxy S9 / Android 10 reports unreliable pairing and ineffective media controls). This does not predict the S24 Ultra result.
+
+Setup and guardrails:
+- Separate macOS experiment target and isolated Bluetooth entitlement if required; no production-module dependency, no Accessibility prompt/permission, no event tap, no global input capture.
+- For development setup only, ADB may open Android Bluetooth Settings and connect an already-paired test peripheral. At first pairing, the owner must visually compare and confirm the displayed code; never auto-accept an unverified code. DroidBridge sends test reports only after explicit POC UI action; ADB must not generate the functional input under evaluation.
+- Use a purpose-built Android test screen/app with visible counters for received keyboard keys, pointer movement, button actions and scroll events. Do not use banking, payment, password-manager, OTP, DRM or other sensitive/protected apps. Do not change Developer Options or screen-capture protections.
+- Bluetooth activation/advertising must follow explicit user action and be visibly stoppable.
+- Do not import upstream source; implement the minimum standard descriptor/transport independently if the separate POC proceeds.
+
+Tests:
+1. Record Mac hardware, macOS, Bluetooth chipset, Android model/API/One UI/build, Bluetooth state, and USB/debugging states.
+2. Add the HID service on macOS and record exact CoreBluetooth state/error; start/stop advertising and observe from Android Bluetooth Settings. ADB may open Settings for development setup but must not accept an unverified code.
+3. Pair from Android Settings with the owner verifying the pairing code; after successful bonding, ADB may automate connection/reconnection setup. Record the actual UX and do not clear unrelated pairings.
+4. From the POC UI, send only a harmless test key (e.g. arrow key) while the visible test screen has focus. Then test normal text in a non-sensitive test field using synthetic text; never use real clipboard content.
+5. Evaluate BLE pointer reports separately: movement, click, drag, scroll, Android navigation and touch-oriented UI. Record input source and what is actually delivered; do not infer touch semantics from pointer motion.
+6. Test disconnect, Android Bluetooth off/on, Mac app stop/relaunch, and stale bond recovery. No private APIs, reflection, shell commands or undocumented device interfaces.
+7. Run a USB-disconnected, USB-debugging-off and wireless-debugging-off manual acceptance round.
+
+Acceptance:
+- First pass the Mac service-publication gate using canonical registered UUIDs plus Battery/Device Information/PnP ID; if publication still fails, record NSError domain/code and stop rather than substituting a custom UUID. P16 is Boot Keyboard only because Apple's public local-descriptor API cannot create Report Reference `0x2908`. Pair/connect only after publication. The Android host must select Boot Protocol and subscribe before any arrow report is allowed. ADB may support development setup/diagnostics only; the owner verifies any first-pairing code, and ADB never synthesizes test keys. If Android requires Report Protocol or remains disconnected, stop and record incompatibility. Final S24 acceptance uses USB disconnected and debugging disabled. P17 is independent. See [P16 procedure](prototypes/P16-ble-hid.md).
+- No Accessibility, ADB-generated functional input/data path, protected-screen interaction, or broad Android permission is introduced. Setup-only ADB automation is development-only and not part of the product/runtime path.
+- Do not claim generic touch injection, banking-app support or complete control from HID keyboard/pointer success.
+
+## P17 — macOS Bluetooth Classic HIDP feasibility on the S24 Ultra
+
+Goal:
+- Independently test the Bluetooth Classic HIDP route described by the reference project, because the earlier P09 assessment did not test this upstream route. This remains an isolated POC only.
+
+Reference and licensing: same as P16. Upstream describes SDP HID records and L2CAP HID control/interrupt channels with a Mac-initiated connection; do not copy its implementation. Apple's public IOBluetooth APIs and entitlement requirements must be confirmed for the current macOS before use. If feasibility depends on undocumented behavior, privilege escalation, or unsupported private interfaces, stop and record NO-GO.
+
+Tests:
+1. Use the same device/environment evidence header and USB/debugging guardrails as P16.
+2. Independently publish a minimal HID SDP record and attempt Android-initiated discovery/pairing as supported by the system UX. Record what Android lists and exact connection behavior.
+3. If paired, connect via the documented/public POC path and send synthetic key reports to the visible test screen; separately measure pointer support and UI behavior.
+4. Test disconnect, app relaunch, phone Bluetooth toggle and bond recovery. No private APIs, reflection, ADB-driven UI, shell input, screen capture commands, or sensitive apps.
+5. Run a USB-disconnected, USB-debugging-off and wireless-debugging-off manual acceptance round.
+
+Acceptance:
+- Exact discovery/pairing/connect result and supported input classes recorded on the S24. A success for keyboard does not establish pointer, swipe, touch-equivalent or clipboard support.
+- If Classic requires unsupported/private interfaces, stop the path; do not bypass OS policy.
+- No new product permission/entitlement is added until separately reviewed against official docs and the permission matrix.
+
+**Implementation/result (2026-11-20, OnePlus preliminary):** Upstream's Classic mode on a MacBook Air M1 (macOS 27.2.1) published an HID SDP record (`handle=1330188580`), opened L2CAP `0x0011` control and `0x0013` interrupt channels to OnePlus Nord AC2001 / Android 12 / API 31, made Android register `MacBook Air Keyboard`, `Mouse`, `Consumer Control` and `System Control` with `STATE_CONNECTED`, and delivered arrow press/release pairs counted by the focused P16 receiver (`UP 8, DOWN 3, LEFT 3, RIGHT 1`; machine-captured `0/0/0/0` → `UP 2, DOWN 2, LEFT 1`). USB was disconnected and wireless debugging off; USB debugging was enabled, so this is not final acceptance. Public `IOBluetooth` only — the upstream `_privateBool` KVC helper is dead code. This used the AGPL upstream app as a probe, not DroidBridge code, and covers keyboard arrows only. macOS automatic termination dropped the session once and must be handled. Remaining: independent implementation, S24 Ultra, reconnect/relaunch/toggle cycles, debugging-off acceptance. See [P17](prototypes/P17-classic-hidp.md) and ADR-041.
+
+## Independent feature POC sequence and guardrails
+
+- **Control:** P16 then P17 compare BLE and Classic HID independently. Accessibility stays prohibited. HID is treated as a standard physical keyboard/pointer, not an input-injection API.
+- **Screen mirroring:** use existing P01/P07/P08 and protected-screen P10 procedures only. Require MediaProjection consent; never use ADB `screencap`/`screenrecord`, alternate capture, or Developer Options protection bypass. P08's wireless/debugging-off acceptance remains outstanding.
+- **Clipboard:** use existing P04/P05/P06 foreground/manual API paths and synthetic content only. No ADB clipboard commands, background-reading workaround, content logs or history.
+- A USB cable or enabled debugging can be present for installation/sanitized diagnostics in early development, but functional evidence is invalid if the control/mirror/clipboard behavior depends on ADB. Report USB, USB debugging and wireless debugging state for every session and repeat all accepted behavior with all three disabled.
 
 ## Prototype report template
 

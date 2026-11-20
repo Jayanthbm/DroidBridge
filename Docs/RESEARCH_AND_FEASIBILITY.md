@@ -1,6 +1,6 @@
 # Research and Feasibility Register
 
-**Research baseline:** 2026-11-07 (initial pack) — **last research pass: 2026-11-08**
+**Research baseline:** 2026-11-07 (initial pack) — **last research pass: 2026-11-20; P16 HOGP/CoreBluetooth profile review added**
 **Target Android:** Samsung Galaxy S24 Ultra, India region, Android 17 / One UI 9 (owner-reported, not yet verified on device)
 **Target macOS:** owner's Mac; exact model and macOS build still to be recorded (P00)
 **Scope of this document:** feasibility research only. No application features, prototypes or device tests have been run. Everything below is documentation evidence and must be re-checked before implementation.
@@ -25,7 +25,7 @@
 
 - **GO** — supported by public, documented APIs within the project's constraints; build it after the normal phase gate.
 - **CONDITIONAL** — supported only on some paths, with user friction, or with product-visible limitations. Build only after the named prototype passes and the owner accepts the limitation.
-- **NO-GO** — not achievable within the constraints (no Accessibility, no ADB/runtime debugging, no root, no privileged/OEM signature APIs, no bypasses), or achievable only in a degraded form the owner has not accepted.
+- **NO-GO** — not achievable within the constraints (no Accessibility, no ADB as a functional control/data path, no root, no privileged/OEM signature APIs, no bypasses), or achievable only in a degraded form the owner has not accepted.
 
 ## 1. Executive feasibility summary
 
@@ -42,20 +42,23 @@
 | Local screen streaming to a native Mac window | **GO** | MediaProjection → MediaCodec → local transport → VideoToolbox/AVSampleBufferDisplayLayer |
 | H.264 pipeline in practice (encode → AVCC → display) | **GO**, prototypes required | Surface encoding removes colour conversion from our code entirely; MediaCodec emits Annex-B so one start-code→length-prefix conversion is mandatory for CoreMedia; the display layer decodes without a VT session, but its enqueue API is deprecated in favour of a macOS 27 replacement (§2 R-29–R-31) |
 | Protected content stays protected (`FLAG_SECURE`, DRM) | **GO** (as a guarantee of *non*-capture) | Capture returns blank/unavailable; Android 15+ screenshare protections also redact notifications and password fields (§2 R-08) |
-| Arbitrary remote touch/keyboard into other Android apps | **NO-GO** under current constraints | No public injection API; Knox requires signature permission plus device-owner/profile-owner or authorized scope; Bluetooth HID API direction is reversed (§2 R-14..R-16) |
-| Mac acting as a Bluetooth HID peripheral for Android | **NO-GO** (pending contrary prototype evidence) | CoreBluetooth refuses to publish the HID-over-GATT service on macOS; classic HID transport is owned by `bluetoothd` (§2 R-14) |
+| macOS Bluetooth HID keyboard/pointer input to Android | **BLE NO-GO; Classic CONDITIONAL** | BLE HOGP is closed for Android: the phone bonds the dual-mode Mac but never creates a HID input device and the Mac sees no GATT traffic — reproduced with the unmodified upstream BLE app, so it is Android's `[ DUAL ]` transport routing, not the GATT tree. Classic HIDP on the OnePlus published an SDP HID record, opened L2CAP `0x0011`/`0x0013`, registered Keyboard/Mouse/Consumer/System input devices and delivered arrow press/release input. Single-device, upstream-app vehicle; S24 Ultra and an independent implementation outstanding. (§2 R-32–R-35) |
+| Generic arbitrary touch/gesture-equivalent control | **Not established; no claim until P16/P17 evidence** | Standard keyboard and relative pointer HID are not automatically equivalent to Android touchscreen gesture injection; device/OEM/UI behavior must be measured. No Accessibility, ADB input, root or Knox workaround |
+| macOS as a Bluetooth HID peripheral for Android | **BLE NO-GO; Classic CONDITIONAL (OnePlus only)** | BLE HOGP cannot reach Android from this Mac: Android classifies the shared public BR/EDR address as `[ DUAL ]` and routes HID over Classic, leaving `HidHostService.mInputDevices` empty with zero GATT traffic. Classic HIDP works end-to-end on OnePlus Android 12 with USB disconnected and wireless debugging off, but used the AGPL upstream app, covers keyboard arrows only, and is untested on the S24 Ultra (§2 R-32–R-35) |
 | Samsung Knox remote injection | **NO-GO** for a consumer app | `KNOX_REMOTE_CONTROL` is `signature`-protected; since Knox API 38 non-DO/PO callers need an authorized scope; DeX injection APIs are absent on Android 16+ |
 | Audio playback capture (media) | **CONDITIONAL** | Requires `RECORD_AUDIO` + MediaProjection consent + same user profile + app opt-in via capture policy |
 | Call audio / cellular call capture | **NO-GO** | Playback capture cannot capture `USAGE_VOICE_COMMUNICATION`; Telecom roles are out of scope |
 | Call notifications / answer-reject | **NO-GO** for MVP | Requires Telecom integration/role or a notification listener, both outside the approved permission set |
-| Bluetooth as optional supplement | **CONDITIONAL**, non-core | Must never gate Wi-Fi features; HID direction problem unresolved |
+| Bluetooth as optional supplement | **CONDITIONAL**, non-core | Must never gate Wi-Fi features; P16/P17 evaluate Mac-to-Android HID independently and Bluetooth remains opt-in |
 | Android release on Google Play | **GO** with defined release work | API 36 is the floor since 2026-08-31, so `targetSdk 37` is above it, not below; two FGS types each need a description, impact statement, use-case choice and a demo video; `ACCESS_LOCAL_NETWORK` would additionally need a Play declaration from 2027-08-25 (§2 R-25, R-26) |
 | macOS distribution to the owner | **CONDITIONAL** | Direct distribution requires a paid Apple Developer Program membership, a Developer ID certificate, hardened runtime, secure timestamp and notarisation; unnotarised apps are blocked by Gatekeeper with only an "Open Anyway" override (§2 R-27) |
 | macOS App Sandbox with a network listener | **GO** | `app-sandbox` + `network.client` + `network.server`; both network entitlements are needed because Bonjour advertising is UDP multicast, and none of them requires a provisioning profile (§2 R-28) |
 
-**Recommended MVP scope after this research:** pairing + LAN transport, Mac→Android clipboard, Android→Mac manual clipboard, view-only screen mirroring with honest protected-content and notification-redaction messaging. Remote input, audio, calls and Bluetooth HID stay research tracks.
+**Recommended next step:** manually retry Mac P16 service publication using the canonical UUID and Boot-only profile build; proceed to advertising only if the app reports successful publication. If it still fails, record NSError domain/code. Only if it publishes should the owner try pairing/connection; do not send a key unless Android selected Boot Protocol and the Mac confirms Boot-input subscription. If Android requires Report Protocol or remains disconnected, record incompatibility and stop. Do not attempt a custom UUID, unsupported descriptor API, or hidden interface. Pursue P17 Classic HIDP independently after its public API/entitlement boundaries are checked. Continue independent mirroring and clipboard prototypes. No production control claim until target-device evidence passes.
 
 ## 2. Findings register
+
+**Update 2026-11-17:** R-32 reopens the earlier R-12/ADR-016 blanket NO-GO only for isolated Mac Bluetooth HID feasibility tests. It does not change the prohibition on Android Accessibility or ADB functional paths and does not establish S24 compatibility. R-12 is retained as the dated historical research record; its old expected BLE refusal is not an acceptance criterion for P16/P17.
 
 Each entry follows the required evidence format. "Checked" is the date the cited page was read.
 
@@ -231,7 +234,7 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 
 ---
 
-### R-12 — macOS cannot present itself as a Bluetooth HID peripheral through public APIs
+### R-12 — Initial Bluetooth HID feasibility assessment (historical; Mac HID routes reopened by R-32)
 
 - **Checked:** 2026-11-08
 - **Target:** macOS 10.9+ CoreBluetooth peripheral role; current macOS
@@ -242,8 +245,63 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Secondary sources (labelled):** multiple independent reports that `CBPeripheralManager.add()` rejects the HID-over-GATT service `0x1812` with `CBError.uuidNotAllowed` (code 8, "The specified UUID is not allowed for this operation."), that macOS reserves the HID service for the system, and that `bluetoothd` owns the classic HID L2CAP PSMs 17/19.
 - **Finding:** Apple documents the peripheral role generally (macOS can publish GATT services and advertise), but does **not** document or support publishing the HID service. The consistent secondary evidence is a platform-level refusal, not a configuration problem, so a custom GATT service cannot produce system-level keyboard/mouse input on Android.
 - **Limitation:** even a successful HID keyboard would only type into a focused field — it would not inject arbitrary touch, and it would not set the Android clipboard.
-- **Decision:** **NO-GO** for "Mac as a Bluetooth HID peripheral for Android" unless prototype P09 produces contrary on-device evidence (which is not expected).
-- **Prototype:** P09 (expected result: `uuidNotAllowed`).
+- **Decision (historical, superseded for feasibility by R-32):** the 2026-11-08 research concluded NO-GO from the reported BLE rejection and Classic transport ownership. The later-reviewed `darwin-bt-remote` source has both BLE HOGP and Classic HIDP code; that is not target-device proof. Do not use this old expected `uuidNotAllowed` outcome as the P16/P17 acceptance criterion. Test independent public-API POCs and record the actual result on target hardware.
+- **Prototype:** original P09 (scoped checks); P16/P17 (current conditional Mac-HID feasibility).
+
+---
+
+### R-35 — Android routes a dual-mode Mac to Classic HID, not BLE HOGP
+
+- **Checked:** 2026-11-20
+- **Targets:** macOS 27.2 CoreBluetooth peripheral role + Bluetooth Classic; Android 12 / API 31 HID host (OnePlus Nord AC2001).
+- **Sources:**
+  - Android [BluetoothHidHost](https://developer.android.com/reference/android/bluetooth/BluetoothHidHost) and [BluetoothProfile](https://developer.android.com/reference/android/bluetooth/BluetoothProfile) — HID host profile and connection-state semantics.
+  - Device-side authoritative state: `dumpsys bluetooth_manager` (`AdapterProperties`, `Profile: HidHostService → mInputDevices`, bond events) and `dumpsys input` (`InputDevice` list).
+  - Apple [IOBluetoothSDPServiceRecord](https://developer.apple.com/documentation/iobluetooth/iobluetoothsdpservicerecord) and [IOBluetoothDevice](https://developer.apple.com/documentation/iobluetooth/iobluetoothdevice) — public SDP publication, `openConnection()`, `openL2CAPChannelSync(_:withPSM:delegate:)`.
+- **Observed (BLE):** Android bonds the Mac's LE advertisement but never creates a HID input device. `HidHostService` keeps `mInputDevices:` empty with `mTargetDevice: null`, and the Mac records **zero** GATT reads, writes or subscriptions. Reproduced with the project P16 POC **and** with the unmodified upstream `darwin-bt-remote` BLE build, so the GATT layout is not the cause.
+- **Observed (Classic):** With the same Mac and phone, a published HID SDP record plus Mac-initiated ACL and L2CAP `0x0011`/`0x0013` channels makes Android register `Keyboard`, `Mouse`, `Consumer Control` and `System Control` input devices with `STATE_CONNECTED`, and arrow press/release reports reach a focused receiver through Android's normal input pipeline.
+- **Finding:** The Mac advertises on its public address `60:3E:5F:31:D0:6D`, which is also its BR/EDR address, so Android lists the peer `[ DUAL ]` and selects the Classic HID transport. HOGP is therefore not reachable for Android from a Mac peripheral that shares its BR/EDR address; no Report Map, descriptor or protocol change alters that routing decision.
+- **Also found:** the upstream Classic backend uses only public `IOBluetooth` APIs; its `_privateBool` KVC helper is declared but never called (dead code). The earlier project note describing the Classic path as private-API dependent was wrong.
+- **Limitations:** OnePlus Android 12 only; S24 Ultra untested. Keyboard arrows only. The upstream app is AGPL-3.0-only and was used as a research probe; no source may be adopted. macOS automatic termination can silently drop the HID connection. Android 17 masks password characters from physical keyboards (R-19).
+- **Decision:** **BLE HOGP → Android: NO-GO.** **Classic HIDP → Android: CONDITIONAL GO** pending an independent DroidBridge implementation, S24 Ultra reproduction, reconnect/relaunch coverage and a USB-disconnected, debugging-off acceptance run. See ADR-041, [P16](prototypes/P16-ble-hid.md) and [P17](prototypes/P17-classic-hidp.md).
+- **Confidence:** High for the BLE result (two independent implementations, consistent device-side state); medium for Classic, since it is single-device and used a third-party app as the vehicle.
+
+---
+
+### R-34 — P16 HOGP service/profile requirements and public CoreBluetooth descriptor limitation
+
+- **Checked:** 2026-11-20
+- **Targets:** Bluetooth HOGP 1.2 HID Device / Boot Host / Report Host roles; macOS 27.2 CoreBluetooth peripheral API.
+- **Official sources:**
+  - Bluetooth SIG [HID over GATT Profile 1.2](https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/hogp_v1-2_1777405843/HOGP_v1.2/out/en/index-en.html) and [HID Service specification](https://www.bluetooth.com/specifications/specs/hid-service-specification/).
+  - Apple [CBMutableDescriptor](https://developer.apple.com/documentation/corebluetooth/cbmutabledescriptor) and the installed macOS 27.2 SDK `CoreBluetooth.framework/Headers/CBDescriptor.h` (local authoritative header): only Characteristic User Description and Characteristic Presentation Format can be locally constructed; Extended Properties and Client Characteristic Configuration are created automatically from characteristic properties.
+  - Apple [CBPeripheralManager peripheral-role guide](https://developer.apple.com/library/archive/documentation/NetworkingInternetWeb/Conceptual/CoreBluetooth_concepts/PerformingCommonPeripheralRoleTasks/PerformingCommonPeripheralRoleTasks.html).
+- **Requirements:** HOGP requires HID Service, Battery Service, and one Device Information Service. Device Information must include PnP ID. The HID Service itself requires a readable Report Map. A Report Host additionally requires Report characteristics, notifications on input Report characteristics, and Report Reference `0x2908` descriptors. A Boot Host is distinct, ignores the Report Map, and uses Protocol Mode plus the fixed Boot Keyboard Input Report characteristic. HOGP says the two host roles are mutually exclusive. Battery must be included in HID only when its characteristic is referenced by the Report Map. This POC does not reference Battery Level in the map, so Battery remains a separate primary service.
+- **Finding:** The initial P16 database omitted Battery and Device Information services and attempted to create `0x2908` with `CBMutableDescriptor`, contrary to Apple's published local-descriptor support contract. A custom descriptor that compiles is not proof Apple will publish or support it. In response, P16 now exposes a standard Battery service and Device Information/PnP ID, adds the mandatory read-only Report Map, and narrows input to Boot Keyboard only; it has no Report characteristics and makes no Report Protocol claim. Battery is a separate primary service because its Battery Level is not used as a Report Map field.
+- **Current result:** Boot-only P16 target built and strict signature verification passed. Native desktop control was unavailable to this session, so Mac service publication after this change is untested. The already-paired OnePlus Nord AC2001 / Android 12 remained `STATE_DISCONNECTED`; `HidHostService` had no active input device, and Mac had not reported Boot-input subscription. No key was sent. Android's willingness to select Boot Protocol rather than Report Protocol is unknown; S24 Ultra behavior is unknown.
+- **Decision:** **CONDITIONAL; test only the supported public Boot route.** First manually verify service publication, then advertisement/pairing. Send no report unless the Mac explicitly reports Android selected Boot Protocol and subscribed to Boot Keyboard Input. If the host declines Boot mode or requires Report Protocol, record a platform/API limit; do not use private APIs or fabricated descriptors.
+- **Confidence:** High for HOGP's stated service/role requirements and Apple's header contract; no confidence yet in this app's Mac publication or target host interoperability.
+- **Attribution/license:** `jqssun/darwin-bt-remote`, commit `e64cae983b8816e7e2f067e79025ffc49faf7e2d`, [GATT.swift](https://github.com/jqssun/darwin-bt-remote/blob/e64cae983b8816e7e2f067e79025ffc49faf7e2d/BTHIDKit/Sources/BTHIDKit/LowEnergy/GATT.swift), [AGPL-3.0-only license](https://github.com/jqssun/darwin-bt-remote/blob/e64cae983b8816e7e2f067e79025ffc49faf7e2d/LICENSE). Reference only; no code copied or vendored. The owner's personal, noncommercial, undistributed use is not treated as a code reuse or distribution event. AGPL source-offer terms should be reviewed before sharing a modified copy or operating it as an interactive network service.
+- **Prototype:** P16 Boot-only manual retest pending; P17 remains independent.
+- **Interpretation superseded by R-35 (2026-11-20):** the Boot-only retest became moot for Android, because the host never performs GATT discovery on this Mac. R-35 records the BLE NO-GO and the working Classic path.
+
+---
+
+### R-33 — P16 CoreBluetooth UUID-format failure and canonical-form retest
+
+- **Checked:** 2026-11-20
+- **Target:** MacBook Air M1, macOS 27.2.1 build `26B131`, Xcode 27.2; isolated P16 `CBPeripheralManager` peripheral role.
+- **Sources (official):**
+  - https://developer.apple.com/documentation/corebluetooth/cberror-swift.struct/code/uuidnotallowed — `CBError.Code.uuidNotAllowed`: “The specified UUID isn’t permitted.”
+  - https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager/add(_:) — adding a service publishes it to the local GATT database; failures are reported by the peripheral-manager delegate.
+  - https://developer.apple.com/library/archive/documentation/NetworkingInternetWeb/Conceptual/CoreBluetooth_concepts/PerformingCommonPeripheralRoleTasks/PerformingCommonPeripheralRoleTasks.html — Apple describes `didAddService:error:` as the publication result callback.
+- **Observed:** P16 initially registered the Bluetooth SIG HID service UUID `0x1812` in short form and the user reported `HID service publication failed: The specified UUID is not allowed for this operation.` The delegate displays `error.localizedDescription`; the string matches Apple's documented `CBError.Code.uuidNotAllowed`. The UI did not separately capture `NSError.domain`/`code`, so this mapping is based on the exact documented message.
+- **Implementation review:** the linked `jqssun/darwin-bt-remote` revision uses canonical 128-bit Bluetooth-base UUID strings for standard GATT services, characteristics and descriptors, while using the short HID UUID in its advertising payload. Its `GATT.swift` explicitly comments that `CBPeripheralManager` rejects short-form service UUIDs. This is project-source evidence, not an Apple-documented guarantee. The repo is AGPL-3.0-only; DroidBridge has not copied its implementation.
+- **Change and current state:** P16 independently switched registration UUIDs to the canonical base form and retained the short UUID only for advertisement. The target builds and its ad-hoc signature verifies; the user has not yet manually retried service publication. No advertising, pairing, OnePlus test or S24 test has occurred.
+- **Finding / scope:** The initial error remains real, but the short-form registration difference is a plausible cause. Do not yet conclude a platform-wide CoreBluetooth NO-GO. A custom/non-SIG UUID would not be standard HID and is not an alternative.
+- **Decision:** **CONDITIONAL; retest P16 service publication with the canonical UUID build.** If it still fails, record the actual NSError domain/code. P17 Classic HIDP remains separate and pending.
+- **Confidence:** High for the initial user-observed error; medium for the UUID-format diagnosis based on upstream source; no evidence yet for service publication after the fix or Android compatibility.
+- **Prototype:** P16 manual retest pending; P17 remains separate.
 
 ---
 
@@ -254,8 +312,29 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Sources (official):** https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice
 - **Finding:** `BluetoothHidDevice` makes **Android** the HID peripheral for a host (for example, a phone acting as a keyboard for a PC). It does not let an external device drive Android. `BLUETOOTH_CONNECT` is required for the relevant operations and on modern target SDKs; registration is tied to the app being in the foreground and can be unregistered when it is not.
 - **Implication:** this API is not an input path for DroidBridge. It is only relevant if the product ever wanted Android controlling the Mac.
-- **Decision:** **NO-GO** for Mac → Android input via this API. Optional Bluetooth remains non-core.
-- **Prototype:** P11 (documentation confirmation only; no input claim).
+- **Decision:** **NO-GO** for Mac → Android input via Android's `BluetoothHidDevice` API specifically; that API makes Android the peripheral. This does not preclude a Mac implementing its own standard HID device role (R-32/P16/P17). Optional Bluetooth remains non-core until POCs pass.
+- **Prototype:** documentation confirmation for Android HID-device direction; P16/P17 evaluate the separate Mac-device direction.
+
+---
+
+### R-32 — Upstream macOS Bluetooth HID reference changes the remote-input feasibility question
+
+- **Checked:** 2026-11-17
+- **Target:** macOS 13+ per upstream project; Android HID host (target Galaxy S24 Ultra / Android 17 / One UI 9 remains unverified)
+- **Primary project reviewed:** https://github.com/jqssun/darwin-bt-remote
+  - **Official platform references:** https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager (CoreBluetooth supports macOS 10.10+), https://developer.apple.com/documentation/corebluetooth/cbperipheralmanager/startadvertising(_:) , https://developer.apple.com/documentation/corebluetooth/cbperipheralmanagerdelegate/peripheralmanagerdidupdatestate(_:) , https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.device.bluetooth , https://developer.apple.com/documentation/bundleresources/information_property_list/nsbluetoothalwaysusagedescription , https://www.bluetooth.com/specifications/specs/hid-over-gatt-profile-hogp/ (adopted HOGP 1.2), https://www.bluetooth.com/specifications/specs/hid-service-specification/ , https://developer.android.com/develop/ui/views/touch-and-input/input-events , https://developer.android.com/develop/ui/views/touch-and-input/input-compatibility-on-large-screens , https://developer.android.com/reference/android/bluetooth/BluetoothHidDevice
+  - Reviewed public `main` HEAD `e64cae983b8816e7e2f067e79025ffc49faf7e2d` (2026-11-04); local research clone was temporary and is not part of DroidBridge.
+  - README: https://github.com/jqssun/darwin-bt-remote/blob/main/README.md
+  - Open Samsung connection report: https://github.com/jqssun/darwin-bt-remote/issues/13 (created 2026-10-14; open when checked). Reporter describes pairing trouble on iPhone 16 ↔ Samsung Galaxy S9 / Android 10: Android sometimes says “an app is needed to use this device”; when it connects, the reported media controls do not affect the phone. This is one report on different hardware/software, not a determination for the S24 Ultra.
+  - License: https://github.com/jqssun/darwin-bt-remote/blob/main/LICENSE — AGPL-3.0-only.
+- **Implementation observed:** the repository has separate backends: (1) macOS Bluetooth Low Energy HID over GATT using `CBPeripheralManager`, publishing HID service `0x1812` and keyboard/mouse/media reports; (2) macOS Bluetooth Classic HIDP using an SDP record and L2CAP control/interrupt channels via IOBluetooth. This is materially different from the earlier P09-only BLE assumption and is evidence that a macOS HID-device implementation exists. It does not prove pairing/input works on this project’s target phone.
+- **Important scope exclusion:** the upstream app also has an optional Direct Input path using macOS Accessibility permission and a CGEvent tap to capture the Mac’s local keyboard/mouse. DroidBridge must not use or reproduce that path. Source inspection also found a helper labeled “private getter via KVC”; DroidBridge must not use KVC/reflection or other private implementation hooks. DroidBridge will send only events directly initiated inside its own UI. Do not copy or vendor the repository’s code; the AGPL license and its obligations require separate review before any reuse or distribution. A clean, independently implemented standards-based prototype avoids an accidental licensing commitment.
+- **What HID may provide:** Android's official input guidance covers physical keyboards, mice and trackpads, but this does not by itself prove generic app coverage, reliable phone-screen pointer behavior, system-navigation behavior, or touch gestures. Keyboard input into a focused field is not arbitrary touch and does not set the Android clipboard. Measure each separately.
+- **Security/privacy boundary:** no Accessibility Service/API/nodes/events; no ADB/debugging input commands; no `INJECT_EVENTS`; no root, hidden APIs, undocumented Samsung APIs, screen-protection bypass or sensitive-app testing. Use synthetic test UI and benign ordinary screens. HID shall be opt-in and visibly connected; stop advertising/disconnect on user action.
+- **Permission/entitlement:** Android user pairs the Mac as a standard Bluetooth input device; do not add an Android app Bluetooth permission merely to receive standard HID input. For an isolated sandboxed Mac POC, Apple's documented `com.apple.security.device.bluetooth` entitlement and `NSBluetoothAlwaysUsageDescription` are included only in the POC target; a Bluetooth authorization prompt is expected when the user explicitly starts the peripheral. This does not authorize adding Bluetooth capability to the production app. Bluetooth must remain opt-in, with no silent activation.
+- **Findings:** the prior P09 NO-GO conclusion is no longer sufficient for Mac-as-HID feasibility, because the referenced project implements Classic HIDP as well as BLE. Its reported target compatibility is not independent evidence, and the open Samsung issue lowers confidence for Samsung phones. **Decision: CONDITIONAL** for Bluetooth keyboard/pointer HID on the S24; **NO-GO remains for claiming touchscreen-equivalent arbitrary gestures until measured**.
+- **Confidence:** Medium that this is a technically plausible prototype path (source reviewed); Low for target-device compatibility and control coverage (no DroidBridge S24 test yet).
+- **Prototype:** P16 (BLE HID), P17 (Classic HIDP), both isolated. Do not build P16/P17 by adding Accessibility or by copying AGPL source. P16 begins with fixed synthetic keyboard reports only; pointer reports are a later optional test after safe keyboard behavior is established. Run each with Wi-Fi independent and record USB/debugging state. The device must be observed via its own display and the POC UI, never through ADB screen/input/clipboard commands.
 
 ---
 
@@ -594,7 +673,7 @@ Nothing below has been tested. Every one is a gate before the corresponding buil
 | U4 | Does the macOS pasteboard access alert fire on `changeCount` polling, on first `string(forType:)`, and per launch? | Decides whether automatic Mac → Android sync can be the default | P06 |
 | U5 | On One UI 9, when exactly does `getPrimaryClip()` return non-null (visible activity, focused field, foreground service, screen off)? | Defines the honest Android → Mac workflow | P04 |
 | U6 | Does `setPrimaryClip()` from a background/foreground-service context display the system clipboard UI, and does auto-clear break sync? | Defines the Mac → Android workflow | P05 |
-| U7 | Is the HID service really refused on macOS (`uuidNotAllowed`)? Any supported alternative? | Final wording of the remote-input NO-GO | P09 |
+| U7 | Can the Mac publish standard Bluetooth HID over BLE or Classic HIDP and deliver useful input to the S24 Ultra on One UI 9? | Determines exact control scope without Accessibility/ADB | P16, P17 |
 | U8 | How do Android 15+ screenshare protections appear in a mirrored stream (notifications, password fields, OTP activities)? | Product copy and test expectations | P10 |
 | U9 | MediaProjection + rotation/resize behavior on the S24 Ultra (foldable-class display metrics, high refresh) | Stream quality and viewer layout | P01/P08 |
 | U10 | Does whole-display capture survive a 30-minute session with the screen off/locked? | Real-world usability | P08 |
@@ -616,7 +695,7 @@ Detailed instructions for each prototype are in `Docs/PROTOTYPE_PLAN.md`.
 - Added: Android 17 CT-by-default and ECH behavior, and the fact that CT does not apply to custom trust anchors (R-03).
 - Added: the advertising-vs-picker permission asymmetry in `NsdManager`, which changes the recommended connection direction (R-02).
 - Added: macOS 15.4+ pasteboard access prompts, a risk the baseline did not record (R-11).
-- Added: macOS HID-peripheral refusal evidence and the classic-HID ownership detail (R-12).
+- R-12's initial macOS HID refusal/Classic ownership conclusion is retained as historical research and superseded for feasibility by R-32. R-32 reviews `darwin-bt-remote` BLE HOGP and Classic HIDP source, an unresolved Samsung issue, and P16/P17 guardrails.
 - Added: Knox authorization-scope requirement and DeX API removal on Android 16+ (R-14).
 - Added: audio playback capture boundary conditions and call-audio impossibility, plus Android 17 background-audio hardening (R-15, R-16).
 - Added: Android 15+ screenshare protections (notifications/passwords/OTP activities) (R-07) and physical-keyboard password masking (R-19).

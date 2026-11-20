@@ -17,7 +17,8 @@ This file is the source of truth for permission minimization. The agent must com
 | `FOREGROUND_SERVICE_MEDIA_PROJECTION` | MediaProjection foreground service | Required for mirroring | Must be combined with `android:foregroundServiceType="mediaProjection"`; a missing type throws `MissingForegroundServiceTypeException` (R-04). | Only with the mirroring feature, and declared on the Play Console app-content page with its use case and demo video (R-26, §1A). |
 | MediaProjection consent | Screen capture authorisation | Per session | Not a manifest permission. Single-use token: one `getMediaProjection()` per consent intent, one `createVirtualDisplay()` per `MediaProjection`, else `SecurityException` (R-04). | Always fresh consent; never cache or replay. |
 | `POST_NOTIFICATIONS` | Foreground service notification visibility | Declare; request in context | Not required to launch a foreground service, but without it the notification is hidden from the drawer and the service is only visible in the FGS Task Manager; Android 13+ FGS notifications are dismissible while the service continues (R-21). | Declare from the first FGS. Request when the user first enables background sync or starts mirroring, never at first launch; the app's own UI remains the authoritative session indicator. |
-| `BLUETOOTH_CONNECT` | Optional Bluetooth connection | Optional, non-core | Relevant only to optional Bluetooth. Android's `BluetoothHidDevice` is the reverse direction from what the product wants (R-13). | Request only after the user enables the optional Bluetooth feature. Bluetooth HID input is NO-GO (ADR-016). |
+| `BLUETOOTH_CONNECT` | Optional Android Bluetooth feature | Optional, non-core | Android's `BluetoothHidDevice` is the reverse role from the desired Mac-to-phone HID direction (R-13). | Request only after the user enables a specific Android-side Bluetooth feature; do not request it for P16/P17 unless the actual design proves it necessary. |
+| Android Bluetooth runtime permissions for receiving standard Mac HID input | P16/P17 feasibility | POC only | The Mac is evaluated as standard HID device paired through Android system Bluetooth settings. Do not add Android Bluetooth permissions merely to receive OS-level keyboard/pointer input; verify on target. | Bluetooth remains opt-in and is enabled only by explicit user action. |
 | `BLUETOOTH_SCAN` | Optional Bluetooth scanning | Optional, non-core | — | Only if actual discovery needs it, only after opt-in. |
 | `BLUETOOTH_ADVERTISE` | Optional Bluetooth advertising | Optional, non-core | — | Only if the chosen role needs it, only after opt-in. |
 | `ACCESS_WIFI_STATE` / `CHANGE_WIFI_MULTICAST_STATE` | Wi-Fi state / multicast lock | Evaluate | Current `NsdManager` documentation states the multicast lock is not needed for foreground discovery/advertising on recent SDK extension levels (R-02 source page). | Do not add pre-emptively (it is a normal permission today but is a dead permission that will age badly); add only if a measured test shows discovery failing without it. |
@@ -42,7 +43,7 @@ These are not manifest permissions, but a submission without them is a policy fa
 
 | Capability | Why excluded | Evidence |
 |---|---|---|
-| Accessibility Service | Ceiling of remote input; prohibited by `AGENTS.md` | ADR-004, ADR-015 |
+| Accessibility Service | Not part of input path | Prohibited by `AGENTS.md`; Bluetooth HID P16/P17 is the evaluated route | ADR-004, ADR-015, R-32 |
 | Default IME / custom keyboard | Only way to read the clipboard in the background (R-09); changes the user's keyboard and privacy model | ADR-013 |
 | `KNOX_REMOTE_CONTROL` / Knox SDK | `signature` protection; Knox API 38 requires DO/PO or an authorized scope; DeX injection APIs absent on Android 16+ | R-14, ADR-017 |
 | Notification listener | Call/OTP content access; prohibited | R-17, ADR-019 |
@@ -69,10 +70,10 @@ These are not manifest permissions, but a submission without them is a policy fa
 | Developer ID Application certificate + secure timestamp | Signing identity | Sign distribution builds | **Yes** for any release | Only the Apple Developer Program **Account Holder** can create the certificate. An unnotarised build is blocked by Gatekeeper with only the System Settings → Privacy & Security → Open Anyway override (R-27). |
 | Keychain | Entitlement / API | Store this Mac's identity key/certificate and the paired Android pin | Yes, scoped | Data protection keychain (`kSecUseDataProtectionKeychain`) under the app's own `keychain-access-groups` entry (ADR-025): non-exportable P-256 key + self-signed certificate + the peer's SPKI pin. No iCloud synchronisation (`kSecAttrSynchronizable` off). |
 | Screen Recording | TCC permission | Capture the Mac display | No | Not needed to view Android's stream; only for a separately approved Mac-capture feature. |
-| Accessibility | TCC permission | System-wide UI control | No | Never for this product. |
+| Accessibility | TCC permission | System-wide UI control / upstream direct-input capture | No | Never request for DroidBridge. The reference repo's optional direct-input/event-tap feature is excluded; POCs send only events initiated inside DroidBridge UI. |
 | Input Monitoring | TCC permission | Global keyboard/mouse observation | No | Not needed for MVP (view-only mirroring). |
 | Microphone | TCC permission | Audio | No | MVP has no audio (ADR-018). |
-| Bluetooth | TCC permission | Optional Bluetooth | No | Not required; Bluetooth HID input is NO-GO (ADR-016). |
+| `com.apple.security.device.bluetooth` | macOS App Sandbox entitlement | BLE/Classic HID POC | Present only in isolated P16 target | Added to `P16BLEHID.entitlements` with app sandbox; the P16 target also declares `NSBluetoothAlwaysUsageDescription`. It is absent from the production DroidBridge target. The system authorization flow and actual HID pairing remain untested; Bluetooth activity must follow explicit opt-in.
 
 ## 4. Configuration that is not a permission but has security impact
 
@@ -108,6 +109,12 @@ First audit against real build artifacts rather than intent. Method: `aapt2 dump
 bundle. Full narrative in `Docs/prototypes/PHASE0-repository-and-environment.md` §6.
 
 ### 6.1 Android manifest diff
+
+P16's isolated receiver (`com.droidbridge.experiment.bluetoothhid`) was separately audited on
+2026-11-20. Its source declares no `uses-permission`; the built APK contains only
+`com.droidbridge.experiment.bluetoothhid.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, an AndroidX-injected
+app-private `signature` permission with no Bluetooth capability. It adds no Android Bluetooth,
+Accessibility, network, storage, clipboard or notification permission. This is not the production app.
 
 | Permission | Declared in source | Present in built APK | Verdict |
 |---|---:|---:|---|

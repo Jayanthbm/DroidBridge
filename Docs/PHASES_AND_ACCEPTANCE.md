@@ -36,8 +36,7 @@ macOS version that implements it. **P07 is completed** — parser, conversion
 tests, live viewer, flush/recovery, startup latency, resolution changes and `preventsCapture`
 (video area black in a screen capture) pass; backpressure false state and glass-to-glass latency are
 plan-only measurements. **P15 personal-use identity persistence is implemented and verified locally** — separate Release identity-harness processes retain one login-Keychain pin and macOS persistence/fail-closed tests pass. Peer reconnect without re-pairing and Keychain ACL behavior after signing changes remain open. Developer ID/notarisation are explicitly deferred while personal-use only. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
-and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09 is completed as
-NO-GO** — no public/accessible/root/Knox/HID remote-input path exists; mirroring ships view-only. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
+and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09's 2026-11-10 NO-GO is historical and scoped to its tested mechanisms.** New source review (R-32/ADR-036) reopens Mac-as-Bluetooth-HID feasibility; P16/P17 are required before a final control decision. No Accessibility/ADB control is allowed, and mirroring remains view-only until target-device evidence passes. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
 sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
 advertiser/cold restart is measured: a new Mac service instance requires one picker re-approval;
@@ -45,7 +44,7 @@ that is a documented product limitation for Phase 2. Advertising and inbound req
 `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not. **P03** has
 all six acceptance criteria met, including the USB-disconnected run. **P04** is verified on
 Android 12 and Android 17.
-Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P15 and its per-prototype order/dependencies.
+Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P17 and its per-prototype order/dependencies.
 - Execute each applicable isolated prototype on the required platform/device.
 - Record evidence header, exact steps, positive and negative results, logs and limitations.
 - Determine GO / CONDITIONAL / NO-GO from measured evidence.
@@ -84,11 +83,11 @@ Exit: text sync passes tests with documented foreground/background limits.
 Exit: 30-minute stable same-Wi-Fi session; protected content remains protected; recovery after a decoder flush is demonstrated with a keyframe request rather than resumed P-frames.
 
 ## Phase 5 — Remote input decision
-- Bluetooth HID and supported APIs experiments.
-- no prohibited mechanism.
-- document exact support.
+- Complete P16 BLE HID and P17 Classic HIDP experiments, using the S24 Ultra and independent implementations.
+- No Accessibility, ADB input/data path, root, hidden/privileged APIs, or protected-surface bypass.
+- Document exact supported keyboard/pointer behavior separately from arbitrary touch, clipboard, and mirroring.
 
-Exit: owner accepts GO or NO-GO. If NO-GO, ship view-only mirroring rather than relaxing constraints.
+Exit: evidence-based GO/CONDITIONAL/NO-GO for the exact supported input scope. Until then, mirroring remains view-only; do not relax constraints to obtain a passing result.
 
 ## Phase 6 — Hardening and UX
 - permission explanations.

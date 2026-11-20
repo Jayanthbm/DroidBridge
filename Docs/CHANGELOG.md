@@ -4,6 +4,22 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Added — independent P17 Classic HIDP implementation and BLE NO-GO result (2026-11-20)
+- Recorded **macOS BLE HOGP → Android as NO-GO**. Android bonds the Mac but never creates a HID input device (`HidHostService.mInputDevices` empty, `mTargetDevice: null`) and the Mac receives no GATT traffic. The unmodified upstream BLE app behaves identically, so this is Android's `[ DUAL ]` transport routing of the Mac's shared public BR/EDR address, not a GATT-layout defect.
+- Recorded **Classic HIDP as a preliminary GO on OnePlus Nord AC2001 / Android 12 only**: SDP HID record published, L2CAP `0x0011`/`0x0013` opened from the Mac, four Android input devices registered, and arrow press/release pairs counted by a focused receiver with USB disconnected and wireless debugging off.
+- Added an **independently authored** `P17ClassicHIDP` macOS experiment (public `IOBluetooth` only: SDP publication, outbound ACL, L2CAP control/interrupt, HIDP transaction handling, `0xA1` input reports). No third-party implementation source is included, and the earlier AGPL-derived comparison artifact was removed before commit.
+- The independent POC publishes its SDP record and opens the ACL, but its control channel currently fails (`0xE00002BC`) against a dozing handset; key delivery from this app is **not yet demonstrated**. Corrected an earlier research note: upstream's Classic path uses only public API, and its `_privateBool` KVC helper is dead code.
+- See [P17](prototypes/P17-classic-hidp.md), [P16](prototypes/P16-ble-hid.md), [ADR-041](TECHNICAL_DECISIONS.md#adr-041--route-mac-to-android-hid-input-through-classic-hidp-not-ble-hogp) and R-35.
+
+### Updated — P16 BLE HID UUID registration retest pending (2026-11-20)
+- Initial P16 CoreBluetooth publication returned the UUID-not-allowed message. Review of the linked repo found it registers standard GATT services/characteristics using canonical Bluetooth-base UUIDs and uses short form only for advertising. The isolated P16 implementation now applies that distinction independently; its Mac build and signature verification pass, but the user must manually retry service publication.
+- No advertising, pairing or phone-side input test has happened; OnePlus/S24 compatibility remains unknown. Do not substitute a custom UUID. P17 Classic HIDP remains a separate pending route. See [P16 evidence](prototypes/P16-ble-hid.md), [ADR-038](TECHNICAL_DECISIONS.md#adr-038--register-sig-gatt-uuids-in-canonical-bluetooth-base-form-for-p16-retest) and R-33.
+
+### Planned — isolated Bluetooth HID control feasibility POCs (2026-11-17)
+- Reviewed `jqssun/darwin-bt-remote`: it implements macOS BLE HID-over-GATT and Bluetooth Classic HIDP; its Samsung pairing report remains open and does not prove S24 Ultra compatibility. Its optional Accessibility-based Direct Input path is explicitly excluded, and no AGPL source is copied.
+- Added P16/P17 plans for independent target-device BLE/Classic HID tests, plus explicit guardrails that ADB/debugging cannot generate input or carry screen/clipboard data. Existing MediaProjection mirroring and foreground/manual clipboard POCs remain separate; no feature is claimed complete.
+- Accessibility remains prohibited. See R-32, ADR-036 and P16/P17 in `Docs/PROTOTYPE_PLAN.md`.
+
 ### Changed — macOS bundle identifier and local app cleanup (2026-11-17)
 - Changed the macOS bundle ID to `com.droidbridge.app` and the test bundle ID to `com.droidbridge.app.tests`; Android's `applicationId` remains unchanged.
 - Regenerated the Xcode project, passed 67/67 macOS tests and the Release build, and verified the canonical `~/Applications/DroidBridge.app` signature, embedded ID/entitlements, persistent identity pin, and standalone Bonjour resolution.

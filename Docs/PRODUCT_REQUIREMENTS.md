@@ -18,7 +18,7 @@ The first target device is the owner's Samsung Galaxy S24 Ultra running Android 
 - Keep data local; no cloud account, relay or storage.
 
 ### P1 — Experimental goals
-- Determine whether remote keyboard and mouse interaction can be achieved without Accessibility, ADB, root or privileged/OEM APIs.
+- Evaluate whether macOS can control the Android phone as a standard Bluetooth HID keyboard/trackpad, without Accessibility, ADB input, root or privileged/OEM APIs.
 - Test Bluetooth HID in the Mac-to-Android direction.
 - Test whether the Mac can act as a supported Bluetooth HID peripheral.
 - Investigate audio streaming under Android's playback-capture rules.
@@ -37,6 +37,7 @@ The first target device is the owner's Samsung Galaxy S24 Ultra running Android 
 - Bypassing `FLAG_SECURE`, protected surfaces or app-specific restrictions.
 - Root, custom ROM or system image modification.
 - Accessibility-based remote control.
+- Using ADB/debugging as a runtime input, screen-mirroring or clipboard transport.
 - ADB-based runtime control.
 - Replacing Samsung DeX, Phone Link or the Android default dialer.
 - Background surveillance or silent screen capture.
@@ -65,7 +66,7 @@ The first target device is the owner's Samsung Galaxy S24 Ultra running Android 
 
 ### Remote input
 - As a user, I can use Mac input only if a supported mechanism is proven.
-- If full input is unavailable, the app must clearly label the feature as unsupported/experimental rather than pretending clicks are delivered.
+- If Bluetooth HID input is unavailable or incomplete on the target, label control unsupported/experimental rather than pretending clicks are delivered. Do not claim generic touchscreen-equivalent control from keyboard/pointer HID without target-device evidence.
 
 ## 5. Product behaviour
 

@@ -18,18 +18,18 @@ Remote input, audio and phone-call integration are research tracks. They must no
 
 - No USB debugging or wireless debugging as a runtime requirement.
 - No root.
-- No Accessibility Service.
+- No Accessibility Service; control feasibility is being evaluated through Bluetooth HID only.
 - No cloud relay or cloud storage.
 - Same local Wi-Fi network for the initial release.
 - Bluetooth is optional and must never be required for core Wi-Fi functionality.
 - Respect `FLAG_SECURE`, DRM restrictions, protected surfaces and user screen-capture consent.
 - No bypasses for banking apps, password managers, payment apps or media protections.
 - The app must not require default-dialer status or SMS access for the initial release.
-- USB/ADB may be used by the developer/agent for installation, logcat, debugging and test automation during development only. The final app must work after USB is disconnected and debugging is disabled.
+- During development, ADB may install/launch test apps, open Android settings, automate test setup (including connecting an already-paired HID device), run tests, and collect sanitized diagnostics. It must never generate the functional HID key/pointer input being tested or capture screen/clipboard contents. No ADB dependency at runtime. Final acceptance must work with USB disconnected and both debugging modes disabled.
 
 ## Important feasibility warning
 
-A normal third-party Android app can request screen capture with MediaProjection, but MediaProjection does not grant arbitrary touch injection into other apps. With the project's prohibition on Accessibility, ADB, root and privileged Samsung APIs, full arbitrary remote touch control is **NO-GO as of the 2026-11-08 research pass**: no public injection API exists, Knox `RemoteInjection` requires a signature permission plus managed-device or MDM-issued authorisation, and macOS cannot publish a Bluetooth HID peripheral. Mirroring therefore ships view-only. See `Docs/RESEARCH_AND_FEASIBILITY.md` §2.
+A normal third-party Android app can request screen capture with MediaProjection, but MediaProjection does not grant touch injection. The project is evaluating a different route: macOS acting as a standard Bluetooth HID keyboard/trackpad for Android, using the independently developed `jqssun/darwin-bt-remote` repository as a feasibility reference. The reported Samsung connection issue means this is **conditional and unproven on the target S24 Ultra**. No Accessibility Service, ADB input, root, hidden APIs or privileged Samsung APIs are allowed. Bluetooth HID input is separate from Wi-Fi screen mirroring and clipboard transfer; each requires its own POC and evidence. USB debugging may be enabled during development for test setup automation, but must not generate the functional input under test or carry screen/clipboard data. See `Docs/RESEARCH_AND_FEASIBILITY.md` §2 and P16–P17 in `Docs/PROTOTYPE_PLAN.md`.
 
 Clipboard behaviour also has limits on both sides: Android 10+ restricts clipboard reads from background apps (focus or default-IME required), and macOS 15.4+ can prompt for or deny programmatic pasteboard access. Two-way automatic background sync is not a release claim; a foreground/manual workflow is the safe baseline.
 

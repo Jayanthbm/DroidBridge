@@ -9,20 +9,28 @@
 /* Begin PBXBuildFile section */
 		03526CC76E4EDCA193BBA00A /* p07-1280x720.h264 in Resources */ = {isa = PBXBuildFile; fileRef = 9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */; };
 		0431767BF78F478395F96886 /* Crypto in Frameworks */ = {isa = PBXBuildFile; productRef = 7444ED0C876CC5A748B2389A /* Crypto */; };
+		0B0A5088E05375403841001C /* P16BLEHIDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */; };
+		0B864CF6F59BB8E561DEAC92 /* P17HIDDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1042BF218FF80363313584D /* P17HIDDescriptor.swift */; };
 		14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */; };
+		1E1A8644ED3EF85A7DB01788 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */; };
 		1F937102D0F6B3F040834F61 /* AdvertisementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */; };
 		22A2541015D47D6A6828E978 /* FrameRateLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */; };
 		2EA838E7F8E807B48F061EDD /* ServiceAdvertisement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */; };
 		308F874E19E960CACEBAF4B3 /* LiveMirrorReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */; };
 		318651D5A6C2A8021330769A /* MacIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83380E99630102BDBDA54D64 /* MacIdentity.swift */; };
+		34D44F2F332762A3B9712C4E /* P17ClassicHIDPApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5B89A7E4A186D3143D0F02A /* P17ClassicHIDPApp.swift */; };
 		36C3BCB3285EE7AB3AE9F00C /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1BCC5937B70DE2A8AC1D55D /* Network.framework */; };
 		373BA350DC174E06EAB118D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45B21693499F9A7C73EA63AB /* AVFoundation.framework */; };
 		3BBB5C21329A089795FF0AE1 /* VideoPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C134AF21AA5D5DAB4F906A /* VideoPayloadTests.swift */; };
 		433FEE5C6C42F0306790EDA3 /* MirrorFormatPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDC18A7AF563DBDE04E0E28 /* MirrorFormatPayload.swift */; };
 		4630552D56097E8EB4AE5B0C /* VideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */; };
 		50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */; };
+		55216DE811A2B0543CCC6085 /* P16HIDPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16042E378A1EDC962453097F /* P16HIDPeripheral.swift */; };
 		5D27F31FAF1BADE14D1705F6 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */; };
 		60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */; };
+		6126F9B4EC2EADDB07265B92 /* ClassicHIDPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 394DAF147017D431340D1FFD /* ClassicHIDPeripheral.swift */; };
+		636545E7E113923C4C27146F /* P16BLEHIDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C6E23730C8C3ED47483118 /* P16BLEHIDView.swift */; };
+		64BC4FE86F1867F9CC9A3AE8 /* P17ClassicHIDPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0733F4D9E4159EBE1EA835D /* P17ClassicHIDPView.swift */; };
 		6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */; };
 		6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */; };
 		6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6F3421D00129EB9F67855F /* ControlMessage.swift */; };
@@ -41,6 +49,7 @@
 		B43C8476EEB1180D97D0F786 /* SessionFraming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */; };
 		B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */; };
 		B761DDE9E0330B1CE1828DDE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C6E7D435733DFE75E0B09E /* Security.framework */; };
+		B944726B747ADF13FD0D3F65 /* IOBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FD598B81310E5A17F0DEFE5 /* IOBluetooth.framework */; };
 		C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */; };
 		DD225B47560B6EF67E83BC0A /* MirrorStreamValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1E0BF142E78BFF416562EA /* MirrorStreamValidator.swift */; };
 		E3D6F3557BEF93868C34108C /* LiveMirrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40DF0E1F740D09943CE2064 /* LiveMirrorView.swift */; };
@@ -68,6 +77,10 @@
 		045D97DC485774CFC0878C91 /* VideoReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReceiver.swift; sourceTree = "<group>"; };
 		062980F55EED673BE05F608F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		0F667686705541706B7C6CAA /* H264AnnexBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexBTests.swift; sourceTree = "<group>"; };
+		16042E378A1EDC962453097F /* P16HIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16HIDPeripheral.swift; sourceTree = "<group>"; };
+		1FD598B81310E5A17F0DEFE5 /* IOBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOBluetooth.framework; path = System/Library/Frameworks/IOBluetooth.framework; sourceTree = SDKROOT; };
+		21EB428B90101FA4647FD000 /* P16BLEHID.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = P16BLEHID.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B54220954E3D7F0A1E1BEBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorReceiver.swift; sourceTree = "<group>"; };
 		2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
 		2EE30D7192532CDBFC5F6985 /* SecureListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureListener.swift; sourceTree = "<group>"; };
@@ -76,16 +89,21 @@
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		36C6E7D435733DFE75E0B09E /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		37EC3B0CDB750433817E3105 /* PasteboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardMonitor.swift; sourceTree = "<group>"; };
+		394DAF147017D431340D1FFD /* ClassicHIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicHIDPeripheral.swift; sourceTree = "<group>"; };
 		3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFraming.swift; sourceTree = "<group>"; };
 		3F6F3421D00129EB9F67855F /* ControlMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlMessage.swift; sourceTree = "<group>"; };
 		425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertisementTests.swift; sourceTree = "<group>"; };
 		45B21693499F9A7C73EA63AB /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
+		4DC83C6B2D5E322BA3A17D76 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16BLEHIDApp.swift; sourceTree = "<group>"; };
 		6654147B222D56D1F88548FF /* MirrorStreamValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorStreamValidatorTests.swift; sourceTree = "<group>"; };
+		68BFBFA4D4482B51A97EFE3F /* P16BLEHID.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = P16BLEHID.entitlements; sourceTree = "<group>"; };
 		6EDC18A7AF563DBDE04E0E28 /* MirrorFormatPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFormatPayload.swift; sourceTree = "<group>"; };
 		7422664024570F46C67EDCDD /* PeerPinStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerPinStore.swift; sourceTree = "<group>"; };
 		7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacIdentityPersistenceTests.swift; sourceTree = "<group>"; };
 		83380E99630102BDBDA54D64 /* MacIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacIdentity.swift; sourceTree = "<group>"; };
+		84C6E23730C8C3ED47483118 /* P16BLEHIDView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16BLEHIDView.swift; sourceTree = "<group>"; };
 		8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertisement.swift; sourceTree = "<group>"; };
 		86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P03Harness.swift; sourceTree = "<group>"; };
 		8799BB7FD9E3C2CDE90A48E3 /* P06Harness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P06Harness.swift; sourceTree = "<group>"; };
@@ -95,17 +113,23 @@
 		9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DroidBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummary.swift; sourceTree = "<group>"; };
 		9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCode.swift; sourceTree = "<group>"; };
+		A1042BF218FF80363313584D /* P17HIDDescriptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P17HIDDescriptor.swift; sourceTree = "<group>"; };
+		A1A8A98639483E962E582EA3 /* P17ClassicHIDP.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = P17ClassicHIDP.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A277847708B2692DCD474697 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
+		A8394F9C7A5FEEEA8228E56B /* P17ClassicHIDP.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = P17ClassicHIDP.entitlements; sourceTree = "<group>"; };
 		A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRateLimiterTests.swift; sourceTree = "<group>"; };
+		AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
 		BB3749161931C168AC4DDC03 /* p07-480x640.h264 */ = {isa = PBXFileReference; path = "p07-480x640.h264"; sourceTree = "<group>"; };
 		BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCodecTests.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
 		C40DF0E1F740D09943CE2064 /* LiveMirrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorView.swift; sourceTree = "<group>"; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
+		C5B89A7E4A186D3143D0F02A /* P17ClassicHIDPApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P17ClassicHIDPApp.swift; sourceTree = "<group>"; };
 		D25743DAABD330041FCEA833 /* p07-test.h264 */ = {isa = PBXFileReference; path = "p07-test.h264"; sourceTree = "<group>"; };
 		D707E18DD99C8296E2D9B141 /* VideoPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPayload.swift; sourceTree = "<group>"; };
 		D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexB.swift; sourceTree = "<group>"; };
 		DF1E0BF142E78BFF416562EA /* MirrorStreamValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorStreamValidator.swift; sourceTree = "<group>"; };
+		E0733F4D9E4159EBE1EA835D /* P17ClassicHIDPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P17ClassicHIDPView.swift; sourceTree = "<group>"; };
 		EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardView.swift; sourceTree = "<group>"; };
 		EC83A3AC94D6A38CA642921B /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
 		EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummaryTests.swift; sourceTree = "<group>"; };
@@ -113,6 +137,22 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		4CCEC5C79AB3A4FA366B29C8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1E1A8644ED3EF85A7DB01788 /* CoreBluetooth.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8A5341BFD95042948BA9E54E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B944726B747ADF13FD0D3F65 /* IOBluetooth.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		DBC3FFDD2EF4BE26566F7011 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -152,12 +192,23 @@
 			isa = PBXGroup;
 			children = (
 				45B21693499F9A7C73EA63AB /* AVFoundation.framework */,
+				AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */,
 				4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */,
 				F6E7C447918BA19DECC45CCB /* CoreVideo.framework */,
+				1FD598B81310E5A17F0DEFE5 /* IOBluetooth.framework */,
 				C1BCC5937B70DE2A8AC1D55D /* Network.framework */,
 				36C6E7D435733DFE75E0B09E /* Security.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		6E4770FADF759B83B9E640E3 /* Experiments */ = {
+			isa = PBXGroup;
+			children = (
+				E60FC2325A993A9DDE5D4C03 /* P16BLEHID */,
+				D4518E4641B228493A0155FA /* P17ClassicHIDP */,
+			);
+			path = Experiments;
 			sourceTree = "<group>";
 		};
 		A3238806DE0DA7297769B531 /* Pasteboard */ = {
@@ -216,8 +267,23 @@
 			children = (
 				354600CB636FE443A976DF92 /* DroidBridge.app */,
 				9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */,
+				21EB428B90101FA4647FD000 /* P16BLEHID.app */,
+				A1A8A98639483E962E582EA3 /* P17ClassicHIDP.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		D4518E4641B228493A0155FA /* P17ClassicHIDP */ = {
+			isa = PBXGroup;
+			children = (
+				394DAF147017D431340D1FFD /* ClassicHIDPeripheral.swift */,
+				4DC83C6B2D5E322BA3A17D76 /* Info.plist */,
+				A8394F9C7A5FEEEA8228E56B /* P17ClassicHIDP.entitlements */,
+				C5B89A7E4A186D3143D0F02A /* P17ClassicHIDPApp.swift */,
+				E0733F4D9E4159EBE1EA835D /* P17ClassicHIDPView.swift */,
+				A1042BF218FF80363313584D /* P17HIDDescriptor.swift */,
+			);
+			path = P17ClassicHIDP;
 			sourceTree = "<group>";
 		};
 		DB9B630078AFE70BB5FC84FC = {
@@ -225,6 +291,7 @@
 			children = (
 				3D4AAD8DC2544209B463BB9B /* App */,
 				C23F2A8F1565FAC66C83902D /* Core */,
+				6E4770FADF759B83B9E640E3 /* Experiments */,
 				E92BAD0F4A15A8180F9E13DD /* Features */,
 				E72083E8893C174D02FB722F /* Resources */,
 				E3FC39B01A3141DF69D5817B /* Tests */,
@@ -247,6 +314,18 @@
 				98C134AF21AA5D5DAB4F906A /* VideoPayloadTests.swift */,
 			);
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		E60FC2325A993A9DDE5D4C03 /* P16BLEHID */ = {
+			isa = PBXGroup;
+			children = (
+				2B54220954E3D7F0A1E1BEBD /* Info.plist */,
+				68BFBFA4D4482B51A97EFE3F /* P16BLEHID.entitlements */,
+				5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */,
+				84C6E23730C8C3ED47483118 /* P16BLEHIDView.swift */,
+				16042E378A1EDC962453097F /* P16HIDPeripheral.swift */,
+			);
+			path = P16BLEHID;
 			sourceTree = "<group>";
 		};
 		E72083E8893C174D02FB722F /* Resources */ = {
@@ -273,6 +352,42 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		262E96E3344D384A9483DE00 /* P16BLEHID */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F7D8214BFAF844E6FFC4BED5 /* Build configuration list for PBXNativeTarget "P16BLEHID" */;
+			buildPhases = (
+				0866051A0CFC9CA7E4F32AB9 /* Sources */,
+				4CCEC5C79AB3A4FA366B29C8 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = P16BLEHID;
+			packageProductDependencies = (
+			);
+			productName = P16BLEHID;
+			productReference = 21EB428B90101FA4647FD000 /* P16BLEHID.app */;
+			productType = "com.apple.product-type.application";
+		};
+		976666E0B8D259321BDB68E5 /* P17ClassicHIDP */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB9BB550FBFED9424D5AC078 /* Build configuration list for PBXNativeTarget "P17ClassicHIDP" */;
+			buildPhases = (
+				CEDDF7A7840F17E92BC4CE6D /* Sources */,
+				8A5341BFD95042948BA9E54E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = P17ClassicHIDP;
+			packageProductDependencies = (
+			);
+			productName = P17ClassicHIDP;
+			productReference = A1A8A98639483E962E582EA3 /* P17ClassicHIDP.app */;
+			productType = "com.apple.product-type.application";
+		};
 		B7E8A9FE213E2D2EEACC5AC3 /* DroidBridge */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C2988F0B8C63BD738EED8A76 /* Build configuration list for PBXNativeTarget "DroidBridge" */;
@@ -321,6 +436,12 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					262E96E3344D384A9483DE00 = {
+						ProvisioningStyle = Manual;
+					};
+					976666E0B8D259321BDB68E5 = {
+						ProvisioningStyle = Manual;
+					};
 					B7E8A9FE213E2D2EEACC5AC3 = {
 						ProvisioningStyle = Manual;
 					};
@@ -348,6 +469,8 @@
 			projectRoot = "";
 			targets = (
 				B7E8A9FE213E2D2EEACC5AC3 /* DroidBridge */,
+				262E96E3344D384A9483DE00 /* P16BLEHID */,
+				976666E0B8D259321BDB68E5 /* P17ClassicHIDP */,
 				E0E53EA90F1C7317AB90C5C2 /* DroidBridgeTests */,
 			);
 		};
@@ -367,6 +490,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		0866051A0CFC9CA7E4F32AB9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0B0A5088E05375403841001C /* P16BLEHIDApp.swift in Sources */,
+				636545E7E113923C4C27146F /* P16BLEHIDView.swift in Sources */,
+				55216DE811A2B0543CCC6085 /* P16HIDPeripheral.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5F13DF4AA37973F1563BC22A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -380,6 +513,17 @@
 				F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */,
 				8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */,
 				3BBB5C21329A089795FF0AE1 /* VideoPayloadTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEDDF7A7840F17E92BC4CE6D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6126F9B4EC2EADDB07265B92 /* ClassicHIDPeripheral.swift in Sources */,
+				34D44F2F332762A3B9712C4E /* P17ClassicHIDPApp.swift in Sources */,
+				64BC4FE86F1867F9CC9A3AE8 /* P17ClassicHIDPView.swift in Sources */,
+				0B864CF6F59BB8E561DEAC92 /* P17HIDDescriptor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -426,6 +570,46 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		3B510A4398C6A22CD0A1AFE1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Experiments/P16BLEHID/P16BLEHID.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Experiments/P16BLEHID/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.experiment.p16blehid;
+				PRODUCT_NAME = "P16 BLE HID Test";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		4A159CFC66DB36F62FEED6C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Experiments/P17ClassicHIDP/P17ClassicHIDP.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Experiments/P17ClassicHIDP/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.experiment.p17classichidp;
+				PRODUCT_NAME = "P17 Classic HIDP Test";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
 		56F9CFAA3D61C8E41CAA6486 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -464,6 +648,26 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DroidBridge.app/Contents/MacOS/DroidBridge";
 			};
 			name = Release;
+		};
+		7C5BDB73F0C286023C425B2D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Experiments/P16BLEHID/P16BLEHID.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Experiments/P16BLEHID/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.experiment.p16blehid;
+				PRODUCT_NAME = "P16 BLE HID Test";
+				SDKROOT = macosx;
+			};
+			name = Debug;
 		};
 		989A71B7A293C5D933CB9314 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -638,6 +842,26 @@
 			};
 			name = Debug;
 		};
+		FFE57821C095E7370102C8E1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Experiments/P17ClassicHIDP/P17ClassicHIDP.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Experiments/P17ClassicHIDP/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = com.droidbridge.experiment.p17classichidp;
+				PRODUCT_NAME = "P17 Classic HIDP Test";
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -659,11 +883,29 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		CB9BB550FBFED9424D5AC078 /* Build configuration list for PBXNativeTarget "P17ClassicHIDP" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4A159CFC66DB36F62FEED6C3 /* Debug */,
+				FFE57821C095E7370102C8E1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		D959B505FDBF42F9514B91FA /* Build configuration list for PBXNativeTarget "DroidBridgeTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				AD8C1B4DBD7CD3DFCFA3B87C /* Debug */,
 				7AC410915A6C269F3D410E29 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F7D8214BFAF844E6FFC4BED5 /* Build configuration list for PBXNativeTarget "P16BLEHID" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7C5BDB73F0C286023C425B2D /* Debug */,
+				3B510A4398C6A22CD0A1AFE1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

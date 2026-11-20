@@ -14,8 +14,10 @@ Secondary:
 ## 2. Development vs release test modes
 
 Development:
-- USB/ADB may be used for install, logs, profiling and test automation.
-- Record when debugging is enabled.
+- USB/ADB may install/launch/stop test apps, open Android Settings, automate setup steps (including connecting an already-paired test HID device), run test suites, and collect sanitized diagnostics.
+- For any functional input test, ADB is setup-only: never use `input`, `sendevent`, instrumentation or another ADB path to synthesize the key/pointer/touch/text event under test. In P16/P17, the HID transport must be the sole source of tested input.
+- Do not use ADB to capture screen/UI hierarchy or read/write clipboard content. The owner must visually verify a new pairing code before confirming any first pairing.
+- Record the ADB transport and whether debugging is enabled.
 
 Release acceptance:
 - USB disconnected.

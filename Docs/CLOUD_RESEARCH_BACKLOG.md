@@ -39,7 +39,7 @@ Re-check volatile facts close to implementation/release; record source URL, date
 
 Cloud can prepare instructions and review evidence, but the local agent owns execution.
 
-- [ ] For each P00–P15 report, verify required environment header, exact steps, raw result, negative findings, USB/debugging state and acceptance conclusion.
+- [ ] For each P00–P17 report, verify required environment header, exact steps, raw result, negative findings, USB/debugging state and acceptance conclusion.
 - [ ] Identify any missing test cases or ambiguous claims and request a local rerun only when evidence is insufficient.
 - [ ] Update research/ADR status only from credible documentation or actual local evidence.
 - [ ] Keep all device-specific prototype statuses pending until local reports prove completion.

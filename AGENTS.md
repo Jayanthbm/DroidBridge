@@ -25,7 +25,7 @@ Read the relevant platform specification before changing Android or macOS code.
 Never:
 - Require USB debugging or wireless debugging at runtime.
 - Add root requirements.
-- Add an Accessibility Service.
+- Add an Accessibility Service. The remote-control path under evaluation is Bluetooth HID; Android/macOS Accessibility APIs, accessibility nodes, event filters and upstream direct-input forwarding are out of scope.
 - Attempt to bypass `FLAG_SECURE`, DRM, banking-app protections or protected surfaces.
 - Use hidden APIs, reflection-based privilege escalation, exploit techniques or undocumented Samsung system interfaces.
 - Add SMS, notification-listener, contacts, call-log or broad storage permissions without a separately approved requirement.
@@ -34,7 +34,7 @@ Never:
 - persist clipboard contents by default.
 - claim arbitrary remote touch control works until a test proves it on the target device under all constraints.
 
-ADB over USB may be used by the developer for install, logcat, profiling and test automation. It must not be embedded as a runtime dependency or required by the user after release. Every test report must state whether USB was connected and whether debugging was enabled.
+ADB is permitted during development as a test-orchestration tool, and must never be embedded as a runtime dependency or required by users after release. It may install/uninstall or launch/stop test apps; open Android system settings; and automate setup actions such as navigating Bluetooth settings and connecting an already-paired test HID device. For pairing, the owner must verify the displayed code matches the intended peer before ADB confirms it; never auto-accept an unverified code. It may use a narrowly scoped UI hierarchy query only on Android system Bluetooth Settings or the P16 receiver to locate setup controls or inspect fixed test counters. Do not collect, retain or report unrelated visible text, notification content, personal device names, or app content. Never take screen captures or video (`screencap`, `screenrecord`) or inspect UI hierarchy for other apps. It may collect sanitized `logcat`/`dumpsys` diagnostics and run tests. This exception is for test setup only: ADB must never generate or forward the functional key, pointer, text or touch input under test (including via `input`, `sendevent`, instrumentation or another channel), nor read/write clipboard contents. The Mac POC's explicitly clicked Bluetooth HID reports remain the sole source of functional input in P16. Record ADB transport and USB/debugging state, and keep setup automation separate from functional-input observations. Final acceptance runs require USB disconnected and USB/wireless debugging disabled, with device-side setup and observation performed without ADB. Every test report must state USB and debugging state.
 
 ## Research-first rules
 
@@ -88,16 +88,18 @@ Follow `Docs/PHASES_AND_ACCEPTANCE.md` in order. After a phase passes its accept
 
 Stop only for a genuine blocker: a hard constraint cannot be met; a feasibility gate fails; a new/expanded permission or sensitive capability, cost, entitlement, security/privacy trade-off needs owner approval; an irreversible/destructive operation is proposed; or a product/architecture decision cannot be resolved from documented requirements and evidence. Do not pause for routine phase approval and never silently relax a hard constraint.
 
-Research documentation completion does not mean prototypes passed. Phase 0 is the next build phase; P00–P15 device/platform prototypes remain pending for their scheduled phase.
+Research documentation completion does not mean prototypes passed. Phase 0 is the next build phase; P00–P17 device/platform prototypes remain pending for their scheduled phase.
 
 ## USB debugging development policy
 
 During development, the owner may authorize:
 - `adb install` / `adb uninstall`
-- `adb logcat`
-- `adb shell dumpsys` for diagnostics
-- Android Studio profiler
+- launching/stopping test apps and opening Android system settings
+- setup-only UI automation for system configuration and pairing/connecting a test Bluetooth peripheral; inspect UI hierarchy only on Android Bluetooth Settings/P16 receiver and limit output to needed controls or fixed test counters. Do not capture screenshots or inspect unrelated app content; do not auto-accept an unverified pairing code
+- `adb logcat`, sanitized `adb shell dumpsys`, Android test runners, and Android Studio profiler
 - XCTest / Xcode diagnostics
+
+This allowance never permits ADB-generated functional input in the app/device under test, or ADB screen/clipboard capture/read/write. HID input must travel over the Bluetooth HID route being evaluated.
 
 Before each test session, record:
 - USB connected: yes/no

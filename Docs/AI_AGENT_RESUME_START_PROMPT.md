@@ -67,7 +67,7 @@ Do not mark it complete, do not commit misleading completion status, and do not 
 - Respect `FLAG_SECURE`, DRM, banking/payment apps and protected surfaces.
 - Clipboard content must stay on the local network and must not be persisted by default.
 - Do not add SMS, notification, contacts, call-log, broad storage, microphone or phone permissions without independent justification and owner approval.
-- USB/ADB is permitted only as a development aid. Final acceptance must work with USB disconnected and USB debugging and wireless debugging disabled.
+- ADB may automate development-test setup (install/launch test apps, open Android Settings, connect an already-paired test HID peripheral) and collect sanitized diagnostics. It must never generate the functional input under test, accept an unverified pairing code, capture screen/UI hierarchy, or read/write clipboard data; it is never a runtime dependency. Final acceptance must work with USB disconnected and USB debugging and wireless debugging disabled.
 
 ## Session-end format
 

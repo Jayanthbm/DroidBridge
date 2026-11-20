@@ -113,14 +113,16 @@ Use origin IDs and content hashes to prevent echo loops. Avoid storing raw clipb
 
 Mac pointer/keyboard events → experimental transport → selected supported input adapter.
 
-**Status 2026-11-08: NO-GO for the MVP (ADR-015, ADR-016, ADR-017).**
+**Status 2026-11-17: Bluetooth HID feasibility reopened as a conditional POC (R-32, ADR-036); no control feature is implemented or claimed.**
 
-- macOS cannot publish a HID-over-GATT peripheral service through CoreBluetooth, and classic HID transports are owned by the system (R-12).
-- Android's `BluetoothHidDevice` makes Android the peripheral, which is the wrong direction (R-13).
-- Knox `RemoteInjection` needs a `signature` permission plus device-owner/profile-owner or an MDM-issued authorized scope (R-14).
-- No generic input-injection API is available to an ordinary app.
+- The upstream `jqssun/darwin-bt-remote` project contains distinct macOS BLE HID-over-GATT and Bluetooth Classic HIDP implementations. This contradicts the earlier blanket NO-GO inference that Mac-as-HID could not be done, but does not prove compatibility with DroidBridge's S24 Ultra / Android 17 / One UI target.
+- P16 evaluates BLE HID; P17 evaluates Classic HIDP. These are isolated prototypes, not production adapters. Do not copy/vendor the AGPL-3.0-only implementation without a separate license decision.
+- The upstream optional Direct Input path uses macOS Accessibility to capture local input and is explicitly excluded. DroidBridge POCs may transmit only events directly initiated inside DroidBridge's own UI.
+- HID keyboard/pointer events are not automatically equivalent to touch gestures, do not set the phone clipboard, and must not be advertised as full remote control unless actual target tests prove the stated scope.
+- Accessibility Service/API/nodes, ADB-generated functional input, `INJECT_EVENTS`, root, Knox injection, hidden APIs and screen-protection bypass remain prohibited. ADB may automate test setup (e.g. open Bluetooth Settings/connect an already-paired test peripheral) during development only; it is never the HID test-input source or runtime dependency. Do not use it to capture screen/UI hierarchy or read/write clipboard data.
+- Mirroring and clipboard are separate features and POCs. Screen capture remains MediaProjection with user consent and `FLAG_SECURE`/DRM protections intact; clipboard remains the documented foreground/manual implementation.
 
-Therefore mirroring is released **view-only**, and the Mac UI must not offer a control affordance. The input pipeline stays a documented, closed gate; reopening it requires new official platform capability, not a workaround.
+Until P16/P17 pass on the target phone, production mirroring remains view-only and the Mac UI must not imply control. Bluetooth remains opt-in and visibly connected.
 
 ## 9. Calls/audio
 

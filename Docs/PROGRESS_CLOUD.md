@@ -1,7 +1,7 @@
 # Cloud Research and Review Progress
 
-**Status:** Initial platform research/documentation pass complete. Cloud agent is available for scoped documentation maintenance and later review of pushed local implementation/evidence.
-**Last updated:** 2026-11-08
+**Status:** Initial platform research/documentation pass complete; scoped P16/P17 HID research and guardrails added after the owner identified `darwin-bt-remote`. Cloud agent is available for scoped documentation maintenance and later review of pushed local implementation/evidence.
+**Last updated:** 2026-11-17
 **Active branch:** `development`
 **Stable-release branch:** `master`
 **Current owner:** Cloud Research Agent (documentation/research/review only)
@@ -44,7 +44,7 @@ The following cannot be closed by cloud research alone:
 - P03/P13: pairing, TLS and pinned-identity implementation/prototype evidence.
 - P04–P06: real clipboard foreground and macOS pasteboard permission behaviour.
 - P07/P08: decoder, transport, latency, recovery and sustained streaming measurements.
-- P09/P10: remote-input NO-GO confirmation and protected-screen behaviour.
+- P09/P10/P16/P17: P09 is historical scoped input evidence; P16/P17 BLE/Classic HID feasibility and P10 protected-screen behavior require local device evidence.
 - P11: macOS local-network privacy and Bonjour behaviour under the actual signed build.
 - P14: background session, Doze, reboot and reconnect evidence.
 - P15: sandbox, signing, notarisation and keychain identity behaviour.
