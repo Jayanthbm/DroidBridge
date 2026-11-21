@@ -286,6 +286,26 @@ Until the sink decodes continuously, the FLAG_SECURE row has no decisive number 
 in progress. The measurement must come from luma, not byte counts: a blacked-out protected surface
 and an unchanging harmless screen are indistinguishable by size.
 
+### Four defects behind the silent sink (2026-11-21, resolved except the last)
+
+Each one hid the next, and every one presented as "no evidence" rather than an error:
+
+1. **os_log throttling.** Per-frame `log.info` lines are dropped at stream rates, so a working sink
+   looked dead. Luma now reports every 15th frame (~2/s).
+2. **The renderer gate.** Evidence was recorded after the display-layer readiness check, so when the
+   layer stopped draining the measurement silently ended. Evidence now runs first.
+3. **The validator stall — a real product bug.** `streamValidator` returning `.waitForRecoveryIDR`
+   dropped every frame *and nothing asked for the keyframe it was waiting for*, so one PTS anomaly
+   stalled the session for good. `requestKeyframeIfNeeded(reason: "validator-recovery")` now recovers
+   it. This would have affected a user-visible mirror, not just measurement.
+4. **Still open: the main-actor dispatch stops after ~15–20 media messages.** The listener keeps
+   accepting frames (699 → 733 observed) while the receiver's handler stops being invoked, so submits
+   end around n=15. Media handling is delivered as one `Task { @MainActor }` per frame; the likely fix
+   is to handle media on a dedicated serial queue rather than the main actor. Until then the sink
+   samples only the first moments of a session.
+
+Practical consequence: the FLAG_SECURE row still has no decisive number, and P10 remains in progress.
+
 ## Current assessment
 
 **In progress.** Protected surfaces are withheld as required in every case that has actually been
