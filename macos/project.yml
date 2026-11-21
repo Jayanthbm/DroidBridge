@@ -114,6 +114,21 @@ targets:
     dependencies:
       - sdk: IOBluetooth.framework
 
+  P11LocalNetwork:
+    type: application
+    platform: macOS
+    sources:
+      - path: Experiments/P11LocalNetwork
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.droidbridge.experiment.p11localnetwork
+        PRODUCT_NAME: P11 Local Network Test
+        INFOPLIST_FILE: Experiments/P11LocalNetwork/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Experiments/P11LocalNetwork/P11LocalNetwork.entitlements
+        ARCHS: arm64
+        ONLY_ACTIVE_ARCH: YES
+
   DroidBridgeTests:
     type: bundle.unit-test
     platform: macOS

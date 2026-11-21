@@ -4,6 +4,11 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Changed — P11 measured: macOS does not prompt for Local Network here (2026-11-21)
+- P11 closed on macOS 27.2.1 with a result that contradicts its premise: a sandboxed app browsing Bonjour and dialling a LAN address gets access with **no alert and no Settings entry**, so the denied-state rows are unreachable rather than failed. Reproduced under a Finder double-click and a `launchd` agent, from `/tmp` and `~/Applications`.
+- **Correction:** the earlier "allowed-state" result measured **Terminal**, not the app — macOS attributes local-network access to the responsible process and auto-allows Terminal's children. Scripted launches are now explicitly invalid for this measurement.
+- Added an isolated harness (`macos/Experiments/P11LocalNetwork/`) to re-measure this on future macOS versions; declarations, entitlements and the `.waiting` recovery path are kept (ADR-044, R-38).
+
 ### Verified — P17 accepted with USB unplugged and debugging off (2026-11-21)
 - Acceptance run on the S24 Ultra with **USB disconnected, USB debugging off, wireless debugging off** (`adb devices` returned zero entries): one Classic HIDP session carried 48 reports and the receiver went `14/14/14/14 → 26/26/26/26` — every press delivered, no drops. Input came only from the Mac's explicitly triggered HID reports.
 - P17 closes as **GO** for the Classic HIDP route on Android 12 and Android 17. Not a production-input approval: one key per user action, with open mapping, text entry and the wider input matrix still unproven.

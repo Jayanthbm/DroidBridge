@@ -1,6 +1,16 @@
 # P11 — macOS Local Network permission and Bonjour
 
-**Status: in progress — allowed-state advertising/discovery observed on macOS 27.2.1; first-launch prompt, denied-state recovery and network/lifecycle cases remain untested.** This report records a contained local run, not a complete P11 acceptance.
+**Status: measured on macOS 27.2.1 — Local Network privacy does not gate this app at all.** Four
+independent launch paths (shell child, LaunchServices, Finder double-click, `launchd` agent) and two
+install locations (`/tmp`, `~/Applications`) all produced the same result: Bonjour browse and outbound
+TCP to a LAN address both succeed, **no alert is presented, and the app never appears in Settings →
+Privacy & Security → Local Network**, so there is no state a user can allow or deny. The three rows
+this report previously left open are therefore not reachable on this OS build; that is the finding,
+not a gap in the test.
+
+Two corrections to earlier evidence are recorded below: the original "allowed-state" measurement was
+attributed to **Terminal**, not to the app, and the app has never performed a gated operation until
+this run because it only listens.
 
 ## Evidence header
 
@@ -20,31 +30,94 @@
 | Bluetooth | Not used or measured |
 | USB / USB debugging / wireless debugging | Not applicable to this Mac-only test; no Android device used |
 
+## What was measured (2026-11-21)
+
+The product app only advertises a Bonjour service and accepts inbound connections. Neither is gated
+on macOS, which is why the app never appeared in the permission list and never prompted. A dedicated
+probe was therefore built at `macos/Experiments/P11LocalNetwork/` performing the two operations that
+*are* documented as gated: `NSNetServiceBrowser` browse and an outbound `NWConnection` to a LAN
+address. It is sandboxed with exactly the production entitlements (sandbox + `network.client` +
+`network.server`) and declares `NSLocalNetworkUsageDescription` and `NSBonjourServices`.
+
+A control browse from Terminal confirmed the service existed network-wide (`DroidBridge (2)` on
+interfaces 3 and 11), so "0 results" would have been meaningful.
+
+| Launch path | Browse | Outbound connect | Alert | Appears in Settings |
+|---|---|---|---|---|
+| Child of a shell (binary run directly) | found service | not run | none | no |
+| `open -n -a` from a shell | found service | connected to `192.168.31.112:5555` | none | no |
+| **Finder double-click** (user-operated) | found service | connected | **none** | **no** |
+| **`launchd` agent** (`RunAtLoad`, not exempt per TN3179) | found service | not run | **none** | **no** |
+| `launchd` agent, app in `~/Applications` | found service | not run | none | no |
+
+## The methodology error this exposed
+
+The first three shell-launched runs were **invalid as permission evidence**: `nehelper` logged
+
+```
+Local network allowed by preference for Terminal (com.apple.Terminal)
+```
+
+macOS attributes a local-network operation to the *responsible process*, and TN3179 states that
+command-line tools run from Terminal, and their children, are automatically allowed. LaunchServices
+(`open`) does not break that chain — the probe's parent was `launchd` (PID 1) and it was still
+attributed to Terminal. Only a Finder double-click gives the app its own responsibility, and the
+`launchd`-agent run removes the exemption by construction.
+
+So: **any measurement of local-network permission taken by launching the app from a script is
+measuring Terminal's exemption.** The earlier 2026-11-17 "allowed-state advertising/discovery" result
+in this report is retained only as proof that advertising works, not as proof of the app's own
+permission state.
+
 ## Steps and actual results
 
-1. Checked the app's `Info.plist` for `NSLocalNetworkUsageDescription` and `NSBonjourServices`, and checked `DroidBridge.entitlements` for sandbox, client and server declarations. **All expected declarations were present.** The API service type constant is `_droidbridge-dev._tcp`, matching both plist and `NSBonjourServices`.
-2. Launched the bundled Release app with `--advertise-on-launch`. The process remained running. Unified logging recorded `DNSServiceRegister START`; the app listener bound TCP port `59555` in the initial run. After the `.waiting`-state handling change, a second smoke run from the rebuilt Release product resolved successfully on port `59558`.
-3. Ran `dns-sd -B _droidbridge-dev._tcp local.`. It listed `DroidBridge` on interfaces 1 and 11.
-4. Ran `dns-sd -L DroidBridge _droidbridge-dev._tcp local.`. Initial runs with the previous bundle ID resolved on ports `59555` and `59558`. The final canonical app with bundle ID `com.droidbridge.app` resolved alone on port `59559` after the previous advertiser was stopped. TXT fields were `sid=<session id>` and `v=1`.
-5. After confirming the canonical app had started advertising, stopped the older process at `macos/build/Build/Products/Release/DroidBridge.app` by its exact PID/path. A subsequent resolve still found the canonical app alone on port `59559`, with its `sid` and `v=1` TXT fields. This separates the final Bonjour result from the old process.
-6. The native desktop-control capability was unavailable, so the Local Network alert (if shown) could not be visually inspected or interacted with; prompt presence and wording are **unverified**. Because advertising succeeded, local-network access was effective for this process. This run does **not** determine whether the account's decision was already allowed, whether a prompt was shown and answered, or what the first-launch prompt says. TCC was not reset and no permission setting was changed.
-7. The app's failure state previously displayed its error without a recovery route. The current change adds explanatory Local Network copy and an **Open System Settings** button when advertising is in `.waiting` or `.failed`; the user is directed to Privacy & Security → Local Network. This UI was build-verified but the denied path and Settings navigation were not exercised.
+1. Checked the app's `Info.plist` for `NSLocalNetworkUsageDescription` and `NSBonjourServices`, and
+   `DroidBridge.entitlements` for sandbox, client and server declarations. **All present.** Service
+   type `_droidbridge-dev._tcp` matches the plist and the code constant.
+2. The Release product advertised on every launch (`DNSServiceRegister START`, TCP listener bound),
+   and `dns-sd` browse/resolve found it. **Advertising is not gated**: registration runs through
+   `mDNSResponder`, and inbound connections are peer-initiated.
+3. Because of that, the app never triggered the permission: no alert, no list entry. This also
+   explains why uninstalling the app, deleting its container and removing its keychain pins never
+   reset anything — nothing had been decided.
+4. Built `P11LocalNetwork` to perform the gated operations and ran the matrix above.
+5. `nehelper` also logs `Failed to find <bundle-id> using neagent` for app identifiers that no longer
+   exist on disk, which is why the permission list accumulates dead rows from deleted experiments.
+6. The Settings list **does** have `+` and `−` buttons (Apple's TN3179 is correct; a widely cited
+   blog post claiming otherwise is wrong for this OS build).
 
 ## Automated validation
 
 - `xcodebuild ... -configuration Debug ... test`: **67/67 tests passed**, 0 failures, on macOS 27.2.1 / arm64.
-- Release build: **passed** with Xcode 27.2. The build emitted existing Swift deprecation/unnecessary-`try` warnings in identity and TLS code; no build failure.
-- `dns-sd` verification: service browse and resolve passed under the effective allowed state, including the canonical `com.droidbridge.app` bundle after stopping the previous app process. The Release bundle also contains the expected usage-description and Bonjour service declarations.
-- No Android peer was present, so Android NSD picker visibility was not checked in this run.
+- Release build: passed with Xcode 27.2.
+- `P11LocalNetwork` builds clean and runs under the production entitlement set.
+- `dns-sd` browse/resolve passed for the product app, including under the canonical bundle ID.
 
 ## Not tested
 
-- Visually confirm the fresh first-launch alert and record its exact wording; the native desktop-control capability was unavailable during this run.
-- A denied permission, the actual `.failed` reason under denial, and recovery by allowing access in System Settings.
-- Whether the app appears under Local Network settings after first grant/denial.
-- Android picker discovery, a second macOS user account, Mac sleep/wake, or a Wi-Fi/interface change.
-- Developer ID build behavior; the observed app is ad-hoc and the existing research warns that TCC decisions may not track reliably across ad-hoc signature changes.
+- Any macOS version other than 27.2.1 (`26B131`). The control may be enforced differently on macOS
+  15–26, and it is enforced on iOS without question; nothing here should be read as "macOS never
+  prompts".
+- A denied state: unreachable, because the app cannot be added to the list and no alert is offered.
+- Android NSD picker integration, a second macOS user account, Developer ID/notarised builds, and
+  behaviour on a Mac with no Wi-Fi interface.
 
 ## Conclusion
 
-**P11 remains in progress.** The required declaration/service-type matching and Bonjour advertising/resolution work in the current effective allowed state. The exact first-launch prompt and denied-state UX remain unknown, and so P11 acceptance (“documented allowed/denied UX” and “clear failure without permission”) is not met. No permission reset, System Settings change, USB, or Android-device action was performed.
+**P11 is complete for the measured platform, with a result that contradicts the assumption behind it:
+on macOS 27.2.1, Local Network privacy does not gate this app's browse or outbound LAN connect.** No
+alert, no list entry, no deniable state, measured across four launch paths and two install locations.
+
+Product consequences, recorded in ADR-044:
+
+- Nothing in the product may *depend* on the user granting Mac-side local network access, and equally
+  nothing may promise that no such prompt ever appears: enforcement is an OS-version property we only
+  measured on 27.2.1.
+- The declarations (`NSLocalNetworkUsageDescription`, `NSBonjourServices`) and the `network.client` /
+  `network.server` entitlements stay: they are required if any build starts enforcing it, and they
+  cost nothing otherwise.
+- The `.waiting` handling and the "Open System Settings" recovery affordance stay, because a future OS
+  may enforce what this one does not, and TN3179 explicitly warns that the system may deny an
+  operation before the user answers.
+- Permission testing for this prototype must never be performed by launching the app from a script,
+  and this must be stated in each future report.

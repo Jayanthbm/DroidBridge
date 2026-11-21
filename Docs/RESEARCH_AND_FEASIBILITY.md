@@ -33,6 +33,7 @@
 |---|---|---|
 | Android screen capture (MediaProjection) | **GO** | Documented consent flow; capture-only, no input injection |
 | Android 17 local network access | **CONDITIONAL** | `ACCESS_LOCAL_NETWORK` required for targetSdk ≥ 37; NSD picker is the least-privilege route but has a hard limit on advertising (§2 R-02) |
+| macOS Local Network consent for the Wi-Fi path | **NO GATE MEASURED on macOS 27.2.1** | A sandboxed app with the production entitlement set browsed Bonjour and dialled a LAN address with no alert and no Settings entry, across four launch paths and two install locations; enforcement is an OS-version property, so nothing may depend on it either way (R-38, ADR-044) |
 | Full-duplex LAN session on Android 17 | **CONDITIONAL** | Only viable zero-broad-permission shape is "Mac advertises, Android selects via picker and connects out" — must be prototyped |
 | Clipboard session while mirroring is off (background) | **CONDITIONAL** | Needs a `connectedDevice` foreground service with a visible notification; Doze can still suspend the network, so reconnect-on-resume, not an always-on promise (R-20) |
 | Mac → Android text clipboard | **GO** with limits | `setPrimaryClip` is unrestricted; Android 15+ system clipboard UI is user-visible and cannot be suppressed |
@@ -312,6 +313,38 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Interpretation superseded by R-35 (2026-11-20):** the Boot-only retest became moot for Android, because the host never performs GATT discovery on this Mac. R-35 records the BLE NO-GO and the working Classic path.
 
 ---
+
+### R-38 — macOS Local Network privacy is not enforced for this app on 27.2.1, and scripted launches measure Terminal instead
+
+**Date:** 2026-11-21. **Platform:** macOS 27.2.1 (`26B131`), arm64. **Sources:** Apple TN3179
+"Understanding local network privacy" (fetched 2026-11-21), plus measured behaviour.
+
+- **What Apple documents:** the privilege has three states (undetermined / allowed / denied); the first
+  local-network operation presents an alert; macOS adds the app to Settings → Privacy & Security →
+  Local Network after it attempts access; the Settings list on macOS has `+` and `−` buttons and the
+  documented reset is removing the app there (there is no `tccutil` service for it); a local-network
+  operation may be denied *before* the user answers; and macOS fails to show the alert for processes
+  that are too short-lived (FB16131937).
+- **What was measured:** a sandboxed app declaring `NSLocalNetworkUsageDescription` and
+  `NSBonjourServices`, with `network.client` + `network.server`, successfully browsed
+  `_droidbridge-dev._tcp` (finding a live peer confirmed independently from Terminal) and opened an
+  outbound TCP connection to a LAN address. **No alert appeared and the app never entered the Settings
+  list**, so there was nothing to allow or deny. Reproduced under a Finder double-click by the user, a
+  `launchd` agent (which TN3179 says is *not* exempt), and from `/tmp` and `~/Applications`.
+- **What is not gated:** Bonjour *registration* (it runs in `mDNSResponder`) and *inbound* connections
+  (peer-initiated). The product app only does those two things, which is why it never triggered the
+  control in earlier work — and why deleting the app, its container and its keychain pins never reset
+  anything.
+- **Methodology trap, measured:** `nehelper` logged `Local network allowed by preference for Terminal
+  (com.apple.Terminal)`. macOS attributes the operation to the *responsible process*, and command-line
+  tools run from Terminal and their children are auto-allowed. `open -n -a` from a shell does **not**
+  break the chain (the probe's parent was `launchd`, yet attribution was still Terminal). Any
+  permission measurement taken from a script is therefore invalid; use a Finder launch or a `launchd`
+  agent and state the launch path.
+- **Confidence:** high for this OS build and configuration; **explicitly not** generalisable to macOS
+  15–26, to Developer ID/notarised builds, to other users, or to iOS, where enforcement is real.
+- **Next step:** re-run the harness (`macos/Experiments/P11LocalNetwork/`) on any new macOS major before
+  release, and never let product copy promise that no prompt exists.
 
 ### R-33 — P16 CoreBluetooth UUID-format failure and canonical-form retest
 

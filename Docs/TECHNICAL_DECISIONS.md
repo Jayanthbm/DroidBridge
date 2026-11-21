@@ -13,6 +13,41 @@ Use newest entries at the top. Every change must include date, status, context, 
 **Alternatives:** Require `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` (rejected: ADR-023 already rules it out as unjustifiable for a consumer app); hold a wake lock (rejected: same, and it does not stop the freezer); use `dataSync` instead of `connectedDevice` (rejected: capped at 6 h/24 h and restricted from boot); ship background sync as foreground-only and say so (chosen).
 **Consequences:** Background sync may ship for devices that behave like the S24, but the design must assume some devices will freeze the process: the notification must show heartbeat age, a watchdog must recover a stalled worker, and product copy must not promise liveness it cannot guarantee. Deep Doze (unplugged) and overnight rows are still unmeasured on both devices, and P14's remaining rows stay open. Measurement procedure must record the process cgroup state alongside heartbeat counts, or an OEM freeze is easily misread as a protocol failure. Any API 37 build that talks to a LAN address must declare `ACCESS_LOCAL_NETWORK`; without it every connection fails as `SocketTimeoutException`, which looks like a dead listener.
 
+## ADR-044 — Do not depend on macOS Local Network consent, and never measure it from a script
+
+**Date:** 2026-11-21
+**Status:** Accepted, measured on macOS 27.2.1 (`26B131`).
+
+**Context:** P11 assumed a macOS "Local Network" prompt would gate the product app's Wi-Fi path.
+Measurement contradicted that on the target OS: a sandboxed app with the production entitlement set
+(§P11 report) browsed Bonjour services and dialled a LAN address successfully, **with no alert and
+without ever appearing in Settings → Privacy & Security → Local Network**, across four launch paths
+(shell child, LaunchServices, Finder double-click, `launchd` agent) and two install locations. The
+product app never triggered the control at all in earlier work because it only advertises and accepts
+inbound connections.
+
+A methodology trap was also found: macOS attributes a local-network operation to the *responsible
+process*, and TN3179 auto-allows command-line tools run from Terminal and their children. Every
+permission measurement taken by launching the app from a script therefore measured **Terminal's
+exemption**, including the original P11 evidence.
+
+**Decision:**
+1. No product behaviour, copy or acceptance criterion may depend on the user granting Mac-side local
+   network consent, and no claim may state that no such prompt exists. Enforcement is an OS-version
+   property measured only on 27.2.1.
+2. Keep the declarations and entitlements (`NSLocalNetworkUsageDescription`, `NSBonjourServices`,
+   `network.client`, `network.server`): required if any build enforces the control, inert otherwise.
+3. Keep `.waiting` handling and the "Open System Settings" recovery affordance in the app, because
+   TN3179 warns the system may deny an operation before the user answers, and a future OS may enforce
+   what this one does not.
+4. Any future permission measurement must launch the app through Finder or a `launchd` agent, never
+   from a shell or via `open` from a shell, and must state the launch path in the report.
+
+**Consequences:** P11's denied-state UX is unreachable on this OS build and is recorded as such rather
+than as a pass or a gap. iOS keeps enforcement, so nothing here transfers to an iOS client. If a later
+macOS build starts enforcing, the report must be re-run — the harness (`macos/Experiments/P11LocalNetwork/`)
+exists for exactly that, and the failure path it would exercise is already implemented.
+
 ## ADR-042 — Treat macOS Bluetooth consent, the single pairing-agent slot and one HID session per connection as environment constraints
 
 **Date:** 2026-11-20
