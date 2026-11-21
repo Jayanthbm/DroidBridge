@@ -49,7 +49,42 @@ The baseline Release implementation produced different pins across separate `--i
 
 A new key is created only if the tagged key is absent. If the key exists but no unique matching certificate is found, or another Keychain operation fails, initialization fails closed instead of silently changing the Mac identity. The isolated tests use disposable Keychains and verify repeated loads retain the pin and an orphan key does not trigger replacement. The Release harness was then run twice as separate processes against the real login Keychain; both exited successfully and produced identical pins. This demonstrates persistence across process launches on this Mac.
 
-An earlier failed experiment's generated Keychain key item remains untouched. This implementation uses a new v2 application tag and does not inspect, adopt, delete, or overwrite that prior item. No Keychain items were deleted or overwritten. Android reconnect using its existing stored peer pin has not yet been tested, and Keychain ACL behavior across a future code-signing identity change is not established.
+An earlier failed experiment's generated Keychain key item remains untouched. This implementation uses a new v2 application tag and does not inspect, adopt, delete, or overwrite that prior item. No Keychain items were deleted or overwritten. Android reconnect using its existing stored peer pin is now tested (a full app restart and a rebuild both reconnected on the stored pin without re-pairing), and Keychain ACL behavior across a code-signing change is established in the 2026-11-21 section below.
+
+## Keychain ACL behavior across a code-signing change — measured 2026-11-21
+
+The open question above ("ACL behavior across a future code-signing identity change") is now answered
+from a real failure, not a hypothesis.
+
+**Ad-hoc rebuilds break the ACL, and they break it silently.** After a Debug rebuild, the app started,
+produced no window and no log output, and never opened its listener. `securityd` recorded the cause:
+
+```
+displaying keychain prompt for .../DroidBridge.app; ACL: <AclValidationContext(action:37) ...
+  CodeSignatureAclSubject[legacyHash:...][requirement:cdhash H"73999c5d..."],
+  CodeSignatureAclSubject[requirement:cdhash H"9163058f..."], ... >
+```
+
+The stored items were created by earlier builds, each ad-hoc build has a new cdhash, and the ACL lists
+the old ones. The prompt is modal, so the app blocks before `main` completes its startup work. Without
+reading `securityd`, this is indistinguishable from a protocol failure, a hung binary, or a dead
+listener — three wrong diagnoses were made before the log was read.
+
+**Signing with the stable Apple Development identity fixes it.** Re-signing the bundle (Team
+`BJ57AFQQD6`, identity `5550CBD27FA5D5B278996B66A656193C893E11DD`) after clearing the stale
+`com.droidbridge.identity` and `com.droidbridge.p08.peer-pins` items gave a stable designated
+requirement, so rebuilds no longer invalidate the ACL and no prompt appears. The identity pin survived
+(`2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb`), so the Android peer's stored pin
+stayed valid and no re-pairing was needed.
+
+Consequences recorded as decisions rather than folklore:
+
+- Every build used for a device test must be signed with the stable identity, or each rebuild silently
+  needs a human click on a Keychain dialog.
+- A silent startup with no window and no output is a Keychain-ACL symptom; read
+  `log show --predicate 'process == "securityd"'` before suspecting the protocol.
+- The self-signed identity for a Developer ID build will change the ACL again; that re-validation is
+  part of the deferred Phase 9 distribution work, not something this prototype settles.
 
 ## Scope decision and remaining distribution limitation
 
