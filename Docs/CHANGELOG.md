@@ -4,6 +4,11 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Verified — P14 rows A–F green on the S24 Ultra (2026-11-21)
+- Background session survives backgrounding (5 min), screen-off (`Dozing`, 5 min), a Wi-Fi off/on cycle, and a real reboot (`BOOT_COMPLETED` → connected 0.3 s after the broadcast), with live counters in the ongoing notification.
+- The Mac receiver now holds AppKit automatic termination for `--p08-mirror`, `--advertise-on-launch` and `--listen`; it had been silently terminated between phases, which mimics a protocol failure.
+- Deep Doze and overnight remain unmeasured: they need the handset unplugged, since `force-idle` refuses while charging.
+
 ### Changed — P11 measured: macOS does not prompt for Local Network here (2026-11-21)
 - P11 closed on macOS 27.2.1 with a result that contradicts its premise: a sandboxed app browsing Bonjour and dialling a LAN address gets access with **no alert and no Settings entry**, so the denied-state rows are unreachable rather than failed. Reproduced under a Finder double-click and a `launchd` agent, from `/tmp` and `~/Applications`.
 - **Correction:** the earlier "allowed-state" result measured **Terminal**, not the app — macOS attributes local-network access to the responsible process and auto-allows Terminal's children. Scripted launches are now explicitly invalid for this measurement.

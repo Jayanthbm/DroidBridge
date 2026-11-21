@@ -124,6 +124,36 @@ class MirroringActivity : ComponentActivity() {
             }
         }
 
+    /**
+     * P10 harness: lets the measurement script drive the matrix by launching this activity with
+     * extras instead of tapping the UI. ADB is permitted to launch/stop test apps; it is not used
+     * here to inject touch, and the screen-capture consent dialog is still answered by the user.
+     */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        applyHarnessExtras(intent)
+    }
+
+    private fun applyHarnessExtras(intent: Intent) {
+        if (intent.hasExtra(EXTRA_SECURE)) {
+            val want = intent.getBooleanExtra(EXTRA_SECURE, false)
+            if (want != secureTestEnabled) toggleSecureTest()
+        }
+        if (intent.hasExtra(EXTRA_PASSWORD_SCREEN)) {
+            passwordScreen = intent.getBooleanExtra(EXTRA_PASSWORD_SCREEN, false)
+            record("P10 password screen shown=$passwordScreen (harness)")
+        }
+        when (intent.getStringExtra(EXTRA_NOTIFICATION)) {
+            "otp-private" -> postOtpNotification(usePublicVersion = false)
+            "otp-public" -> postOtpNotification(usePublicVersion = true)
+            "cancel" -> {
+                getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID_PRIVATE)
+                getSystemService(NotificationManager::class.java).cancel(NOTIFICATION_ID_PUBLIC)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -133,6 +163,7 @@ class MirroringActivity : ComponentActivity() {
         storedPinText = pinStore.pinFor(PEER_ID) ?: "(none)"
         restoreSessionAfterActivityRecreation()
         omitRepeatFrame = intent.getBooleanExtra(MirroringService.EXTRA_OMIT_REPEAT_FRAME, false)
+        applyHarnessExtras(intent)
         if (omitRepeatFrame) {
             record("P08 idle-cost comparison: repeat-previous-frame off for this run")
         }
@@ -511,6 +542,14 @@ class MirroringActivity : ComponentActivity() {
         private const val CHANNEL_ID = "p10-test"
         private const val NOTIFICATION_ID_PRIVATE = 101
         private const val NOTIFICATION_ID_PUBLIC = 102
+
+        /**
+         * P10 harness extras. They let the measurement script drive the matrix by launching this
+         * activity (ADB may launch/stop test apps) without injecting touch, which ADB must not do.
+         */
+        const val EXTRA_SECURE = "p10Secure"
+        const val EXTRA_PASSWORD_SCREEN = "p10PasswordScreen"
+        const val EXTRA_NOTIFICATION = "p10Notification"
     }
 }
 

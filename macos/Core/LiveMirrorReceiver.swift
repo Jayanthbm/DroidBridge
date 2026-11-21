@@ -1,5 +1,7 @@
 import AVFoundation
+import CoreImage
 import CoreMedia
+import ImageIO
 import Foundation
 import os
 
@@ -42,6 +44,20 @@ public final class LiveMirrorReceiver: ObservableObject {
     /// still per-process, because persistent identity storage is P15's scope (ADR-025).
     private var identity: MacIdentity?
     private var format: CMVideoFormatDescription?
+
+    /// P10 evidence sink. `AVSampleBufferDisplayLayer` decodes internally, so the mirrored pixels are
+    /// not reachable for measurement; when `P08_DUMP_DIR` is set this second VTDecompressionSession
+    /// decodes the same samples and reports mean luma plus writes a PNG. That turns "is protected
+    /// content withheld?" into a number instead of an opinion. Off unless the env var is set.
+    private var dumpSession: VTDecompressionSession?
+    private var dumpFormat: CMFormatDescription?
+    private var dumpDir: URL?
+    private var dumpCount = 0
+    private let dumpContext = CIContext(options: nil)
+    private var dumpLumaSum: Double = 0
+    private var dumpLumaCount = 0
+    private var dumpLumaMin: Double = 255
+    private var dumpLumaMax: Double = 0
     private var formatDescription: MirrorFormatPayload?
     private var streamValidator = MirrorStreamValidator()
     private var firstFrameAt: Date?
@@ -294,6 +310,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             renderer.enqueue(sample)
             totalFramesEnqueued += 1
             publishFrameCounters()
+            dumpIfConfigured(sample)
             if firstFrameAt == nil {
                 firstFrameAt = Date()
                 if let started = streamStartedAt {
@@ -318,6 +335,92 @@ public final class LiveMirrorReceiver: ObservableObject {
             streamValidator.decoderFlushed()
             resetPtsAnchor()
             requestKeyframeIfNeeded(reason: "sample-buffer-failed")
+        }
+    }
+
+    // MARK: - P10 evidence dump
+
+    private func dumpIfConfigured(_ sample: CMSampleBuffer) {
+        if dumpDir == nil {
+            guard let path = ProcessInfo.processInfo.environment["P08_DUMP_DIR"] else { return }
+            let dir = URL(fileURLWithPath: path, isDirectory: true)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            dumpDir = dir
+            emit("DUMP enabled dir=\(dir.path)")
+        }
+        guard let dir = dumpDir, let format else { return }
+
+        if dumpSession == nil || dumpFormat != format {
+            setupDumpSession(format: format)
+        }
+        guard let session = dumpSession else { return }
+        dumpCount += 1
+        VTDecompressionSessionDecodeFrame(
+            session,
+            sampleBuffer: sample,
+            flags: [._EnableAsynchronousDecompression],
+            infoFlagsOut: nil
+        ) { [weak self] status, flags, imageBuffer, pts, duration in
+            guard status == noErr, let imageBuffer = imageBuffer else { return }
+            self?.recordDumpedFrame(imageBuffer, dir: dir, flags: flags)
+        }
+    }
+
+    private func setupDumpSession(format: CMFormatDescription) {
+        dumpSession.map { VTDecompressionSessionInvalidate($0) }
+        dumpFormat = format
+        let spec: [CFString: Any] = [
+            kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder: false as CFBoolean,
+        ]
+        let attrs: [CFString: Any] = [
+            kCVPixelBufferPixelFormatTypeKey: Int(kCVPixelFormatType_32BGRA),
+        ]
+        var session: VTDecompressionSession?
+        let status = VTDecompressionSessionCreate(
+            allocator: kCFAllocatorDefault,
+            formatDescription: format,
+            decoderSpecification: spec as CFDictionary,
+            imageBufferAttributes: attrs as CFDictionary,
+            outputCallback: nil,
+            decompressionSessionOut: &session
+        )
+        dumpSession = status == noErr ? session : nil
+        if status != noErr { emit("DUMP session failed status=\(status)") }
+    }
+
+    private func recordDumpedFrame(_ buffer: CVPixelBuffer, dir: URL, flags: VTDecodeInfoFlags) {
+        let ci = CIImage(cvPixelBuffer: buffer)
+        let extent = CIVector(cgRect: ci.extent)
+        guard let filter = CIFilter(name: "CIAreaAverage", parameters: [
+            kCIInputImageKey: ci,
+            kCIInputExtentKey: extent,
+        ]), let output = filter.outputImage else { return }
+
+        var pixel = [UInt8](repeating: 0, count: 4)
+        dumpContext.render(
+            output,
+            toBitmap: &pixel,
+            rowBytes: 4,
+            bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+            format: .RGBA8,
+            colorSpace: CGColorSpaceCreateDeviceRGB()
+        )
+        let luma = 0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])
+        dumpLumaSum += luma
+        dumpLumaCount += 1
+        dumpLumaMin = min(dumpLumaMin, luma)
+        dumpLumaMax = max(dumpLumaMax, luma)
+
+        let index = dumpLumaCount
+        // Per-frame so a measurement phase can be attributed by timestamp; cumulative stats stay
+        // available for the whole session.
+        emit(String(format: "LUMA f=%d l=%.1f", index, luma))
+        if index % 30 == 0, let cg = dumpContext.createCGImage(ci, from: ci.extent) {
+            let url = dir.appendingPathComponent(String(format: "dump-%05d.png", index))
+            if let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) {
+                CGImageDestinationAddImage(dest, cg, nil)
+                CGImageDestinationFinalize(dest)
+            }
         }
     }
 

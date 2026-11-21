@@ -84,6 +84,37 @@ from both the Mac and the phone's shell. Android 17 gates local-network access b
 immediately. Android 12 does not enforce this, which is why the OnePlus never needed it. **Any API 37
 build that talks to a LAN address needs this permission, and its absence presents as a timeout.**
 
+## 2026-11-21 — autonomous re-run on the S24 Ultra (rows A–F green)
+
+Run unattended with USB connected, USB debugging on and wireless debugging off. The app was driven by
+`am start` extras (permitted: launching test apps) rather than by injected touch, and every value below
+comes from the app's own log or from `dumpsys`.
+
+| Row | Measurement |
+|---|---|
+| A — start from a visible activity | `startForeground succeeded for connectedDevice`, no runtime prompt |
+| B — backgrounded 5 min | heartbeats `2 → 22` (15 s cadence), `/proc/<pid>/cgroup` = `5:freezer:/`, 0 stalls |
+| C — screen off 5 min | `mWakefulness=Dozing`, heartbeats `22 → 42`, still `5:freezer:/` |
+| D — Wi-Fi off/on | `RECONNECT n=2,3` then `state=connected`; 0 false stalls (the tuned watchdog held) |
+| E — reboot | `BOOT_COMPLETED received; background sync enabled=true` → `startForegroundService accepted` → `startForeground succeeded` → `state=connected` → `HEARTBEAT n=1 / PONG n=1`, 0.3 s after the broadcast |
+| F — notification | title `DroidBridge background session`, text `connected · 52 heartbeats · 52 pongs · 3 reconnects · last heartbeat 1s ago`, importance 2, `ONGOING_EVENT|NO_CLEAR` |
+
+Two operational notes that cost time and are now documented:
+
+1. **The app requires the peer pin up front** (`start refused: host, port and pin are all required`). A
+   fresh install therefore cannot pair, because nobody can confirm the numeric-comparison code in an
+   unattended run. The working recipe is: attempt once to learn the Android identity pin from the
+   failure, restart the listener with `--expect-pin <android-pin>`, then connect — the Mac then reports
+   `authenticated=true` and skips pairing.
+2. **The Mac receiver must hold AppKit automatic termination.** It was being ended silently
+   (`_kLSApplicationWouldBeTerminatedByTALKey`) between measurement phases, which looks exactly like a
+   protocol failure. `--p08-mirror`, `--advertise-on-launch` and `--listen` now disable automatic and
+   sudden termination for the life of the process.
+
+Still open, and only for these reasons: **deep Doze and overnight** need the handset unplugged and idle
+(the S24 refuses `force-idle` while charging: `Unable to go deep idle; stopped at INACTIVE`), and the
+30-minute/notification-denied rows need a session that lasts longer than this run.
+
 ## Defects found and fixed during bring-up
 
 1. A start request carrying a new host/port was ignored while a session was running, so a long run kept

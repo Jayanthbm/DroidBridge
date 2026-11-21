@@ -7,6 +7,7 @@ import SwiftUI
 /// none of those exist yet and a control that does nothing misrepresents the product's state.
 @main
 struct DroidBridgeApp: App {
+    @NSApplicationDelegateAdaptor(BridgeAppDelegate.self) private var appDelegate
     /// Created at launch, so `--advertise-on-launch` works without the user opening the tab.
     @StateObject private var advertisement = AdvertisementModel()
 
@@ -104,5 +105,39 @@ struct DroidBridgeApp: App {
                 NSApplication.shared.terminate(nil)
             }
         }
+    }
+}
+
+/// Holds the app open while a mirroring session is running.
+///
+/// AppKit's automatic termination ends an idle window (the log shows
+/// `_kLSApplicationWouldBeTerminatedByTALKey=1`), which killed the P08/P10 receiver mid-session and
+/// looked like a protocol failure. A receiver that is showing or waiting for a mirror must not be
+/// terminated just because the user is not touching it; P17 hit the same problem and fixed it the
+/// same way.
+final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
+    private var holdReason: String?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let arguments = CommandLine.arguments
+        if arguments.contains("--p08-mirror")
+            || arguments.contains("--advertise-on-launch")
+            || arguments.contains("--listen") {
+            holdTermination(reason: "mirror receiver or advertiser is active")
+        }
+    }
+
+    func holdTermination(reason: String) {
+        guard holdReason == nil else { return }
+        holdReason = reason
+        ProcessInfo.processInfo.disableAutomaticTermination(reason)
+        ProcessInfo.processInfo.disableSuddenTermination()
+    }
+
+    func releaseTerminationHold() {
+        guard let holdReason else { return }
+        self.holdReason = nil
+        ProcessInfo.processInfo.enableAutomaticTermination(holdReason)
+        ProcessInfo.processInfo.enableSuddenTermination()
     }
 }
