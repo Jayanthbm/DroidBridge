@@ -245,6 +245,27 @@ B/frame** and stayed suppressed for the whole protected period (`dropped=0` thro
 consistent with the surface being withheld, but it is byte-count evidence with the confound above, so
 it must be re-measured with luma before it is cited as the P10 result.
 
+### Mac-side startup hazards found while driving the run through ADB (2026-11-21)
+
+Three non-protocol failures each presented as a broken mirroring session:
+
+1. **The receiver advertises but does not accept.** The P02 advertiser publishes the name; the P08
+   tab's listener only starts when its button is pressed. A phone connecting to the advertised name
+   with no listener gets `SSLHandshakeException: UNEXPECTED_MESSAGE`. Fixed for unattended runs with
+   `--p08-listen`.
+2. **The listener drops a quiet session after 120 s**, which is shorter than a consent prompt plus a
+   screen-off check, so a measured pause looks like `receive failed: SessionException` on the phone.
+   `--p08-idle-timeout <seconds>` now overrides it.
+3. **A per-build Keychain ACL prompt blocks startup silently.** `securityd` logs
+   `displaying keychain prompt ... ACL ... cdhash H"..."`, listing the cdhashes of earlier builds; the
+   app waits with no window and no output. Ad-hoc signing makes this happen on every rebuild. Signing
+   the bundle with the stable Apple Development identity, after clearing the stale `com.droidbridge.identity`
+   and `com.droidbridge.p08.peer-pins` items, keeps the ACL valid across rebuilds.
+
+Also: an open notification shade makes `uiautomator` report `ERROR: could not get idle state` and
+silently swallows taps; `cmd statusbar collapse` resolves it. The charged-phone state meant
+`uiautomator dump` returned only on-screen nodes, so a control below the fold needs a scroll first.
+
 ## Current assessment
 
 **In progress.** Protected surfaces are withheld as required in every case that has actually been

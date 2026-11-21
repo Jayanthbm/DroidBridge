@@ -129,7 +129,7 @@ public final class LiveMirrorReceiver: ObservableObject {
                 pinStore: store,
                 peerId: peerId,
                 trustMode: .storedPin,
-                idleTimeout: 120,
+                idleTimeout: idleTimeoutSeconds,
                 pairingTimeout: 300
             )
             wire(secure)
@@ -142,6 +142,13 @@ public final class LiveMirrorReceiver: ObservableObject {
             emit("LISTEN_FAILED \(error)")
         }
     }
+
+    /// When set, an unauthenticated peer whose pin matches is confirmed without a click.
+    public var expectedPeerPin: String?
+
+    /// Seconds of silence before the listener drops the session. Long runs that pause between
+    /// phases (consent prompts, screen-off checks) need a wider window than the 120 s default.
+    public var idleTimeoutSeconds: TimeInterval = 120
 
     public func confirmPairing() {
         guard let listener else { return }
@@ -189,6 +196,14 @@ public final class LiveMirrorReceiver: ObservableObject {
                 self.pairingCode = code
                 self.state = authenticated ? .connected : .awaitingConfirmation
                 self.emit("READY peer-pin=\(pin) authenticated=\(authenticated) code=\(ShortAuthenticationCode.formatForDisplay(code))")
+                // Harness: confirm only when the peer pin is the one the run expected. The operator
+                // still compares the displayed code on both screens; this only removes the click.
+                if !authenticated, let expected = self.expectedPeerPin, expected == pin {
+                    self.emit("AUTO_CONFIRM peer-pin matches the expected pin")
+                    self.confirmPairing()
+                } else if !authenticated, self.expectedPeerPin != nil {
+                    self.emit("AUTO_CONFIRM_SKIPPED peer pin does not match the expected pin")
+                }
             }
         }
         secure.onAuthenticated = { [weak self] pin in

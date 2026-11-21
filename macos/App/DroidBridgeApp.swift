@@ -93,6 +93,12 @@ struct DroidBridgeApp: App {
                 // mirrored pixels cannot be recorded without turning it off for the run.
                 // P08/P10 harness: start the secure listener with the window so an unattended run
                 // does not need a Mac-side click to begin accepting the phone's connection.
+                if let expected = Self.argumentValue("--p08-expect-pin") {
+                    liveMirror.expectedPeerPin = expected
+                }
+                if let raw = Self.argumentValue("--p08-idle-timeout"), let seconds = TimeInterval(raw) {
+                    liveMirror.idleTimeoutSeconds = seconds
+                }
                 if CommandLine.arguments.contains("--p08-listen") {
                     liveMirror.startListening()
                 }
