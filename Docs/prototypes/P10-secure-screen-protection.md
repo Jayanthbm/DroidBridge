@@ -218,7 +218,7 @@ off unless the argument is passed.
 
 ## Measurement harness (built 2026-11-21, live matrix not yet run)
 
-Judgeing "is protected content withheld?" from encoder byte counts alone is unreliable: a protected
+Judging "is protected content withheld?" from encoder byte counts alone is unreliable: a protected
 surface compresses to ~650–1000 B/frame, but so does a static, sparse screen such as the password
 screen (measured 1119 B/frame unprotected). The number only distinguishes the two when the screen has
 motion or high entropy. Two additions remove that ambiguity:
