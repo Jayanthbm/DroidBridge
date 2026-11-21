@@ -341,6 +341,29 @@ What this establishes:
 Privacy note: the recording is a local artefact of a synthetic test surface and a throwaway OTP string;
 no personal content was captured, and no device-side screen capture was used.
 
+### Lock screen: no stream at all (measured, 2026-11-21)
+
+The lock-screen redaction row resolves differently than expected. Tagging a locked-device window
+produced zero frames, and the cause is recorded on the device:
+
+```
+MIRROR state=stopped: system onStop (lock / screen-sharing chip / user stop)
+```
+
+Locking **ends the MediaProjection session**. There is no mirror while the device is locked, so
+lock-screen notification content — redacted or not — cannot be disclosed through this path. That
+matches the earlier P01 finding and means the private-vs-public OTP distinction is unobservable here
+rather than unresolved: with the shade open on an unlocked device both variants render in full
+(80.3 vs 80.5 luma), and while locked there is nothing to render.
+
+### Measurement build caveat
+
+The recording harness needs to write outside the sandbox, so measurement runs sign with
+`macos/App/DroidBridge.measurement.entitlements`, which adds one scoped
+`temporary-exception.files.absolute-path.read-write` for `/private/tmp/p10-rec/`. Shipped and
+acceptance builds keep using `DroidBridge.entitlements` unchanged (three keys, ADR-026). The recording
+is a local artefact of a synthetic test surface and a throwaway OTP string.
+
 ## Current assessment
 
 **In progress — core claim now measured.** Protected surfaces are withheld as required in every case
