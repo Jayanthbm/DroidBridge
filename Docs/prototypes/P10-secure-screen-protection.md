@@ -306,10 +306,46 @@ Each one hid the next, and every one presented as "no evidence" rather than an e
 
 Practical consequence: the FLAG_SECURE row still has no decisive number, and P10 remains in progress.
 
+## Measured evidence — 2026-11-21, S24 Ultra (Android 17 / API 37)
+
+Method: the receiver records every received AVCC frame plus a wall-clock timeline
+(`P08_RECORD_DIR`), the phases are tagged with wall-clock windows, and the recording is decoded
+**offline** afterwards (`ffmpeg` → 64×128 gray → mean luma per frame). Offline decoding is deliberate:
+a second live `VTDecompressionSession` deadlocks (`RemoteVideoDecoder_DecodeFrameWithOptions` blocks in
+a semaphore wait) and, when run inline, blocked the main thread and silenced the stream.
+
+| Phase | Frames | Mean luma | Min | Max |
+|---|---|---|---|---|
+| Baseline, same screen, same motion | 645 | 196.4 | 195.2 | 197.9 |
+| **`FLAG_SECURE` ON** | **809** | **1.0** | **0.9** | **1.1** |
+| `FLAG_SECURE` OFF | 646 | 196.4 | 195.2 | 197.8 |
+| Password-field screen (unprotected) | 46 | 238.1 | 238.1 | 238.1 |
+| OTP notification, private version only | 493 | 80.3 | 66.7 | 87.4 |
+| OTP notification, with public version | 510 | 80.5 | 73.9 | 87.2 |
+| Notification shade open | 819 | 64.2 | 60.9 | 68.1 |
+| Shade with private-only OTP | 838 | 114.4 | 112.5 | 115.5 |
+
+What this establishes:
+
+- **Protected surfaces are withheld, and withheld as black.** 809 frames were still delivered while
+  the mirrored surface read luma 1.0 — the stream was live and the pixels were black, which is the
+  distinction byte counts could never make (a static harmless screen also compresses to ~1 kB).
+- **The control is exact.** The same screen with the same motion reads 196.4 before and after, so the
+  collapse is attributable to `FLAG_SECURE` alone, not to content, motion or encoding.
+- **The unprotected password screen mirrors normally** (238.1), consistent with it being an app-level
+  protection of the field rather than a secure surface.
+- **Private-vs-public notification redaction is not settled by this run**: 80.3 vs 80.5 while the shade
+  is open on an unlocked device, where both variants render in full. The distinction only exists on the
+  lock screen, so that row still needs a locked-device run.
+
+Privacy note: the recording is a local artefact of a synthetic test surface and a throwaway OTP string;
+no personal content was captured, and no device-side screen capture was used.
+
 ## Current assessment
 
-**In progress.** Protected surfaces are withheld as required in every case that has actually been
-observed (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured pixels).
+**In progress — core claim now measured.** Protected surfaces are withheld as required in every case
+that has actually been observed, and the `FLAG_SECURE` case is quantified above (luma 1.0 with 809
+frames flowing, against 196.4 for the identical unprotected screen) (synthetic `FLAG_SECURE`, the Slice banking app, the password field with captured pixels).
 The notification shade mirrored and remained live in one fresh run; public-version notification
 redaction was also observed. The private-only notification outcome is inconclusive and remains
 **Awaiting Local Validation**. The historical shade freeze remains valid historical evidence but was

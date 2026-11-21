@@ -222,11 +222,20 @@ public final class LiveMirrorReceiver: ObservableObject {
             }
         }
         secure.onFrame = { [weak self] message in
-            Task { @MainActor in self?.handle(message) }
+            let isMedia = message.type.isMedia
+            Task { @MainActor in
+                guard let self else { return }
+                self.handle(message)
+                if isMedia {
+                    self.pendingMedia &+= 1
+                    if self.pendingMedia % 30 == 0 { self.emit("MAIN ran=\(self.pendingMedia)") }
+                }
+            }
         }
     }
 
     private var handledCount = 0
+    private var pendingMedia = 0
 
     private func handle(_ message: ControlMessage) {
         handledCount += 1
@@ -248,6 +257,8 @@ public final class LiveMirrorReceiver: ObservableObject {
                     nalLengthSize: fmt.nalLengthSize
                 )
                 formatChanges += 1
+                recordParameterSets(sps: [UInt8](fmt.sps), pps: [UInt8](fmt.pps))
+                Self.recordNALLengthSize = Int(fmt.nalLengthSize)
                 renderer.flush()
                 streamValidator.formatChanged()
                 resetPtsAnchor()
@@ -290,6 +301,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             // Validate every received frame even while the renderer is backpressured or failed.
             // Otherwise malformed media could evade protocol checks simply because it was dropped.
             video = try VideoPayload.parse(payload)
+            recordIfConfigured(video, ptsUs: UInt64(max(0, video.ptsUs)))
             // Evidence first: a frame the renderer refuses is still a frame that arrived, and the
             // measurement must not inherit the renderer's recovery state.
             let evidencePresentation = presentationTime(for: video.ptsUs)
@@ -367,7 +379,75 @@ public final class LiveMirrorReceiver: ObservableObject {
 
     // MARK: - P10 evidence dump
 
+    /// Writes every received AVCC frame to a .h264 file plus a CSV timeline, so the measurement can
+    /// run offline after the session instead of competing with the live renderer for the decoder.
+    private nonisolated func recordParameterSets(sps: [UInt8], pps: [UInt8]) {
+        Self.recordSPS = sps
+        Self.recordPPS = pps
+        Self.recordWroteParameters = false
+    }
+
+    private nonisolated func recordIfConfigured(_ video: VideoPayload, ptsUs: UInt64) {
+        guard let dir = ProcessInfo.processInfo.environment["P08_RECORD_DIR"] else { return }
+        recordQueue.async {
+            let fm = FileManager.default
+            if Self.recordFile == nil {
+                try? fm.createDirectory(atPath: dir, withIntermediateDirectories: true)
+                Self.recordFile = FileHandle(forWritingAtPath: dir + "/stream.h264")
+                if Self.recordFile == nil {
+                    fm.createFile(atPath: dir + "/stream.h264", contents: nil)
+                    Self.recordFile = FileHandle(forWritingAtPath: dir + "/stream.h264")
+                }
+                Self.recordTimeline = FileHandle(forWritingAtPath: dir + "/timeline.csv")
+                if Self.recordTimeline == nil {
+                    fm.createFile(atPath: dir + "/timeline.csv", contents: nil)
+                    Self.recordTimeline = FileHandle(forWritingAtPath: dir + "/timeline.csv")
+                }
+                Self.recordTimeline?.write(Data("index,ptsUs,bytes,wall\n".utf8))
+            }
+            var frame = Data()
+            if !Self.recordWroteParameters {
+                for ps in [Self.recordSPS, Self.recordPPS] {
+                    guard let ps, !ps.isEmpty else { continue }
+                    frame.append(contentsOf: [0, 0, 0, 1])
+                    frame.append(contentsOf: ps)
+                }
+                Self.recordWroteParameters = true
+            }
+            // video.avcc is length-prefixed NAL units; a start code per NAL is what a decoder
+            // reading the file back expects.
+            frame.append(Self.annexB(fromLengthPrefixed: video.avcc, nalLengthSize: Self.recordNALLengthSize))
+            Self.recordFile?.write(frame)
+            Self.recordFrameCount &+= 1
+            let line = "\(Self.recordFrameCount),\(ptsUs),\(video.avcc.count),\(Date().timeIntervalSince1970)\n"
+            Self.recordTimeline?.write(Data(line.utf8))
+        }
+    }
+
     private func dumpIfConfigured(_ sample: CMSampleBuffer) {
+        guard ProcessInfo.processInfo.environment["P08_DUMP_DIR"] != nil else { return }
+        // VTDecompressionSessionDecodeFrame blocks in a semaphore wait on this platform, so
+        // decoding inline stalls whichever thread called it - on the main thread that stops every
+        // later frame handler and the sink goes silent after roughly one decoder queue depth.
+        evidenceQueue.async { [weak self] in
+            guard let self else { return }
+            guard !Self.evidenceBusy else { return }
+            Self.evidenceBusy = true
+            // Watchdog: a decoder that never returns must not silence the sink for the session.
+            let token = Self.evidenceToken &+ 1
+            Self.evidenceToken = token
+            DispatchQueue.global().asyncAfter(deadline: .now() + 5) {
+                if Self.evidenceToken == token, Self.evidenceBusy {
+                    Self.evidenceBusy = false
+                    self.emit("EVIDENCE stale-lock cleared")
+                }
+            }
+            defer { Self.evidenceBusy = false }
+            self.dumpOnEvidenceQueue(sample)
+        }
+    }
+
+    private func dumpOnEvidenceQueue(_ sample: CMSampleBuffer) {
         if dumpDir == nil {
             guard let path = ProcessInfo.processInfo.environment["P08_DUMP_DIR"] else { return }
             let dir = URL(fileURLWithPath: path, isDirectory: true)
@@ -421,15 +501,44 @@ public final class LiveMirrorReceiver: ObservableObject {
 
     private var dumpKeyframeRequested = false
     private var dumpSetups = 0
+    private nonisolated let recordQueue = DispatchQueue(label: "com.droidbridge.p08.record")
+    private nonisolated(unsafe) static var recordFile: FileHandle?
+    private nonisolated(unsafe) static var recordTimeline: FileHandle?
+    private nonisolated(unsafe) static var recordFrameCount: UInt64 = 0
+    private nonisolated(unsafe) static var recordSPS: [UInt8]?
+    private nonisolated(unsafe) static var recordPPS: [UInt8]?
+    private nonisolated(unsafe) static var recordWroteParameters = false
+    private nonisolated(unsafe) static var recordNALLengthSize = 4
+
+    private nonisolated static func annexB(fromLengthPrefixed data: Data, nalLengthSize: Int) -> Data {
+        var out = Data(); var i = data.startIndex
+        let n = max(1, min(4, nalLengthSize))
+        while i + n <= data.endIndex {
+            var len = 0
+            for k in 0..<n { len = (len << 8) | Int(data[data.index(i, offsetBy: k)]) }
+            let start = data.index(i, offsetBy: n)
+            guard len > 0, data.distance(from: start, to: data.endIndex) >= len else { break }
+            out.append(contentsOf: [0, 0, 0, 1])
+            out.append(data[start..<data.index(start, offsetBy: len)])
+            i = data.index(start, offsetBy: len)
+        }
+        return out.isEmpty ? data : out
+    }
+
+    private nonisolated let evidenceQueue = DispatchQueue(
+        label: "com.droidbridge.p08.evidence", qos: .utility
+    )
+    private nonisolated(unsafe) static var evidenceBusy = false
+    private nonisolated(unsafe) static var evidenceToken = 0
     private var lastDumpImageAt: Date?
     private var lastDumpKeyframeAt: Date?
 
     private func setupDumpSession(format: CMFormatDescription) {
         dumpSession.map { VTDecompressionSessionInvalidate($0) }
         dumpFormat = format
-        let spec: [CFString: Any] = [
-            kVTVideoDecoderSpecification_EnableHardwareAcceleratedVideoDecoder: false as CFBoolean,
-        ]
+        // Let VideoToolbox pick the decoder. Forcing the software path made
+        // RemoteVideoDecoder_DecodeFrameWithOptions block indefinitely in a semaphore wait.
+        let spec: [CFString: Any] = [:]
         let attrs: [CFString: Any] = [
             kCVPixelBufferPixelFormatTypeKey: Int(kCVPixelFormatType_32BGRA),
             // Without an IOSurface-backed pool the decompressor accepts frames and never calls
@@ -644,6 +753,10 @@ public final class LiveMirrorReceiver: ObservableObject {
     }
 
     private func emit(_ line: String) {
+        if !Thread.isMainThread {
+            DispatchQueue.main.async { [weak self] in self?.emit(line) }
+            return
+        }
         lastEvent = line
         events.append(line)
         if events.count > 300 { events.removeFirst(events.count - 300) }
