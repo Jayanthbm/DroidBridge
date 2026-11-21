@@ -204,3 +204,16 @@ were not diagnosed in that attempt. This is consistent with earlier observed Med
 on lock but does not establish a new controlled reproduction. A later unattended stability attempt
 also ended after the phone locked; no successful 30-minute awake stability run is established from
 these later attempts. Do not leave the phone unlocked unattended to complete one.
+
+## Matrix rows measured 2026-11-21 (S24 Ultra, Android 17 / API 37)
+
+| Row | Result |
+|---|---|
+| Keyframe recovery | **Pass** — `FAULT_INJECTED method=corrupt-sample bytes=4096 afterSeconds=8.0` → `FAULT_FALLBACK scripted-flush` → `KEYFRAME_REQUEST reason=scripted-fault count=1` → stream continued at `status=rendering` with `dropped=0` |
+| 30-minute continuous session | **Pass for endurance** — 8496 frames / 49.0 MB, `dropped=0`, `keyframeRequests=0`, `status=rendering` throughout; ended at 29 min 48 s on `system onStop (lock / screen-sharing chip / user stop)` because the screen timeout fired |
+| Rotation | **Blocked — needs a human hand.** `settings put system user_rotation 1` and `cmd window user-rotation lock 1` both left `mCurrentOrientation=0` on this device, so the row could not be induced through ADB. The service does implement `onCapturedContentResize`, but whether it produces a correct re-encode on rotation is still unverified |
+
+Two operational findings worth keeping:
+
+- **A sleeping screen ends the projection.** `svc power stayon usb` was set and the screen still timed out at the configured 30 minutes, which stopped capture. Any long endurance run must hold the screen awake, and the row's failure mode (`system onStop`) must not be mistaken for a transport fault.
+- **The phone's window manager can wedge.** Mid-run, focus stuck on a stale `NotificationShade` window, `uiautomator` returned no hierarchy and every tap missed. A reboot recovered it; taps against a wedged WM look exactly like a broken app.
