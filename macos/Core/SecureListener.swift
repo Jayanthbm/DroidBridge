@@ -175,7 +175,7 @@ public final class SecureListener {
     /// The port is dynamic (P03 requires it): a fixed port collides with whatever else the user
     /// runs and cannot be re-bound quickly after a crash. Bonjour carries the real port to the peer,
     /// which is the whole reason the service is advertised rather than an IP being typed in.
-    public func start(serviceName: String = "DroidBridge-P03-Mac") throws {
+    public func start(serviceName: String = "DroidBridge-P03-Mac", port: UInt16 = 0) throws {
         let resolvedPin: String?
         switch trustMode {
         case .storedPin:
@@ -266,7 +266,8 @@ public final class SecureListener {
         let parameters = NWParameters(tls: tls, tcp: NWProtocolTCP.Options())
         parameters.allowLocalEndpointReuse = true
 
-        let listener = try NWListener(using: parameters, on: .any)
+        let endpoint: NWEndpoint.Port = port == 0 ? .any : (NWEndpoint.Port(rawValue: port) ?? .any)
+        let listener = try NWListener(using: parameters, on: endpoint)
         self.listener = listener
 
         listener.stateUpdateHandler = { [weak self] state in

@@ -76,6 +76,9 @@ enum P03Harness {
         }
 
         var seconds: Double = isPair ? 300 : 120
+        var listenPort: UInt16 = 0
+        if let raw = value(of: "--port"), let parsed = UInt16(raw) { listenPort = parsed }
+
         if let raw = value(of: "--seconds"), let parsed = Double(raw) {
             seconds = parsed
         }
@@ -141,7 +144,7 @@ enum P03Harness {
         }
 
         do {
-            try listener.start()
+            try listener.start(port: listenPort)
         } catch {
             emit("FAIL start: \(error)")
             return 1

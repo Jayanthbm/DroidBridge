@@ -158,3 +158,22 @@ battery drain. The S24 rows that did run used a charging handset over USB.
 Nothing about Doze, overnight survival, notification dismissal, or battery drain. On this device the
 backgrounded case is a measured **no**; whether a valid `connectedDevice` FGS is frozen on stock Android
 or on One UI is untested, and that is the row that decides ADR-023.
+
+### Notification-permission-denied row — blocked by device UI instability (2026-11-21)
+
+Not measured. The row cannot be driven through ADB on this handset because the window manager wedges
+after a few automated taps: `mCurrentFocus` pins to a stale `NotificationShade` window id,
+`uiautomator dump` fails with `could not get idle state` (or returns a clock/weather widget), and
+`KEYCODE_HOME`, `KEYCODE_BACK`, `cmd statusbar collapse` and an upward swipe all fail to clear it.
+Only a reboot recovers the device. It happened four times in this session, twice on the P08 run and
+twice here.
+
+Also relevant: the session service is not exported, so it cannot be started headlessly
+(`am start-foreground-service` → `Requires permission not exported from uid`). Starting it requires the
+activity UI, and `MainActivity` accepts `host`/`port`/`pin` extras that prefill the fields — that part
+works, but the final "Start session" tap is what collides with the wedge.
+
+The row stays open. It needs either a reboot-into-clean-UI sequence with fewer taps, or a debuggable
+build that exports the service so the session can be started from the shell without touching the UI.
+Recorded rather than worked around, because "the app did not start" and "the device UI was stuck"
+must not be conflated in a persistence result.
