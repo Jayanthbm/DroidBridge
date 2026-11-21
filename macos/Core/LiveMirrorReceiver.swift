@@ -368,18 +368,32 @@ public final class LiveMirrorReceiver: ObservableObject {
         if dumpSession == nil || dumpFormat != format {
             setupDumpSession(format: format)
         }
+        // The evidence session joins mid-GOP and cannot start until it sees an IDR, so ask the
+        // sender for one; without this the sink stays silent for the whole session.
+        if !dumpKeyframeRequested {
+            dumpKeyframeRequested = true
+            requestKeyframeIfNeeded(reason: "dump-session")
+        }
         guard let session = dumpSession else { return }
         dumpCount += 1
-        VTDecompressionSessionDecodeFrame(
+        var decodeStatus = VTDecompressionSessionDecodeFrame(
             session,
             sampleBuffer: sample,
             flags: [._EnableAsynchronousDecompression],
             infoFlagsOut: nil
         ) { [weak self] status, flags, imageBuffer, pts, duration in
-            guard status == noErr, let imageBuffer = imageBuffer else { return }
+            guard status == noErr, let imageBuffer = imageBuffer else {
+                self?.emit("DUMP decode status=\(status) image=\(imageBuffer != nil)")
+                return
+            }
             self?.recordDumpedFrame(imageBuffer, dir: dir, flags: flags)
         }
+        if decodeStatus != noErr, dumpCount % 30 == 1 {
+            emit("DUMP submit failed status=\(decodeStatus) n=\(dumpCount)")
+        }
     }
+
+    private var dumpKeyframeRequested = false
 
     private func setupDumpSession(format: CMFormatDescription) {
         dumpSession.map { VTDecompressionSessionInvalidate($0) }
@@ -389,6 +403,9 @@ public final class LiveMirrorReceiver: ObservableObject {
         ]
         let attrs: [CFString: Any] = [
             kCVPixelBufferPixelFormatTypeKey: Int(kCVPixelFormatType_32BGRA),
+            // Without an IOSurface-backed pool the decompressor accepts frames and never calls
+            // back, which reads as a silent measurement gap rather than an error.
+            kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary,
         ]
         var session: VTDecompressionSession?
         let status = VTDecompressionSessionCreate(
@@ -401,6 +418,7 @@ public final class LiveMirrorReceiver: ObservableObject {
         )
         dumpSession = status == noErr ? session : nil
         if status != noErr { emit("DUMP session failed status=\(status)") }
+        else { emit("DUMP session created") }
     }
 
     private func recordDumpedFrame(_ buffer: CVPixelBuffer, dir: URL, flags: VTDecodeInfoFlags) {

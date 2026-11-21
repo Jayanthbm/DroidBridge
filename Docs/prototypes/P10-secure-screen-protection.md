@@ -266,6 +266,26 @@ Also: an open notification shade makes `uiautomator` report `ERROR: could not ge
 silently swallows taps; `cmd statusbar collapse` resolves it. The charged-phone state meant
 `uiautomator dump` returned only on-screen nodes, so a control below the fold needs a scroll first.
 
+### Luma sink status (2026-11-21, end of run)
+
+The evidence sink now starts and decodes: `DUMP enabled` → `DUMP session created` →
+`LUMA f=1 l=160.1`. It then stops producing frames, and three config changes did not fix it
+(keyframe request on session creation, logging the synchronous submit status, IOSurface-backed
+output attributes). Nothing reports an error: submission returns `noErr`, the failure callback never
+fires, and only the first frame is ever measured.
+
+Two things were learned that matter beyond the sink:
+
+- **The encoder only sends frames when the screen changes.** A static screen produces no samples at
+  all, so "no LUMA" can mean "nothing moved", not "the sink is broken". Any phase must include motion.
+- **Phone-side bytes/frame is now measured under motion:** 16,398 B/frame with continuous scrolling.
+  That is the number a FLAG_SECURE phase has to be compared against; the earlier 6,500–7,900 B/frame
+  static-screen figures are not comparable.
+
+Until the sink decodes continuously, the FLAG_SECURE row has no decisive number and P10 stays
+in progress. The measurement must come from luma, not byte counts: a blacked-out protected surface
+and an unchanging harmless screen are indistinguishable by size.
+
 ## Current assessment
 
 **In progress.** Protected surfaces are withheld as required in every case that has actually been
