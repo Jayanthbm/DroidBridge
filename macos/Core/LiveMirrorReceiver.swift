@@ -226,7 +226,11 @@ public final class LiveMirrorReceiver: ObservableObject {
         }
     }
 
+    private var handledCount = 0
+
     private func handle(_ message: ControlMessage) {
+        handledCount += 1
+        if dumpDir != nil, handledCount % 30 == 0 { emit("HANDLE n=\(handledCount) type=\(message.type)") }
         switch message.type {
         case .mirrorStarted:
             state = .streaming
@@ -286,12 +290,22 @@ public final class LiveMirrorReceiver: ObservableObject {
             // Validate every received frame even while the renderer is backpressured or failed.
             // Otherwise malformed media could evade protocol checks simply because it was dropped.
             video = try VideoPayload.parse(payload)
+            // Evidence first: a frame the renderer refuses is still a frame that arrived, and the
+            // measurement must not inherit the renderer's recovery state.
+            let evidencePresentation = presentationTime(for: video.ptsUs)
+            let evidenceSample = try makeSampleBuffer(
+                avcc: video.avcc, format: format, presentation: evidencePresentation
+            )
+            dumpIfConfigured(evidenceSample)
             switch try streamValidator.validate(ptsUs: video.ptsUs, isIDR: video.isKeyframe) {
             case .enqueue:
                 break
             case .waitForRecoveryIDR:
                 totalFramesDropped += 1
                 publishFrameCounters()
+                // The validator waits for an IDR nobody is asking for; without this the stream
+                // stalls for the rest of the session.
+                requestKeyframeIfNeeded(reason: "validator-recovery")
                 return
             }
         } catch {
@@ -312,20 +326,18 @@ public final class LiveMirrorReceiver: ObservableObject {
             requestKeyframeIfNeeded(reason: "renderer-failed")
             return
         }
-        guard renderer.isReadyForMoreMediaData else {
-            totalFramesDropped += 1
-            publishFrameCounters()
-            if totalFramesDropped % 30 == 0 { emit("BACKPRESSURE dropped=\(totalFramesDropped)") }
-            return
-        }
-
         do {
             let presentation = presentationTime(for: video.ptsUs)
             let sample = try makeSampleBuffer(avcc: video.avcc, format: format, presentation: presentation)
+            guard renderer.isReadyForMoreMediaData else {
+                totalFramesDropped += 1
+                publishFrameCounters()
+                if totalFramesDropped % 30 == 0 { emit("BACKPRESSURE dropped=\(totalFramesDropped)") }
+                return
+            }
             renderer.enqueue(sample)
             totalFramesEnqueued += 1
             publishFrameCounters()
-            dumpIfConfigured(sample)
             if firstFrameAt == nil {
                 firstFrameAt = Date()
                 if let started = streamStartedAt {
@@ -366,15 +378,29 @@ public final class LiveMirrorReceiver: ObservableObject {
         guard let dir = dumpDir, let format else { return }
 
         if dumpSession == nil || dumpFormat != format {
+            dumpSetups += 1
             setupDumpSession(format: format)
         }
         // The evidence session joins mid-GOP and cannot start until it sees an IDR, so ask the
         // sender for one; without this the sink stays silent for the whole session.
         if !dumpKeyframeRequested {
             dumpKeyframeRequested = true
+            lastDumpKeyframeAt = Date()
             requestKeyframeIfNeeded(reason: "dump-session")
         }
-        guard let session = dumpSession else { return }
+        // The evidence decoder needs a periodic IDR to stay alive; if it has produced nothing for a
+        // second while frames keep arriving, ask for one (bounded to once per two seconds).
+        let now = Date()
+        let silent = lastDumpImageAt.map { now.timeIntervalSince($0) > 1 } ?? true
+        let canAsk = lastDumpKeyframeAt.map { now.timeIntervalSince($0) > 2 } ?? true
+        if silent, canAsk {
+            lastDumpKeyframeAt = now
+            requestKeyframeIfNeeded(reason: "dump-stall")
+        }
+        guard let session = dumpSession else {
+            emit("DUMP no-session call#\(dumpCount + 1) setups=\(dumpSetups)")
+            return
+        }
         dumpCount += 1
         var decodeStatus = VTDecompressionSessionDecodeFrame(
             session,
@@ -388,12 +414,15 @@ public final class LiveMirrorReceiver: ObservableObject {
             }
             self?.recordDumpedFrame(imageBuffer, dir: dir, flags: flags)
         }
-        if decodeStatus != noErr, dumpCount % 30 == 1 {
-            emit("DUMP submit failed status=\(decodeStatus) n=\(dumpCount)")
+        if dumpCount % 15 == 0 || decodeStatus != noErr {
+            emit("DUMP submit n=\(dumpCount) status=\(decodeStatus)")
         }
     }
 
     private var dumpKeyframeRequested = false
+    private var dumpSetups = 0
+    private var lastDumpImageAt: Date?
+    private var lastDumpKeyframeAt: Date?
 
     private func setupDumpSession(format: CMFormatDescription) {
         dumpSession.map { VTDecompressionSessionInvalidate($0) }
@@ -418,7 +447,7 @@ public final class LiveMirrorReceiver: ObservableObject {
         )
         dumpSession = status == noErr ? session : nil
         if status != noErr { emit("DUMP session failed status=\(status)") }
-        else { emit("DUMP session created") }
+        else { emit("DUMP session created setups=\(dumpSetups)") }
     }
 
     private func recordDumpedFrame(_ buffer: CVPixelBuffer, dir: URL, flags: VTDecodeInfoFlags) {
@@ -439,6 +468,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             colorSpace: CGColorSpaceCreateDeviceRGB()
         )
         let luma = 0.2126 * Double(pixel[0]) + 0.7152 * Double(pixel[1]) + 0.0722 * Double(pixel[2])
+        lastDumpImageAt = Date()
         dumpLumaSum += luma
         dumpLumaCount += 1
         dumpLumaMin = min(dumpLumaMin, luma)
@@ -447,7 +477,9 @@ public final class LiveMirrorReceiver: ObservableObject {
         let index = dumpLumaCount
         // Per-frame so a measurement phase can be attributed by timestamp; cumulative stats stay
         // available for the whole session.
-        emit(String(format: "LUMA f=%d l=%.1f", index, luma))
+        // ~2 lines/second: os_log throttles per-frame info lines at stream rates, which silently
+        // hides the measurement instead of reporting it.
+        if index % 15 == 0 { emit(String(format: "LUMA f=%d l=%.1f", index, luma)) }
         if index % 30 == 0, let cg = dumpContext.createCGImage(ci, from: ci.extent) {
             let url = dir.appendingPathComponent(String(format: "dump-%05d.png", index))
             if let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.png" as CFString, 1, nil) {
