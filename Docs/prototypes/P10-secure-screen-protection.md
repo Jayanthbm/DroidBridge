@@ -338,8 +338,11 @@ What this establishes:
   is open on an unlocked device, where both variants render in full. The distinction only exists on the
   lock screen, so that row still needs a locked-device run.
 
-Privacy note: the recording is a local artefact of a synthetic test surface and a throwaway OTP string;
-no personal content was captured, and no device-side screen capture was used.
+Artefacts: [evidence/p10](evidence/p10/README.md) holds the method, the full table, `baseline.png`
+(the same screen unprotected and fully legible) and `flag-secure-on.png` (the app window black while
+system chrome still renders). Privacy note: the recording is a local artefact of a synthetic test
+surface and a throwaway OTP string; no personal content was captured, and no device-side screen
+capture was used.
 
 ### Lock screen: no stream at all (measured, 2026-11-21)
 
