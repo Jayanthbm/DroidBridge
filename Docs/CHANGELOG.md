@@ -4,6 +4,12 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Added — P17 delivers input on the target S24 Ultra (2026-11-21)
+- Bonded the S24 Ultra to the Mac with a **phone-initiated** pairing and the numeric code verified by the owner on both screens (`695843`).
+- P17 Classic HIDP delivered arrow input on the target device: SDP `1330188580`, CoD `0x2540`, control `0x0011` + interrupt `0x0013` open, `0/0/0/0 → 1/1/1/1`, Android `BTHH_CONN_STATE_CONNECTED` over `BT_TRANSPORT_BR_EDR`. A 48-press burst landed `+12` per direction with no drops.
+- Fixed a shutdown defect: `SIGTERM` (`pkill`) bypassed `applicationShouldTerminate`, leaving the SDP record published and the L2CAP channels open so the next launch was refused with `0xE00002BC`. The app now handles `SIGTERM`/`SIGINT` through the same stop path; a phone-side Bluetooth cycle clears an already-stale session.
+- Both runs had USB debugging enabled, so the debugging-off acceptance run is still outstanding. See [P17](prototypes/P17-classic-hidp.md).
+
 ### Changed — P14 re-run on the S24 Ultra: background session stays alive (2026-11-20)
 - On the **S24 Ultra (Android 17)** the same build kept the session alive while backgrounded for ten minutes, with the screen off, across a Wi-Fi off/on cycle, and across a real reboot (`BOOT_COMPLETED` reconnects within 450 ms). The OnePlus freeze recorded earlier is an OEM deviation, so ADR-023's premise holds on the target device and ADR-043 is revised: background sync is allowed on this device class, with stalled-session detection and foreground-only degradation elsewhere.
 - **API 37 requires `ACCESS_LOCAL_NETWORK`.** Without it every LAN connection failed as `SocketTimeoutException` — indistinguishable from a dead listener; the experiment now declares and requests it.

@@ -35,4 +35,36 @@ final class P17AppDelegate: NSObject, NSApplicationDelegate {
         peripheral?.stop()
         return .terminateNow
     }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        installTerminationSignalHandlers()
+    }
 }
+
+/// Runs the same shutdown path for `SIGTERM`/`SIGINT` as for a normal quit.
+///
+/// AppKit does not turn these signals into an `applicationShouldTerminate` call, so a `kill` or a
+/// logout used to drop the process without withdrawing the SDP record or closing the L2CAP
+/// channels. The peer then kept a HID session nobody owned and the next launch was refused with
+/// `0xE00002BC` until Bluetooth was cycled on one side. Confirmed by measurement: `pkill` caused
+/// exactly that, while an AppleEvent quit (`osascript ... to quit`) logged `stopped` and reconnected
+/// cleanly.
+private func installTerminationSignalHandlers() {
+    for sig in [SIGTERM, SIGINT] {
+        signal(sig, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+        source.setEventHandler {
+            // The source is delivered on the main queue, so the main-actor work can be assumed.
+            MainActor.assumeIsolated {
+                if let delegate = NSApp.delegate as? P17AppDelegate {
+                    delegate.peripheral?.stop()
+                }
+            }
+            exit(0)
+        }
+        source.resume()
+        terminationSignalSources.append(source)
+    }
+}
+
+private var terminationSignalSources: [DispatchSourceSignal] = []

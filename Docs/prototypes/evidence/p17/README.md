@@ -128,6 +128,72 @@ reconnects with no Bluetooth cycle:
 20:23:25.721  harness sent UP
 ```
 
+## Run 6 — S24 Ultra (target device), first delivery
+
+Device: S24 Ultra `SM-S928B`, Android 17 / API 37. Mac at `60:3E:5F:31:D0:6D`; phone at
+`C0:D5:E2:F6:D7:C2`. USB connected: **yes**; USB debugging: **on**; wireless debugging: **off**.
+This is therefore preliminary evidence on the target device, not the debugging-off acceptance run.
+
+Pairing was **phone-initiated** and used SSP numeric comparison. The phone displayed `695843`
+(`Check pairing codes`), the owner read the same code on the Mac's Bluetooth pairing dialog and
+clicked Pair on both sides. The agent driving the phone could not read the Mac's dialog itself
+(no screen-capture capability in that session), so the numeric match was verified by the owner —
+which is the only acceptable way to confirm it. Both sides then held a bond: the phone reported
+`Bonded devices: 10` (was 9) and the Mac listed `Jayanth's S24 Ultra  C0:D5:E2:F6:D7:C2`.
+
+Delivery, one session, receiver screen focused:
+
+```
+SDP published (handle 1330188580)
+opening ACL to c0-d5-e2-f6-d7-c2
+class of device -> 0x2540
+control channel open
+interrupt channel open
+harness sent UP / DOWN / LEFT / RIGHT
+```
+
+```
+receiver before: UP: 0  DOWN: 0  LEFT: 0  RIGHT: 0
+receiver after : UP: 1  DOWN: 1  LEFT: 1  RIGHT: 1
+Android        : addr …[public][BT_TRANSPORT_BR_EDR] fd:475 state:BTHH_CONN_STATE_CONNECTED
+```
+
+A second delivery on the same bond took the counters to `2/2/2/2`.
+
+## Run 7 — 48-press stability burst on the S24 Ultra
+
+Same session shape as the OnePlus burst: `UP, DOWN, LEFT, RIGHT` × 12 over one control/interrupt
+pair, 900 ms apart.
+
+```
+receiver before: UP: 2   DOWN: 2   LEFT: 2   RIGHT: 2
+receiver after : UP: 14  DOWN: 14  LEFT: 14  RIGHT: 14
+```
+
+`+12` per direction: no dropped, duplicated or stuck keys on the target device either.
+
+## Failure mode found in Run 6/7 — `SIGTERM` leaves the session stale
+
+Replacing a running instance with `pkill` (SIGTERM) killed the process without running
+`applicationShouldTerminate`, so the SDP record was never withdrawn and the L2CAP channels were
+never closed. The next launch was then refused with `L2CAP control channel (0x0011) failed
+(0xE00002BC)` and `harness send skipped (not ready)`, while Android reported
+`BTHH_CONN_STATE_DISCONNECTED` — the stale half was the Mac.
+
+Two outcomes:
+
+1. **Recovery:** cycling Bluetooth on the *phone* (`svc bluetooth disable` → `enable`) cleared it,
+   and the next connect opened both channels first time. This is the documented "cycle one side"
+   step, now confirmed as a phone-side action.
+2. **Fix:** `P17ClassicHIDP` now installs `SIGTERM`/`SIGINT` handlers that run the same `stop()`
+   path as a normal quit before exiting. Verified: `osascript … to quit` logs `stopped` and the
+   next launch reconnects without any adapter cycle.
+
+Also observed: the S24 carries a **stale LE HID host record for the Mac** (`DevType = LE` with a
+boot-keyboard descriptor) from the P16 BLE attempts, next to the BR/EDR record this run uses. The
+Classic path works with it present, but it is another reason to read `dumpsys bluetooth_manager`
+carefully rather than trusting a single `HID status` line.
+
 ## Failure modes observed while reaching this result
 
 1. **Bluetooth privacy consent (macOS 26).** Until `kTCCServiceBluetoothAlways` was granted,
