@@ -1,3 +1,10 @@
+## Verified — P10 protection measured, P08 recovery, P15 ACL (2026-11-21)
+
+- **Screen-capture protection measured as a number.** A synthetic `FLAG_SECURE` surface mirrors as black: mean luma 1.0 over 809 delivered frames, against 196.4 for the identical unprotected screen with the same motion. The mirrored password-field screen reads 238.1, i.e. it mirrors normally.
+- **Locking ends the projection.** `system onStop (lock / screen sharing chip / user stop)` — nothing is mirrored while the device is locked, so lock-screen content cannot be disclosed through the mirror.
+- **Mirror no longer stalls after a bad timestamp.** The stream validator could wait for a recovery keyframe that nothing requested; the receiver now asks for it, and an injected corrupt sample recovers to `status=rendering` with `dropped=0`.
+- **Keychain prompts after a rebuild are explained and fixed for development.** Ad-hoc rebuilds invalidated the stored items' ACLs and blocked startup silently; builds now use the stable Apple Development identity, so no prompt appears and stored pairing survives rebuilds.
+
 # Changelog
 
 All notable project changes are recorded here.
