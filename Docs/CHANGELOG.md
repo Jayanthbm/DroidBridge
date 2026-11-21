@@ -4,6 +4,10 @@ All notable project changes are recorded here.
 
 ## [Unreleased]
 
+### Verified — P17 accepted with USB unplugged and debugging off (2026-11-21)
+- Acceptance run on the S24 Ultra with **USB disconnected, USB debugging off, wireless debugging off** (`adb devices` returned zero entries): one Classic HIDP session carried 48 reports and the receiver went `14/14/14/14 → 26/26/26/26` — every press delivered, no drops. Input came only from the Mac's explicitly triggered HID reports.
+- P17 closes as **GO** for the Classic HIDP route on Android 12 and Android 17. Not a production-input approval: one key per user action, with open mapping, text entry and the wider input matrix still unproven.
+
 ### Added — P17 delivers input on the target S24 Ultra (2026-11-21)
 - Bonded the S24 Ultra to the Mac with a **phone-initiated** pairing and the numeric code verified by the owner on both screens (`695843`).
 - P17 Classic HIDP delivered arrow input on the target device: SDP `1330188580`, CoD `0x2540`, control `0x0011` + interrupt `0x0013` open, `0/0/0/0 → 1/1/1/1`, Android `BTHH_CONN_STATE_CONNECTED` over `BT_TRANSPORT_BR_EDR`. A 48-press burst landed `+12` per direction with no drops.

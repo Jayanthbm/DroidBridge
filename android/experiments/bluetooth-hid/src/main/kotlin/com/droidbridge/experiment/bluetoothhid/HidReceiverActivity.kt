@@ -38,12 +38,16 @@ class HidReceiverActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize().padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("P16 — BLE HID keyboard receiver", style = MaterialTheme.typography.headlineSmall)
+                    Text("Arrow-key receiver — P16 BLE / P17 Classic", style = MaterialTheme.typography.headlineSmall)
                     Text("This test screen records only arrow-key down/up events.")
                     Text("Keep this screen visible and focused while testing.")
                     Text("UP: $upCount    DOWN: $downCount")
                     Text("LEFT: $leftCount    RIGHT: $rightCount")
-                    Text("USB debugging may be on for installation/diagnostics only; it does not deliver test input.")
+                    Text(
+                        "Test input arrives only over the Bluetooth HID link under test. " +
+                            "ADB is used for installation and diagnostics, never to deliver input, " +
+                            "and acceptance runs are performed with USB disconnected and debugging off.",
+                    )
                     Text("Events:")
                     observations.takeLast(12).forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }

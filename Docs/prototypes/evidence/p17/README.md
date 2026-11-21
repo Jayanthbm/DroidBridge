@@ -172,6 +172,43 @@ receiver after : UP: 14  DOWN: 14  LEFT: 14  RIGHT: 14
 
 `+12` per direction: no dropped, duplicated or stuck keys on the target device either.
 
+## Run 8 — ACCEPTANCE: 48 presses with USB unplugged and debugging off
+
+Environment, stated before the run and checked where possible: **USB connected: no**;
+**USB debugging: off**; **wireless debugging: off**. `adb devices` returned zero entries, so the
+device was not reachable by ADB at any point during the run. The Mac app was already signed with the
+stable Apple Development identity (Team `BJ57QQD6`), so the Bluetooth consent grant carried over.
+
+Everything below was driven from the Mac alone; the phone was operated by hand and read by eye.
+
+```
+SDP published (handle 1330188580)
+opening ACL to c0-d5-e2-f6-d7-c2
+class of device -> 0x2540
+control channel open
+interrupt channel open
+harness sent … × 48   (UP, DOWN, LEFT, RIGHT × 12, 900 ms apart, one session)
+```
+
+Receiver counters, read on the phone screen after the run:
+
+```
+before: UP: 14  DOWN: 14  LEFT: 14  RIGHT: 14
+after : UP: 26  DOWN: 26  LEFT: 26  RIGHT: 26
+```
+
+`+12` per direction — 48 of 48 reports delivered, no drops, no duplicates, no stuck keys, with no
+debugging channel available to the host. This is the acceptance result for P17.
+
+The photo of the receiver screen taken after the run shows `UP: 26  DOWN: 26 / LEFT: 26  RIGHT: 26`
+and, in its event list, the last ten events arriving in order (`DOWN up, LEFT down, LEFT up,
+RIGHT down, RIGHT up, UP down, UP up, DOWN down, DOWN up, LEFT down`), i.e. the tail of the
+`UP, DOWN, LEFT, RIGHT` sequence with each press followed by its release. The same photo showed two
+stale labels on that screen, which have been corrected in the app: the title still said
+"P16 — BLE HID keyboard receiver" for a Classic run, and a caption warned that USB debugging "may be
+on", which contradicted the run's own environment and invited exactly the misreading the acceptance
+criterion exists to prevent.
+
 ## Failure mode found in Run 6/7 — `SIGTERM` leaves the session stale
 
 Replacing a running instance with `pkill` (SIGTERM) killed the process without running
