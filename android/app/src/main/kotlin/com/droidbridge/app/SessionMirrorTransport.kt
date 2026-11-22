@@ -24,6 +24,9 @@ class SessionMirrorTransport(
     override val peerLabel: String
         get() = "Mac"
 
+    override val generation: Long
+        get() = controller.sessionGeneration
+
     override fun send(type: ControlMessage.Type, payload: ByteArray): Boolean =
         controller.sendControl(type, payload)
 }

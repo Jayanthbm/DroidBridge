@@ -1,3 +1,21 @@
+## Verified — Phase 4: the product streams the screen, survives rotation, recovers from a fault (2026-11-22)
+
+- **Mirroring now runs over the one authenticated session.** Measured end to end: `mirror.format 590x1280`,
+  60 → 644 frames, `dropped=0`, worst send 6 ms, rendered on the Mac. No second connection, no second pairing code.
+- **A picture rotating no longer drops the connection.** Rotation used to log `session closed: stopped by app`
+  inside 120 ms because the session lived in the activity and `onDestroy` stopped it. The session now belongs to
+  the process, and rotating re-emits `mirror.format` (`1280x590` → `590x1280`) with frames continuing and no drops.
+- **A scrambled frame recovers with a keyframe, not with P-frames.** The Mac's injected corrupt sample produced
+  `KEYFRAME_REQUEST reason=validator-recovery`, the phone requested an IDR, and the stream resumed
+  (`dropped=4`: the garbage sample and the frames before the IDR).
+- **A reconnect no longer leaves a black stream.** A new session has no `mirror.format`, so the Mac had no SPS/PPS
+  and silently discarded every frame; the sender now re-announces the format with a fresh IDR when the session
+  generation changes. Implemented, not yet measured end to end.
+- **Screen capture is a button, gated by the system dialog every time.** Scope selection is explicit
+  (`Share one app` / `Share entire screen`); nothing starts at launch, and the capture service is `exported="false"`.
+- **Defect found and fixed:** the app must not stop its session from `onDestroy` — that turned an orientation change
+  into a dropped connection.
+
 ## Verified — Phase 3: clipboard sync both ways (2026-11-22)
 
 - **Text copied on the phone can reach the Mac, and back.** Measured on the S24 Ultra against the Mac app

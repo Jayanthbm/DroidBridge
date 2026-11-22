@@ -21,6 +21,16 @@ interface MirrorTransport {
     /** Sentinel peer label for the notification. Never a secret. */
     val peerLabel: String
 
+    /**
+     * Increases once per authenticated session.
+     *
+     * A new session knows nothing about the previous one: it has no `mirror.format`, so the Mac has no
+     * SPS/PPS and silently drops every frame it receives. The sender compares this counter and
+     * re-publishes the format (plus an IDR) when it changes — measured after a forced reconnect, where
+     * the phone kept encoding and the Mac received nothing at all.
+     */
+    val generation: Long
+
     /** Sends one control or media frame. Returns false when the session cannot carry it. */
     fun send(type: ControlMessage.Type, payload: ByteArray = ByteArray(0)): Boolean
 }

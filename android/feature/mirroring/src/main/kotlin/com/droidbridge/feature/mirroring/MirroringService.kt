@@ -134,6 +134,12 @@ class MirroringService : Service() {
 
     /** Set once a format message has been sent; the receiver needs one before any frame. */
     private val formatSent = AtomicBoolean(false)
+
+    /** The last format published, so a *new* session can be brought up without waiting for a resize. */
+    @Volatile private var lastFormat: Triple<Int, Int, H264ParameterSets>? = null
+
+    /** Generation the current session was announced on; a change means "tell the Mac again". */
+    @Volatile private var announcedGeneration: Long = -1
     private val timestampGate = MonotonicTimestampGate()
 
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -312,6 +318,7 @@ class MirroringService : Service() {
      */
     private fun publishFormat(width: Int, height: Int, sets: H264ParameterSets) {
         val activeTransport = transport ?: return
+        lastFormat = Triple(width, height, sets)
         try {
             val format = MirrorFormat(
                 width = width,
@@ -415,6 +422,18 @@ class MirroringService : Service() {
                     continue
                 }
                 try {
+                    // A reconnect gives us a fresh session that has never seen a format, so the Mac has
+                    // no SPS/PPS and discards everything. Re-announce before the next frame rather than
+                    // waiting for a resolution change that may never come.
+                    if (activeTransport.generation != announcedGeneration) {
+                        announcedGeneration = activeTransport.generation
+                        lastFormat?.let { (w, h, sets) ->
+                            gate.requireKeyframe()
+                            encoder?.requestSyncFrame()
+                            publishFormat(w, h, sets)
+                            Log.i(TAG, "re-announced format ${w}x${h} on new session gen=$announcedGeneration")
+                        }
+                    }
                     val payload = VideoPayload.encode(entry.ptsUs, entry.payload)
                     val startedNs = System.nanoTime()
                     activeTransport.send(ControlMessage.Type.VIDEO, payload)

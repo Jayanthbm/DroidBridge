@@ -85,6 +85,12 @@ class SessionController(
     @Volatile var lastRttMs: Long = -1
         private set
 
+    /** Increases each time a session authenticates, so features can re-establish their state. */
+    @Volatile private var generation = 0L
+
+    /** Current authenticated-session generation. */
+    val sessionGeneration: Long get() = generation
+
     @Volatile var confirmationCompleted: Boolean = false
         private set
 
@@ -213,6 +219,7 @@ class SessionController(
             // Only now is the peer trusted enough to pin: a rejected code must leave no pin behind.
             pinStore.remember(peerIdFor(selected), live.peerPin)
             confirmationCompleted = true
+            generation += 1
             update(Event.Confirmed)
             Log.i(TAG, "PAIRING_CONFIRMED code=$code")
         } catch (e: Exception) {
@@ -401,6 +408,10 @@ class SessionController(
                     ControlMessage.Type.MIRROR_STOP,
                     ControlMessage.Type.MIRROR_STARTED,
                     ControlMessage.Type.MIRROR_FORMAT -> {
+                        // Logged because this path is otherwise invisible: when a keyframe request was
+                        // dropped here the Mac kept flushing while the phone kept sending P-frames, and
+                        // nothing in either log said why.
+                        Log.i(TAG, "mirror message ${message.type} handler=${onMirrorMessage != null}")
                         onMirrorMessage?.invoke(message.type, message.payload)
                     }
                     ControlMessage.Type.CLIPBOARD_PAUSE -> {

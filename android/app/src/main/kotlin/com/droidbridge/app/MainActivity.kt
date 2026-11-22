@@ -19,7 +19,6 @@ import com.droidbridge.feature.dashboard.DashboardScreen
 import androidx.activity.result.contract.ActivityResultContracts
 import android.media.projection.MediaProjectionManager
 import com.droidbridge.feature.clipboard.ClipboardBridge
-import com.droidbridge.feature.mirroring.MirrorTransportHolder
 import com.droidbridge.feature.mirroring.MirroringService
 import com.droidbridge.feature.dashboard.ClipboardUiState
 import com.droidbridge.feature.dashboard.DiscoveryUiState
@@ -35,7 +34,8 @@ import kotlinx.coroutines.launch
  */
 class MainActivity : ComponentActivity() {
 
-    private lateinit var controller: SessionController
+    private val controller: SessionController
+        get() = (application as DroidBridgeApplication).controller
     private lateinit var clipboard: ClipboardBridge
 
     /** True while this activity is the resumed one, i.e. while Android will let us touch the clipboard. */
@@ -58,14 +58,6 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val identity = DeviceIdentity.loadOrCreate()
-        val pinStore = KeystorePinStore(this)
-        controller = SessionController(
-            identity = identity,
-            pinStore = pinStore,
-            discovery = ServiceDiscovery(this),
-            scope = lifecycleScope,
-        )
-
         // Discovery starts immediately on every platform. API 37 uses the system picker, which is
         // the scoped consent path and needs no broad permission (ADR-010) — measured on the S24 with
         // ACCESS_LOCAL_NETWORK explicitly denied: the picker still resolved the Mac and the session
@@ -88,15 +80,8 @@ class MainActivity : ComponentActivity() {
         }
         controller.onStateChanged = { clipboardTick.value += 1 }
 
-        // The capture service writes through this adapter, which forwards into the one session.
-        MirrorTransportHolder.transport = SessionMirrorTransport(controller)
-        controller.onMirrorMessage = { type, _ ->
-            // The only mirroring frame the Mac sends mid-stream is a keyframe request, after it flushed
-            // its decoder. Ignoring it would leave the Mac blank until the next scheduled GOP.
-            if (type == com.droidbridge.protocol.session.ControlMessage.Type.MIRROR_KEYFRAME_REQUEST) {
-                MirroringService.requestKeyframe()
-            }
-        }
+        // The transport binding and the mirror-frame hook live on the application, so they survive a
+        // configuration change; re-registering them here would silently drop a running capture's route.
 
         lifecycleScope.launch {
             kotlinx.coroutines.delay(2_000)
@@ -228,7 +213,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        controller.stop()
+        // The session is owned by the process, so an activity going away must NOT close it: doing that
+        // killed the stream on every rotation. Disconnect is an explicit user action.
         super.onDestroy()
     }
 }
