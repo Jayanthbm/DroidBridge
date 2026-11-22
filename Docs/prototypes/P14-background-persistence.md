@@ -159,21 +159,31 @@ Nothing about Doze, overnight survival, notification dismissal, or battery drain
 backgrounded case is a measured **no**; whether a valid `connectedDevice` FGS is frozen on stock Android
 or on One UI is untested, and that is the row that decides ADR-023.
 
-### Notification-permission-denied row — blocked by device UI instability (2026-11-21)
+### Notification-permission-denied row — measured (2026-11-22)
 
-Not measured. The row cannot be driven through ADB on this handset because the window manager wedges
-after a few automated taps: `mCurrentFocus` pins to a stale `NotificationShade` window id,
-`uiautomator dump` fails with `could not get idle state` (or returns a clock/weather widget), and
-`KEYCODE_HOME`, `KEYCODE_BACK`, `cmd statusbar collapse` and an upward swipe all fail to clear it.
-Only a reboot recovers the device. It happened four times in this session, twice on the P08 run and
-twice here.
+**Pass.** With `POST_NOTIFICATIONS` revoked (`granted=false`) the foreground service still starts and the
+session still runs:
 
-Also relevant: the session service is not exported, so it cannot be started headlessly
-(`am start-foreground-service` → `Requires permission not exported from uid`). Starting it requires the
-activity UI, and `MainActivity` accepts `host`/`port`/`pin` extras that prefill the fields — that part
-works, but the final "Start session" tap is what collides with the wedge.
+```
+autostart requested from visible activity
+startForegroundService accepted (origin=activity-autostart)
+startForeground succeeded for connectedDevice
+connecting to 192.168.31.109:59628
+state=connected
+```
 
-The row stays open. It needs either a reboot-into-clean-UI sequence with fewer taps, or a debuggable
-build that exports the service so the session can be started from the shell without touching the UI.
-Recorded rather than worked around, because "the app did not start" and "the device UI was stuck"
-must not be conflated in a persistence result.
+The notification is suppressed rather than fatal: `dumpsys notification` reports the package with
+`importance=NONE userSet=true` while the `p14-session` channel keeps `mImportance=2`. Android does not
+refuse the FGS, and heartbeats continued with the screen off.
+
+The earlier "blocked" note was a tooling problem, not a product one: the session could only be started
+by tapping, and the conditioned device UI wedged on a stale `NotificationShade`. The service is
+`exported=false` and `run-as` cannot reach the activity manager, so the fix is to use the harness extras
+the activity already accepts:
+
+```
+adb shell am start -n com.droidbridge.experiment.backgroundsession/.MainActivity \
+  --es host <ip> --ei port <port> --es pin <mac-pin> --ez autostart true
+```
+
+That starts the session with no UI interaction, which is how every future P14 row should be driven.
