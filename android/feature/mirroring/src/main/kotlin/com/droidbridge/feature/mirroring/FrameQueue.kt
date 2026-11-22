@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 /**
  * A bounded queue between the encoder and the socket.

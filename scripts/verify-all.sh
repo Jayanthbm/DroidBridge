@@ -51,9 +51,9 @@ fi
     :experiments:session:assembleDebug \
     :experiments:session:testDebugUnitTest \
     :experiments:session:lintDebug \
-    :experiments:mirroring:assembleDebug \
-    :experiments:mirroring:testDebugUnitTest \
-    :experiments:mirroring:lintDebug \
+    :feature:mirroring:assembleDebug \
+    :feature:mirroring:testDebugUnitTest \
+    :feature:mirroring:lintDebug \
     "${ANDROID_ARGS[@]+"${ANDROID_ARGS[@]}"}"
 
 if [[ "$SKIP_MACOS" -eq 1 ]]; then

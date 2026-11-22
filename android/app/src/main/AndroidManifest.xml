@@ -10,9 +10,12 @@
       declared and requested in context at the moment the user taps "Find the Mac", never at launch.
       On devices below API 37 the permission does not exist and the request is a no-op.
 
-      Deliberately still absent: FOREGROUND_SERVICE* (no background session yet — that is ADR-023's
-      P14 decision, not Phase 2), POST_NOTIFICATIONS (no notifications), BLUETOOTH* (ADR-016), and
-      every clipboard permission (none exists; clipboard needs foreground focus, R-09).
+      Phase 4 adds screen capture, so FOREGROUND_SERVICE, FOREGROUND_SERVICE_MEDIA_PROJECTION and
+      POST_NOTIFICATIONS arrive from `:feature:mirroring` (its manifest declares them with the same
+      justifications). Mirroring is started by an explicit button, never automatically.
+
+      Deliberately still absent: BLUETOOTH* (ADR-016), every clipboard permission (none exists;
+      clipboard needs foreground focus, R-09), and RECORD_AUDIO (experiment-scoped only, ADR-045).
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />

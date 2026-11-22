@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

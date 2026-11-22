@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -18,7 +18,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import com.droidbridge.core.network.SecureSession
 import com.droidbridge.protocol.media.AccessUnit
 import com.droidbridge.protocol.media.H264ParameterSets
 import com.droidbridge.protocol.media.MirrorFormat
@@ -61,8 +60,8 @@ class MirroringService : Service() {
     companion object {
         private const val TAG = "P08Mirroring"
 
-        const val ACTION_START = "com.droidbridge.experiment.mirroring.START"
-        const val ACTION_STOP = "com.droidbridge.experiment.mirroring.STOP"
+        const val ACTION_START = "com.droidbridge.feature.mirroring.START"
+        const val ACTION_STOP = "com.droidbridge.feature.mirroring.STOP"
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_RESULT_DATA = "resultData"
 
@@ -80,6 +79,20 @@ class MirroringService : Service() {
         private const val BITRATE_BPS = 4_000_000
 
         val stats = MirrorStats()
+
+        /**
+         * Set while capture runs; the session owner forwards keyframe requests through [requestKeyframe].
+         */
+        @Volatile
+        private var onKeyframeRequested: (() -> Unit)? = null
+
+        /** Called by the session owner when the Mac reports a flushed decoder. */
+        fun requestKeyframe() {
+            onKeyframeRequested?.invoke()
+        }
+
+        /** True while capture is running; the UI renders from this rather than from a second flag. */
+        fun isCapturing(): Boolean = stats.state.get().startsWith("streaming")
 
         @Volatile
         var isRunning: Boolean = false
@@ -116,9 +129,8 @@ class MirroringService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var encoder: MirrorEncoder? = null
     private var senderThread: Thread? = null
-    private var readerThread: Thread? = null
 
-    private var session: SecureSession? = null
+    private var transport: MirrorTransport? = null
 
     /** Set once a format message has been sent; the receiver needs one before any frame. */
     private val formatSent = AtomicBoolean(false)
@@ -178,8 +190,8 @@ class MirroringService : Service() {
         }
         Log.i(TAG, "repeat-previous-frame=${MirrorEncoder.repeatPreviousFrameAfterUs ?: "off"}")
 
-        val activeSession = MirrorSessionHolder.session
-        if (activeSession == null || !activeSession.isAuthenticated) {
+        val activeTransport = MirrorTransportHolder.transport
+        if (activeTransport == null || !activeTransport.isReady) {
             stats.state.set("start failed: no authenticated session")
             Log.w(TAG, "start refused: no authenticated session")
             stopSelf()
@@ -206,11 +218,13 @@ class MirroringService : Service() {
                 }
                 projection = mp
                 mp.registerCallback(projectionCallback, mainHandler)
-                session = activeSession
+                transport = activeTransport
 
-                activeSession.send(ControlMessage.Type.MIRROR_STARTED)
-                startSender(activeSession)
-                startReader(activeSession)
+                activeTransport.send(ControlMessage.Type.MIRROR_STARTED)
+                // No reader of our own: the session owner reads the socket and calls
+                // [requestKeyframe]. Two readers on one session steal each other's frames.
+                onKeyframeRequested = ::handleKeyframeRequest
+                startSender(activeTransport)
 
                 val metrics = resources.displayMetrics
                 val contentWidth = metrics.widthPixels
@@ -297,7 +311,7 @@ class MirroringService : Service() {
      * with no reference.
      */
     private fun publishFormat(width: Int, height: Int, sets: H264ParameterSets) {
-        val activeSession = session ?: return
+        val activeTransport = transport ?: return
         try {
             val format = MirrorFormat(
                 width = width,
@@ -308,7 +322,7 @@ class MirroringService : Service() {
                 parameterSets = sets,
             )
             gate.requireKeyframe()
-            activeSession.send(
+            activeTransport.send(
                 ControlMessage.Type.MIRROR_FORMAT,
                 format.toJsonPayload().toByteArray(Charsets.UTF_8),
             )
@@ -391,7 +405,7 @@ class MirroringService : Service() {
     // Transport threads
     // ---------------------------------------------------------------------------------------
 
-    private fun startSender(activeSession: SecureSession) {
+    private fun startSender(activeTransport: MirrorTransport) {
         val thread = Thread({
             while (running.get()) {
                 val entry = queue.take()
@@ -403,7 +417,7 @@ class MirroringService : Service() {
                 try {
                     val payload = VideoPayload.encode(entry.ptsUs, entry.payload)
                     val startedNs = System.nanoTime()
-                    activeSession.send(ControlMessage.Type.VIDEO, payload)
+                    activeTransport.send(ControlMessage.Type.VIDEO, payload)
                     val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000
                     if (elapsedMs > stats.maxSendMs.get()) stats.maxSendMs.set(elapsedMs)
 
@@ -431,58 +445,18 @@ class MirroringService : Service() {
     }
 
     /**
-     * Reads control traffic while mirroring.
+     * The Mac flushed its decoder and asked for a keyframe.
      *
-     * The only message the Mac sends during a session is `mirror.keyframe_request`, after it flushed
-     * its decoder. Ignoring it would leave the Mac showing nothing until the next scheduled GOP.
+     * The session owner calls this rather than the service reading the socket. One reader per session
+     * is what keeps control frames and media frames from being consumed by different threads.
      */
-    private fun startReader(activeSession: SecureSession) {
-        val thread = Thread({
-            while (running.get()) {
-                val message = try {
-                    activeSession.tryReceive(1_000)
-                } catch (e: Exception) {
-                    if (running.get()) {
-                        Log.w(TAG, "receive stopped: ${e.javaClass.simpleName}: ${e.message}")
-                        stats.state.set("connection lost")
-                        teardown("receive failed: ${e.javaClass.simpleName}")
-                        stopSelf()
-                    }
-                    return@Thread
-                } ?: continue
-
-                when (message.type) {
-                    ControlMessage.Type.MIRROR_KEYFRAME_REQUEST -> {
-                        stats.keyframeRequests.incrementAndGet()
-                        gate.requireKeyframe()
-                        encoder?.requestSyncFrame()
-                        Log.i(TAG, "keyframe requested by the Mac; requesting an IDR")
-                    }
-
-                    ControlMessage.Type.PING -> try {
-                        activeSession.send(ControlMessage.Type.PONG, message.payload)
-                    } catch (e: Exception) {
-                        Log.w(TAG, "pong failed: ${e.javaClass.simpleName}")
-                    }
-
-                    ControlMessage.Type.CLOSE -> {
-                        teardown("peer sent close")
-                        stopSelf()
-                        return@Thread
-                    }
-
-                    else -> Unit
-                }
-            }
-        }, "p08-reader")
-        thread.isDaemon = true
-        readerThread = thread
-        thread.start()
+    private fun handleKeyframeRequest() {
+        if (!running.get()) return
+        stats.keyframeRequests.incrementAndGet()
+        gate.requireKeyframe()
+        encoder?.requestSyncFrame()
+        Log.i(TAG, "keyframe requested by the Mac; requesting an IDR")
     }
-
-    // ---------------------------------------------------------------------------------------
-    // Notification and teardown
-    // ---------------------------------------------------------------------------------------
 
     private fun startForegroundWithNotification() {
         val manager = getSystemService(NotificationManager::class.java)
@@ -494,10 +468,13 @@ class MirroringService : Service() {
             ),
         )
 
+        // Opens the product app, not an experiment activity: tapping the notification should land the
+        // user where the mirroring controls live.
         val openApp = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MirroringActivity::class.java),
+            packageManager.getLaunchIntentForPackage(packageName)
+                ?: Intent(Intent.ACTION_MAIN).setPackage(packageName),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val stopIntent = PendingIntent.getService(
@@ -558,11 +535,11 @@ class MirroringService : Service() {
 
         queue.clear()
 
-        val activeSession = session
-        if (activeSession != null && activeSession.isAuthenticated) {
+        val activeTransport = transport
+        if (activeTransport != null && activeTransport.isReady) {
             val sendStop = {
                 runCatching {
-                    activeSession.send(
+                    activeTransport.send(
                         ControlMessage.Type.MIRROR_STOP,
                         reason.toByteArray(Charsets.UTF_8),
                     )
@@ -576,9 +553,8 @@ class MirroringService : Service() {
         }
 
         senderThread?.interrupt()
-        readerThread?.interrupt()
         senderThread = null
-        readerThread = null
+        onKeyframeRequested = null
 
         val currentEncoder = encoder
         encoder = null

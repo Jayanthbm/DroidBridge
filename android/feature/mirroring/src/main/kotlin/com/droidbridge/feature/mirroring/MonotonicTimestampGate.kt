@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 /**
  * Enforces strictly increasing, non-negative encoder presentation timestamps within one format

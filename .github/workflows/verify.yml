@@ -77,9 +77,9 @@ jobs:
             :experiments:session:assembleDebug \
             :experiments:session:testDebugUnitTest \
             :experiments:session:lintDebug \
-            :experiments:mirroring:assembleDebug \
-            :experiments:mirroring:testDebugUnitTest \
-            :experiments:mirroring:lintDebug \
+            :feature:mirroring:assembleDebug \
+            :feature:mirroring:testDebugUnitTest \
+            :feature:mirroring:lintDebug \
             --no-daemon
 
       - name: Upload lint report

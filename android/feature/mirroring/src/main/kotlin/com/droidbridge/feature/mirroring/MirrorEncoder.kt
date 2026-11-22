@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 import android.media.MediaCodec
 import android.media.MediaCodecInfo

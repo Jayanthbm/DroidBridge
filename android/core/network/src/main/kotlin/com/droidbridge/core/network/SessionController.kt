@@ -94,6 +94,12 @@ class SessionController(
      */
     @Volatile var onClipboardMessage: ((ControlMessage.Type, ByteArray) -> Unit)? = null
 
+    /**
+     * Receives mirroring control frames. The session owner is the only reader of the socket, so a
+     * feature that needs `mirror.keyframe_request` subscribes here instead of reading it itself.
+     */
+    @Volatile var onMirrorMessage: ((ControlMessage.Type, ByteArray) -> Unit)? = null
+
     /** Called whenever the pairing state changes, so feature UIs can refresh without polling. */
     @Volatile var onStateChanged: (() -> Unit)? = null
 
@@ -391,6 +397,12 @@ class SessionController(
                     ControlMessage.Type.CLIPBOARD_ACCEPT,
                     ControlMessage.Type.CLIPBOARD_ACK,
                     ControlMessage.Type.CLIPBOARD_REJECT,
+                    ControlMessage.Type.MIRROR_KEYFRAME_REQUEST,
+                    ControlMessage.Type.MIRROR_STOP,
+                    ControlMessage.Type.MIRROR_STARTED,
+                    ControlMessage.Type.MIRROR_FORMAT -> {
+                        onMirrorMessage?.invoke(message.type, message.payload)
+                    }
                     ControlMessage.Type.CLIPBOARD_PAUSE -> {
                         // Handed to the feature, which owns the clipboard rules. The keepalive loop
                         // must not interpret them: a clipboard pause is not a session event.

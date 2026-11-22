@@ -16,9 +16,14 @@ import com.droidbridge.core.network.SessionController
 import com.droidbridge.core.security.DeviceIdentity
 import com.droidbridge.core.security.KeystorePinStore
 import com.droidbridge.feature.dashboard.DashboardScreen
+import androidx.activity.result.contract.ActivityResultContracts
+import android.media.projection.MediaProjectionManager
 import com.droidbridge.feature.clipboard.ClipboardBridge
+import com.droidbridge.feature.mirroring.MirrorTransportHolder
+import com.droidbridge.feature.mirroring.MirroringService
 import com.droidbridge.feature.dashboard.ClipboardUiState
 import com.droidbridge.feature.dashboard.DiscoveryUiState
+import com.droidbridge.feature.dashboard.MirroringUiState
 import kotlinx.coroutines.launch
 
 /**
@@ -38,6 +43,15 @@ class MainActivity : ComponentActivity() {
 
     /** Changes whenever clipboard-visible state changes, so Compose recomposes without polling. */
     private val clipboardTick = kotlinx.coroutines.flow.MutableStateFlow(0)
+
+    /** Drives the mirroring counters once a second while a capture is running. */
+    private val mirroringTick = kotlinx.coroutines.flow.MutableStateFlow(0)
+
+    /**
+     * Screen capture needs the system's own consent dialog, and the resulting grant is an `Intent` that
+     * is only valid for one capture. It is launched from a button, never at startup.
+     */
+    private lateinit var projectionLauncher: androidx.activity.result.ActivityResultLauncher<android.content.Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,12 +88,52 @@ class MainActivity : ComponentActivity() {
         }
         controller.onStateChanged = { clipboardTick.value += 1 }
 
+        // The capture service writes through this adapter, which forwards into the one session.
+        MirrorTransportHolder.transport = SessionMirrorTransport(controller)
+        controller.onMirrorMessage = { type, _ ->
+            // The only mirroring frame the Mac sends mid-stream is a keyframe request, after it flushed
+            // its decoder. Ignoring it would leave the Mac blank until the next scheduled GOP.
+            if (type == com.droidbridge.protocol.session.ControlMessage.Type.MIRROR_KEYFRAME_REQUEST) {
+                MirroringService.requestKeyframe()
+            }
+        }
+
+        lifecycleScope.launch {
+            kotlinx.coroutines.delay(2_000)
+            while (true) {
+                if (MirroringService.isRunning) mirroringTick.value += 1
+                kotlinx.coroutines.delay(1_000)
+            }
+        }
+
+        projectionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val data = result.data
+            if (result.resultCode == android.app.Activity.RESULT_OK && data != null) {
+                MirroringService.start(this, result.resultCode, data)
+            }
+        }
+
         setContent {
             val state by controller.state.collectAsState()
             val peers by controller.peers.collectAsState()
             val discoveryStatus by controller.discoveryStatus.collectAsState()
             // Read the revision so every bridge update recomposes the card.
             val clipboardRevision by clipboardTick.collectAsState()
+            // Mirroring counters are atomics in the feature; this recomposes them once a second while
+            // capture runs, which is cheaper than exposing four flows for a debug line.
+            val mirroringRevision by mirroringTick.collectAsState()
+            val mirroringState = remember(mirroringRevision, state.phase) {
+                val stats = MirroringService.stats
+                MirroringUiState(
+                    state = stats.state.get(),
+                    capturing = MirroringService.isCapturing(),
+                    framesSent = stats.framesSent.get(),
+                    bytesSent = stats.bytesSent.get(),
+                    keyframeRequests = stats.keyframeRequests.get(),
+                    maxSendMs = stats.maxSendMs.get(),
+                    connected = state.phase == com.droidbridge.core.pairing.Pairing.Phase.CONNECTED,
+                )
+            }
             val clipboardState = remember(clipboardRevision, state.phase) {
                 ClipboardUiState(
                     status = clipboard.status,
@@ -128,6 +182,12 @@ class MainActivity : ComponentActivity() {
                     clipboard.setPaused(paused)
                     clipboardTick.value += 1
                 },
+                mirroring = mirroringState,
+                onStartMirroring = { requestMirroring() },
+                onStopMirroring = {
+                    MirroringService.stop(this)
+                    clipboardTick.value += 1
+                },
             )
         }
     }
@@ -147,6 +207,12 @@ class MainActivity : ComponentActivity() {
             "device ${info.manufacturer} ${info.model} android=${info.androidRelease} sdk=${info.sdkInt} build=${info.buildId}",
         )
         return "${info.manufacturer} ${info.model} · Android ${info.androidRelease} (API ${info.sdkInt})"
+    }
+
+    /** Shows the system capture-consent dialog; the service only starts if the user allows it. */
+    private fun requestMirroring() {
+        val manager = getSystemService(MediaProjectionManager::class.java)
+        projectionLauncher.launch(manager.createScreenCaptureIntent())
     }
 
     override fun onResume() {

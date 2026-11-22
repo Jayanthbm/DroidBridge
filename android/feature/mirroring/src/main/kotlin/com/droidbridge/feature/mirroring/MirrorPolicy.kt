@@ -1,4 +1,4 @@
-package com.droidbridge.experiment.mirroring
+package com.droidbridge.feature.mirroring
 
 /**
  * Pure decisions about the encode geometry and which frames may be sent.

@@ -34,6 +34,17 @@ data class DiscoveryUiState(
     val needsPermission: Boolean = false,
 )
 
+/** Mirroring state the screen renders. Counts only: no frame data ever reaches the UI. */
+data class MirroringUiState(
+    val state: String = "idle",
+    val capturing: Boolean = false,
+    val framesSent: Long = 0,
+    val bytesSent: Long = 0,
+    val keyframeRequests: Long = 0,
+    val maxSendMs: Long = 0,
+    val connected: Boolean = false,
+)
+
 /** Clipboard state the screen renders; no clipboard content is ever held here. */
 data class ClipboardUiState(
     val status: String = "not connected",
@@ -67,6 +78,9 @@ fun DashboardScreen(
     discovery: DiscoveryUiState = DiscoveryUiState(),
     onGrantLocalNetwork: () -> Unit = {},
     clipboard: ClipboardUiState = ClipboardUiState(),
+    mirroring: MirroringUiState = MirroringUiState(),
+    onStartMirroring: () -> Unit = {},
+    onStopMirroring: () -> Unit = {},
     onSendClipboard: () -> Unit = {},
     onApplyClipboard: () -> Unit = {},
     onDismissClipboard: () -> Unit = {},
@@ -137,6 +151,12 @@ fun DashboardScreen(
                 onPausedChange = onPauseClipboard,
             )
 
+            MirroringCard(
+                state = mirroring,
+                onStart = onStartMirroring,
+                onStop = onStopMirroring,
+            )
+
             Text("Nearby", style = MaterialTheme.typography.titleMedium)
             when {
                 discovery.needsPermission -> Card {
@@ -203,4 +223,41 @@ private fun explain(failure: Pairing.Failure): String = when (failure) {
     Pairing.Failure.PIN_MISMATCH -> "the Mac's identity does not match the one you paired with"
     Pairing.Failure.CODE_REJECTED -> "you rejected the code; nothing was saved"
     Pairing.Failure.GAVE_UP -> "the connection kept dropping, so retrying stopped"
+}
+
+/**
+ * The Phase 4 surface.
+ *
+ * Start goes through the system capture dialog every time: Android grants one capture per consent, and
+ * a remembered grant would be a permission the user never re-approved.
+ */
+@Composable
+private fun MirroringCard(
+    state: MirroringUiState,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Card {
+        Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Screen", style = MaterialTheme.typography.titleMedium)
+            Text(state.state, style = MaterialTheme.typography.bodySmall)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                Button(
+                    onClick = onStart,
+                    enabled = state.connected && !state.capturing,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Share this screen") }
+                OutlinedButton(onClick = onStop, enabled = state.capturing, modifier = Modifier.weight(1f)) {
+                    Text("Stop sharing")
+                }
+            }
+
+            Text(
+                "frames ${state.framesSent} · ${state.bytesSent / 1024} KiB · " +
+                    "keyframe requests ${state.keyframeRequests} · worst send ${state.maxSendMs} ms",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
 }

@@ -54,7 +54,6 @@ include(":experiments:clipboard")
 include(":experiments:clipboard-receive")
 include(":experiments:discovery")
 include(":experiments:session")
-include(":experiments:mirroring")
 // P16 isolated standard BLE HID keyboard receiver; no Android Bluetooth permission declared.
 include(":experiments:bluetooth-hid")
 // P14 foreground-service session persistence; declares the connectedDevice FGS permissions.
