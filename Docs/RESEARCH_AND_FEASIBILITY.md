@@ -422,6 +422,7 @@ Each entry follows the required evidence format. "Checked" is the date the cited
 - **Finding (negative):** all other usages "CAN NOT be captured" — `USAGE_VOICE_COMMUNICATION` (cellular/VoIP call audio) is excluded by design. There is no public path to cellular call audio without privileged or system roles.
 - **Decision:** **NO-GO** for call audio. Playback (media) audio is **CONDITIONAL** and out of MVP scope; it needs `RECORD_AUDIO`, which is not approved for the MVP.
 - **Prototype:** none in MVP; P12 only if the owner approves an audio research track.
+- **Measured 2026-11-22 (P12, SM-S928B Android 17):** the boundary above was confirmed on the target device rather than left as a documentation claim. Captured bit-exactly (`rms=5791.5 peak=8190`) for `USAGE_MEDIA`/`USAGE_GAME`/`USAGE_UNKNOWN` with `ALLOW_CAPTURE_BY_ALL`; refused (`rms=0.0` with frames still advancing) for `USAGE_VOICE_COMMUNICATION` with `ALLOW_CAPTURE_BY_ALL`, for `USAGE_NOTIFICATION`, and for any usage published with `ALLOW_CAPTURE_BY_NONE`. A real third-party YouTube client's audio was captured, so the positive case is not an artefact of the test signal. Two details the documentation does not state: `USAGE_NOTIFICATION` is also excluded (the docs list the allowed set only), and a capturing app **does** capture its own playback. See `Docs/prototypes/P12-audio-calls.md`.
 
 ---
 

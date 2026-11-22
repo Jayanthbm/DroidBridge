@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      P12 permissions, each carrying its own justification so PERMISSIONS_MATRIX.md can be checked
+      against the manifest rather than against prose.
+
+      RECORD_AUDIO: mandatory for AudioRecord, and therefore for playback capture at all (R-15).
+      Approved for this experiment only (owner decision 2026-11-22); it is absent from :app.
+      FOREGROUND_SERVICE + FOREGROUND_SERVICE_MEDIA_PROJECTION: the MediaProjection instance that
+      authorises playback capture must be held by a mediaProjection-type foreground service.
+      POST_NOTIFICATIONS: that service's ongoing notification.
+
+      Deliberately absent: INTERNET and ACCESS_LOCAL_NETWORK. This experiment captures and measures
+      locally and transmits nothing, so it needs no network permission at all.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/experiment_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.P12AudioCapture">
+
+        <activity
+            android:name=".AudioCaptureActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Holds the MediaProjection the capture is authorised by. stopWithTask="false" so a session
+          survives the activity going to the background, which is what the row measures.
+        -->
+        <service
+            android:name=".AudioCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection"
+            android:stopWithTask="false" />
+    </application>
+
+</manifest>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="experiment_name">P12 Tone Player</string>
+    <string name="tone_status">P12 tone\n%1$s\n%2$s\n440 Hz, %3$d s</string>
+</resources>

@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A level meter: the P12 audio-capture experiment, not a product icon. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M26,54h10v20h-10zM42,40h10v34h-10zM58,30h10v44h-10zM74,46h10v28h-10z" />
+</vector>

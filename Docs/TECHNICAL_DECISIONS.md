@@ -390,3 +390,36 @@ satisfy.
 - Status: Reopened for Mac Bluetooth HID feasibility by ADR-036 (2026-11-17); no control claim until physical-device tests pass.
 - Decision: Do not claim full remote control until P16/P17 establish exact supported behavior through a compliant Bluetooth HID path. Accessibility, ADB functional paths, root and privileged APIs remain prohibited.
 - Alternatives: Keep production mirroring view-only until the evidence supports any narrower control claim.
+
+## ADR-045 — Media audio capture is GO (conditional); call audio is closed NO-GO; call control deferred
+
+**Date:** 2026-11-22
+**Status:** Accepted, measured on SM-S928B (Android 17 / API 37).
+
+**Context:** P12 was the last unstarted phase and the only one that could not proceed without an
+owner decision, because playback capture needs `RECORD_AUDIO`. The owner approved that permission for
+an isolated experiment and directed that setup and consent prompts be driven through ADB rather than
+by hand.
+
+**Decision:**
+1. **Media audio: GO, conditional.** `AudioRecord` + `AudioPlaybackCaptureConfiguration` under a
+   `mediaProjection` foreground service captures an allowed app's playback **bit-exactly** on the
+   target device (`rms=5791.5 peak=8190` against a source amplitude of 8192). Public APIs only.
+2. **Call audio: NO-GO, closed.** Publishing `USAGE_VOICE_COMMUNICATION` with the most permissive
+   policy an app can declare still yields digital silence, so the exclusion is the platform's, not any
+   app's. This is measured, not inferred from documentation.
+3. **Call notifications/control: deferred to P2.** They need `READ_PHONE_STATE` or notification-listener
+   access, which `AGENTS.md` gates behind separate approval and which no MVP surface needs.
+4. **A refused capture must be treated as a product state, not an error.** Refusal is silent: the
+   stream keeps its full frame rate and carries nothing. An audio feature that cannot distinguish
+   "refused" from "quiet" would appear to work while delivering silence, so any future audio track
+   must measure amplitude, never frame arrival.
+
+**Alternatives rejected:** recording call audio through a privileged role or OEM interface (prohibited);
+using the notification listener to infer calls (unapproved sensitive permission, and it would not
+deliver audio); streaming audio without a refusal signal (fails the "never claim what was not
+measured" rule).
+
+**Consequences:** `RECORD_AUDIO` lives in `:experiments:audio-capture` and nowhere else; `:app` is
+unchanged. Audio stays an experiment until a product decision adds it, and that decision now has a
+number to reason about instead of a documentation claim.

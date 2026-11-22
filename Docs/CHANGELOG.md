@@ -1,3 +1,11 @@
+## Verified — audio capture measured, call audio closed (2026-11-22)
+
+- **Media audio capture works and is bit-exact.** Under a MediaProjection consent, Android's playback capture reproduces an allowed app's audio exactly (`rms=5791.5 peak=8190` against a source amplitude of 8192), including a real third-party YouTube client. Public APIs only — no root, no Accessibility.
+- **Call audio cannot be captured, and that is now measured rather than cited.** A stream published as `USAGE_VOICE_COMMUNICATION` with the most permissive policy an app can declare still arrives as silence. The exclusion belongs to the platform, so no prototype can reopen it.
+- **A refused capture must not look like a quiet one.** Refusal is silent: the stream keeps its full frame rate and carries nothing. Anything built on audio has to measure amplitude, never frame arrival — otherwise it will report success while delivering silence.
+- **Call notifications/control deferred**, because they need `READ_PHONE_STATE` or a notification listener and nothing in the MVP depends on them.
+- **`RECORD_AUDIO` stays experiment-scoped.** It exists only in the isolated P12 experiment, never in the product app, and the experiment transmits nothing.
+
 ## Verified — P10 protection measured, P08 recovery, P15 ACL (2026-11-21)
 
 - **Screen-capture protection measured as a number.** A synthetic `FLAG_SECURE` surface mirrors as black: mean luma 1.0 over 809 delivered frames, against 196.4 for the identical unprotected screen with the same motion. The mirrored password-field screen reads 238.1, i.e. it mirrors normally.
