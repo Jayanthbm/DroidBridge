@@ -11,6 +11,7 @@ import com.droidbridge.core.security.PeerPinning
 import com.droidbridge.protocol.session.ControlMessage
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -87,10 +88,62 @@ class SessionController(
     @Volatile var confirmationCompleted: Boolean = false
         private set
 
+    /**
+     * Receives clipboard control messages. Set by the clipboard feature; the controller does not know
+     * what they mean, which keeps the transport free of clipboard policy.
+     */
+    @Volatile var onClipboardMessage: ((ControlMessage.Type, ByteArray) -> Unit)? = null
+
+    /** Called whenever the pairing state changes, so feature UIs can refresh without polling. */
+    @Volatile var onStateChanged: (() -> Unit)? = null
+
+    /**
+     * One frame waiting to be written. A queue rather than a direct write because callers are UI
+     * handlers and other feature threads, and a socket write from the main thread throws
+     * `NetworkOnMainThreadException` — measured here, where it silently swallowed the clipboard ack.
+     */
+    private class Outbound(val type: ControlMessage.Type, val payload: ByteArray)
+
+    /** Unbounded so a send from a UI thread can never block; drained in order by one writer. */
+    private val outbox = Channel<Outbound>(Channel.UNLIMITED)
+
+    /**
+     * Sends one control frame on the live session.
+     *
+     * The frame is queued and written by [outboxWriter], so this is safe to call from the main
+     * thread and preserves the order the caller produced. Returns false when there is no
+     * authenticated session, so a caller can report "not connected" instead of believing a copy was
+     * delivered; a write failure after the queue accepts it is logged and ends the session.
+     */
+    fun sendControl(type: ControlMessage.Type, payload: ByteArray = ByteArray(0)): Boolean {
+        val live = session ?: return false
+        if (!live.isAuthenticated) return false
+        return outbox.trySend(Outbound(type, payload)).isSuccess
+    }
+
+    /**
+     * The single writer. One coroutine owns the socket's write side, which is also what keeps
+     * clipboard offer/body pairs in the order they were produced.
+     */
+    private suspend fun outboxWriter() {
+        for (frame in outbox) {
+            val live = session ?: continue
+            try {
+                live.send(frame.type, frame.payload)
+            } catch (e: Exception) {
+                Log.i(TAG, "send ${frame.type} failed: ${e.javaClass.simpleName}")
+                // A dead socket is a reconnect, not a lost message: let the keepalive observe it
+                // rather than pretending the frame was delivered.
+                return
+            }
+        }
+    }
+
     private fun update(event: Event) {
         val next = Pairing.reduce(stateFlow.value, event)
         if (next != stateFlow.value) {
             stateFlow.value = next
+            onStateChanged?.invoke()
             Log.i(TAG, "state=${next.phase} attempt=${next.attempt} code=${next.code ?: "none"} failure=${next.failure ?: "none"}")
         }
     }
@@ -132,7 +185,16 @@ class SessionController(
         selected = peer
         update(Event.ConnectRequested(hasStoredPin = storedPin(peer) != null))
         worker?.cancel()
-        worker = scope.launch(dispatcher) { runSession(peer) }
+        worker = scope.launch(dispatcher) {
+            // The writer runs for as long as this session attempt does: it owns the socket's write
+            // side so no caller thread ever touches it.
+            val writer = launch { outboxWriter() }
+            try {
+                runSession(peer)
+            } finally {
+                writer.cancel()
+            }
+        }
     }
 
     /** The user compared the codes and they matched. */
@@ -323,6 +385,16 @@ class SessionController(
                     }
                     ControlMessage.Type.CLOSE -> {
                         return "peer closed: ${String(message.payload)}"
+                    }
+                    ControlMessage.Type.CLIPBOARD_OFFER,
+                    ControlMessage.Type.CLIPBOARD_TEXT,
+                    ControlMessage.Type.CLIPBOARD_ACCEPT,
+                    ControlMessage.Type.CLIPBOARD_ACK,
+                    ControlMessage.Type.CLIPBOARD_REJECT,
+                    ControlMessage.Type.CLIPBOARD_PAUSE -> {
+                        // Handed to the feature, which owns the clipboard rules. The keepalive loop
+                        // must not interpret them: a clipboard pause is not a session event.
+                        onClipboardMessage?.invoke(message.type, message.payload)
                     }
                     else -> Unit
                 }

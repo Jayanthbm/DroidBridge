@@ -16,6 +16,7 @@ dependencies {
     // The dashboard renders pairing state and discovered peers; it does not own either.
     implementation(project(":core:pairing"))
     implementation(project(":core:network"))
+    implementation(project(":feature:clipboard"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

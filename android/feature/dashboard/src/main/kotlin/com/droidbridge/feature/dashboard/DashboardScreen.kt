@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.droidbridge.core.network.ServiceDiscovery
 import com.droidbridge.core.pairing.Pairing
+import com.droidbridge.feature.clipboard.ClipboardCard
 
 /**
  * What discovery is doing, as the screen needs it.
@@ -31,6 +32,15 @@ import com.droidbridge.core.pairing.Pairing
 data class DiscoveryUiState(
     val status: ServiceDiscovery.Status = ServiceDiscovery.Status.Idle,
     val needsPermission: Boolean = false,
+)
+
+/** Clipboard state the screen renders; no clipboard content is ever held here. */
+data class ClipboardUiState(
+    val status: String = "not connected",
+    val paused: Boolean = false,
+    val hasIncoming: Boolean = false,
+    val incomingBytes: Int = 0,
+    val connected: Boolean = false,
 )
 
 /**
@@ -56,6 +66,11 @@ fun DashboardScreen(
     onStop: () -> Unit,
     discovery: DiscoveryUiState = DiscoveryUiState(),
     onGrantLocalNetwork: () -> Unit = {},
+    clipboard: ClipboardUiState = ClipboardUiState(),
+    onSendClipboard: () -> Unit = {},
+    onApplyClipboard: () -> Unit = {},
+    onDismissClipboard: () -> Unit = {},
+    onPauseClipboard: (Boolean) -> Unit = {},
 ) {
     Scaffold { padding ->
         Column(
@@ -109,6 +124,18 @@ fun DashboardScreen(
                     Text("Drop the connection (proves reconnect)")
                 }
             }
+
+            ClipboardCard(
+                status = clipboard.status,
+                paused = clipboard.paused,
+                hasIncoming = clipboard.hasIncoming,
+                incomingBytes = clipboard.incomingBytes,
+                connected = clipboard.connected,
+                onSend = onSendClipboard,
+                onApply = onApplyClipboard,
+                onDismiss = onDismissClipboard,
+                onPausedChange = onPauseClipboard,
+            )
 
             Text("Nearby", style = MaterialTheme.typography.titleMedium)
             when {

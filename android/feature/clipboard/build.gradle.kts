@@ -13,6 +13,8 @@ android {
 
 dependencies {
     implementation(project(":core:common"))
+    // Clipboard policy lives in the shared protocol module so the Mac implements the same rules.
+    api(project(":core:protocol"))
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

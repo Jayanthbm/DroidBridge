@@ -18,6 +18,15 @@ public enum ControlMessageType: UInt8, Equatable {
 
     case video = 0x20
 
+    // Clipboard (Phase 3, NETWORK_PROTOCOL §6). Codes must match
+    // `shared/protocol/.../session/ControlMessage.kt`.
+    case clipboardOffer = 0x30
+    case clipboardAccept = 0x31
+    case clipboardText = 0x32
+    case clipboardAck = 0x33
+    case clipboardReject = 0x34
+    case clipboardPause = 0x35
+
     public var label: String {
         switch self {
         case .ping: return "ping"
@@ -28,6 +37,12 @@ public enum ControlMessageType: UInt8, Equatable {
         case .mirrorStop: return "mirror.stop"
         case .mirrorKeyframeRequest: return "mirror.keyframe_request"
         case .video: return "video"
+        case .clipboardOffer: return "clipboard.offer"
+        case .clipboardAccept: return "clipboard.accept"
+        case .clipboardText: return "clipboard.text"
+        case .clipboardAck: return "clipboard.ack"
+        case .clipboardReject: return "clipboard.reject"
+        case .clipboardPause: return "clipboard.pause"
         }
     }
 

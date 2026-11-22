@@ -106,7 +106,7 @@ behaviour in P09/P10/P12/P14.
 | **Phase 0** Repository and environment | **Complete** | — |
 | **Phase 1** Feasibility prototypes | **In progress** | P08/P10 remain in progress; P14 pending; P16 BLE NO-GO for Android; P17 Classic HIDP preliminary GO on OnePlus only, S24 Ultra and independent implementation outstanding; P09 historical scoped NO-GO; P12 measured (media GO conditional, call audio NO-GO) |
 | **Phase 2** Shared protocol, discovery, pairing | **Partially evidenced** | P02/P03 prove the path; not formally closed. Needs the Mac identity/re-approval decision, P11/P13 outcomes, and Bluetooth-off confirmation |
-| **Phase 3** Clipboard MVP | **Not started** | P05/P06 plus loop prevention, deduplication, size limits, no-history default |
+| **Phase 3** Clipboard MVP | **Implemented and measured (USB attached)** | Text sync works both ways with hash+origin loop prevention, pause, 64 KiB limit, sensitive-clip refusal and no persistence — see [PHASE3-clipboard-sync.md](Docs/prototypes/PHASE3-clipboard-sync.md). Remaining for formal close: one cable-out sweep with both debuggings disabled. |
 | **Phase 4** Screen capture and streaming | **Partially evidenced** | P01 capture done; P07/P08 receiver, 30-minute session, keyframe recovery pending |
 | **Phase 5** Remote input decision | **Not started** | Route is now Classic HIDP (BLE HOGP is NO-GO for Android); needs independent DroidBridge implementation, S24 Ultra reproduction, reconnect/relaunch coverage and a USB-disconnected, debugging-off acceptance run before any keyboard claim |
 | **Phase 6** Hardening and UX | **Not started** | Permission UX, pairing revocation, failure states, accessibility, security/regression tests |

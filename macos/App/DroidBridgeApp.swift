@@ -104,6 +104,10 @@ struct DroidBridgeApp: App {
                 if let raw = Self.argumentValue("--p08-idle-timeout"), let seconds = TimeInterval(raw) {
                     liveMirror.idleTimeoutSeconds = seconds
                 }
+                // Phase 3: watch the Mac pasteboard for user copies and send them to the phone.
+                if CommandLine.arguments.contains("--clipboard-poll") {
+                    liveMirror.clipboard.startPolling()
+                }
                 if CommandLine.arguments.contains("--p08-listen") {
                     // Phase 2 harness: the peer id and service name select which stored pin applies,
                     // so a run can start from a genuinely unpinned peer instead of inheriting the

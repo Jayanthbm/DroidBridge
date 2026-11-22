@@ -64,6 +64,29 @@ class ClipboardActivity : ComponentActivity() {
                 "wrote sample text"
             }
             "read-focused" -> ClipboardProbe.read(this, "activity_focused").toLine()
+            // Phase 3 needs text on the phone clipboard produced by a real app action, not by ADB:
+            // Android has no shell clipboard command, and having the harness write the payload under
+            // test would make the measurement meaningless. An experiment app writing its own
+            // clipboard is an ordinary user-visible action.
+            "write-test" -> {
+                val text = "p04 test " + System.currentTimeMillis()
+                val clipboard = getSystemService(android.content.ClipboardManager::class.java)
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("p04", text))
+                "wrote " + text.length + " chars to the clipboard"
+            }
+            // Same write, but flagged the way a password manager flags a clip, so the product's
+            // "never send a sensitive clip" rule can be observed rather than assumed.
+            "write-sensitive" -> {
+                val text = "p04 sensitive " + System.currentTimeMillis()
+                val clip = android.content.ClipData.newPlainText("p04", text)
+                if (android.os.Build.VERSION.SDK_INT >= 33) {
+                    clip.description.extras = android.os.PersistableBundle().apply {
+                        putBoolean(android.content.ClipDescription.EXTRA_IS_SENSITIVE, true)
+                    }
+                }
+                getSystemService(android.content.ClipboardManager::class.java).setPrimaryClip(clip)
+                "wrote a sensitive-flagged clip"
+            }
             "read-empty" -> {
                 ClipboardProbe.clear(this)
                 ClipboardProbe.read(this, "clipboard_empty").toLine()
@@ -144,6 +167,14 @@ private fun ClipboardScreen(
 
         Button(onClick = { onAction("read-focused") }, modifier = Modifier.fillMaxWidth()) {
             Text("Send clipboard (product action)")
+        }
+
+        OutlinedButton(onClick = { onAction("write-test") }, modifier = Modifier.fillMaxWidth()) {
+            Text("Put test text on the clipboard")
+        }
+
+        OutlinedButton(onClick = { onAction("write-sensitive") }, modifier = Modifier.fillMaxWidth()) {
+            Text("Put sensitive test text on the clipboard")
         }
 
         Text("Observations", style = MaterialTheme.typography.titleSmall)

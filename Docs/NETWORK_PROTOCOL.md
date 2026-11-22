@@ -117,6 +117,41 @@ Fields:
 
 Never include raw clipboard text in logs.
 
+### Implemented wire shape (Phase 3)
+
+Message codes: `clipboard.offer 0x30`, `clipboard.accept 0x31`, `clipboard.text 0x32`,
+`clipboard.ack 0x33`, `clipboard.reject 0x34`, `clipboard.pause 0x35`. All of them ride the existing
+envelope `[version][type][sequence:4 BE][payload]`, so they are ordered with the keepalive and cannot
+overtake an earlier frame — which is what lets an offer and its body travel as two messages.
+
+- **offer**: UTF-8 JSON, `{"hash":"<sha256 hex>","bytes":<utf8 length>,"origin":"<peer id>","source":"<label>"}`.
+  `origin` is mandatory: a missing origin is a framing error, never a default, because a defaulted
+  origin disables loop prevention.
+- **text**: the raw UTF-8 bytes, no JSON, no base64. Byte length is the offer's `bytes`; text is never
+  re-encoded in transit.
+- **accept**: empty payload.
+- **ack**: the 32-byte content hash as lowercase hex — the receiver's proof that *that* body landed.
+- **reject**: a short wire reason, one of `too_large`, `not_foreground`, `paused`, `hash_mismatch`,
+  `own_origin`.
+- **pause**: `pause` or `resume`.
+
+Limits and policy settled by implementation:
+
+- Maximum text size is **64 KiB** of UTF-8 (`ClipboardSync.MAX_TEXT_BYTES`). The limit is applied to
+  the offer, so an oversized body is refused before it is transferred.
+- **Sensitivity markers are honoured, not ignored.** An Android clip flagged
+  `ClipDescription.EXTRA_IS_SENSITIVE` and a macOS pasteboard item carrying
+  `org.nspasteboard.ConcealedType` are refused at the sender. Declining to send is the only safe
+  behaviour for a password-manager copy that the user did not ask to move.
+- **TTL is not implemented** by design: nothing is stored, so nothing can expire. The MVP keeps at
+  most one pending incoming text in memory and drops it when applied, dismissed, or the session ends.
+- Loop prevention uses **content hash plus origin ID**, per §6. A receiver that applies text remembers
+  that hash until the next local copy, so the resulting echo is not re-sent.
+
+The Android side implements the corresponding permission-free rules in `ClipboardBridge`
+(`android/feature/clipboard/`), the macOS side in `ClipboardBridgeMac` (`macos/Core/`), and both are
+specified by the shared, unit-tested `ClipboardSync` object.
+
 ## 7. Mirroring messages
 
 - `mirror.start_request`

@@ -98,6 +98,12 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var totalFramesDropped = 0
     private var lastPublishedFrameCount = 0
     @Published public private(set) var formatChanges: Int = 0
+    /// Phase 3 clipboard: shares this session, its own rules live in ClipboardBridgeMac.
+    public let clipboard = ClipboardBridgeMac()
+
+    /// Mirrors `clipboard.status` so SwiftUI updates when the bridge reports a change.
+    @Published public private(set) var clipboardStatus = "idle"
+
     @Published public private(set) var pairingCode: String?
     @Published public private(set) var peerPin: String?
 
@@ -132,6 +138,21 @@ public final class LiveMirrorReceiver: ObservableObject {
                 idleTimeout: idleTimeoutSeconds,
                 pairingTimeout: 300
             )
+            clipboard.ownOriginId = identity.pin
+            clipboard.send = { [weak self] type, payload in
+                guard let self, let live = self.listener else { return }
+                do {
+                    try live.sendControl(type: type, payload: payload)
+                } catch {
+                    self.emit("CLIPBOARD_SEND_FAILED \(type) \(error)")
+                }
+            }
+            clipboard.onStatus = { [weak self] line in
+                Task { @MainActor in
+                    self?.clipboardStatus = line
+                    self?.emit("CLIPBOARD \(line)")
+                }
+            }
             wire(secure)
             try secure.start(serviceName: serviceName)
             listener = secure
@@ -186,6 +207,7 @@ public final class LiveMirrorReceiver: ObservableObject {
     }
 
     public func stop() {
+        clipboard.stopPolling()
         listener?.stop()
         listener = nil
         publishFrameCounters(force: true)
@@ -203,6 +225,9 @@ public final class LiveMirrorReceiver: ObservableObject {
                 self.peerPin = pin
                 self.pairingCode = code
                 self.state = authenticated ? .connected : .awaitingConfirmation
+                // Clipboard sync begins when the session is trusted, not before: an unconfirmed peer
+                // must not be able to make the Mac pasteboard change.
+                if authenticated { self.clipboard.startPolling() }
                 self.emit("READY peer-pin=\(pin) authenticated=\(authenticated) code=\(ShortAuthenticationCode.formatForDisplay(code))")
                 // Harness: confirm only when the peer pin is the one the run expected. The operator
                 // still compares the displayed code on both screens; this only removes the click.
@@ -297,6 +322,10 @@ public final class LiveMirrorReceiver: ObservableObject {
             } catch {
                 emit("PONG_FAILED \(error)")
             }
+        case .clipboardOffer, .clipboardAccept, .clipboardAck, .clipboardReject, .clipboardPause:
+            clipboard.handle(type: message.type, payload: message.payload)
+        case .clipboardText:
+            clipboard.handleTextBody(message.payload)
         default:
             break
         }

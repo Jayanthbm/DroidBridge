@@ -1,3 +1,24 @@
+## Verified — Phase 3: clipboard sync both ways (2026-11-22)
+
+- **Text copied on the phone can reach the Mac, and back.** Measured on the S24 Ultra against the Mac app
+  (`p04 test 1795359008053` copied on the phone appeared on the Mac pasteboard; a 25-byte Mac copy was
+  applied on the phone and acked). Both directions are explicit user actions.
+- **A copy never bounces.** Text is identified by its SHA-256 plus the origin peer, so the phone refuses
+  to send back what the Mac just gave it (`SEND_SKIPPED reason=echo`) and the Mac does not re-send what
+  it just applied.
+- **Sensitive clips stay where they are.** An Android clip flagged `EXTRA_IS_SENSITIVE` and a macOS
+  pasteboard item marked `org.nspasteboard.ConcealedType` are refused by the sender with a visible
+  explanation, so a password-manager copy is never moved by accident.
+- **Sync can be paused from either side**, and a paused peer sends nothing (`CLIPBOARD paused by the phone`).
+- **Nothing is stored or logged.** No history, no file, no clipboard text in logs — only hashes and byte
+  counts. Transfers are capped at 64 KiB of UTF-8.
+- **Android's real limits are surfaced, not hidden.** A clip sent while the app is backgrounded arrives
+  and waits: the card shows "ready to apply" and the pasteboard is written only on a tap, because
+  Android will not let a backgrounded app write it.
+- **Defects the live run caught:** the clipboard ack died on `NetworkOnMainThreadException` (writes now go
+  through one ordered writer coroutine), the card never refreshed because its revision was collected but
+  never read, and the bridge was constructed after the first composition, crashing on `lateinit`.
+
 ## Verified — Phase 2: discovery, pairing and the authenticated session (2026-11-22)
 
 - **The Android app can find the Mac.** Bonjour discovery resolves the advertised service and reads the protocol version from its TXT record (`pv=1`); a peer advertising a version this build does not speak is shown as incompatible and is never dialled.

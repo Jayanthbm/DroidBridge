@@ -482,3 +482,48 @@ connections from a freshly re-signed binary, so the app was run through `/usr/bi
 `execv`, whose responsible process it allows. This is the same class of problem as the P15 Keychain
 ACL: a rebuild invalidates a per-binary trust record. It does not affect shipped behaviour, but any
 unattended Mac-side test must account for it.
+
+## ADR-047 — Clipboard: hash+origin identity, sender-side limits, no interception, nothing stored
+
+**Status:** accepted (Phase 3). Supersedes nothing; implements the §6 contract that P04/P05/P06 made
+feasible.
+
+**Context.** P04 established that a backgrounded Android app cannot even read its clipboard, and that
+neither platform dedups anything at the OS level. P06 established that the macOS pasteboard's
+`changeCount` is the only reliable signal of a user copy and that the app's own writes must be
+recognised, or it will echo received text straight back.
+
+**Decisions.**
+
+1. **One pending transfer, identified by SHA-256 of the UTF-8 bytes, and an origin ID.** The origin ID
+   is the sender's identity pin, which already exists, is stable across restarts, and is never sent
+   anywhere it does not have to go. A receiver that applied a hash refuses to send that same hash back
+   until it sees a different local copy. Both sides implement both rules.
+
+2. **Limits are enforced by the sender before the body moves.** Offer carries the byte length and the
+   hash; the receiver refuses an oversized or mismatched offer before it takes a body, and the sender
+   refuses a pasteboard entry it will not carry. A 64 KiB UTF-8 limit keeps the whole transfer inside
+   one control frame and keeps the pending buffer bounded.
+
+3. **No clipboard interception and no history.** Sending is an explicit user action, not a watcher;
+   receiving on Android is a user action too, because the platform will not allow otherwise. Nothing is
+   persisted: no text, no hash history, no file, and logs carry hashes and byte counts only
+   (SECURITY_AND_PRIVACY). This is why there is no TTL in the implementation even though the protocol
+   allows one.
+
+4. **Sensitivity markers are honoured at the sender.** `EXTRA_IS_SENSITIVE` on Android and
+   `org.nspasteboard.ConcealedType` on macOS both refuse the send, with a visible explanation. Moving a
+   password the user did not ask to move is a privacy failure that no amount of user consent at pairing
+   time covers.
+
+5. **Transport writes are queued, never performed on the caller's thread.** The ack was lost to
+   `NetworkOnMainThreadException` when it was written from a Compose click handler. `SessionController`
+   now has one writer coroutine draining an ordered outbox, which is also what guarantees an offer and
+   its body are written in that order. Extends ADR-046 decision 1 from connect-path to all sends.
+
+6. **Polling starts only for a trusted session.** The Mac pasteboard monitor is not armed while a peer
+   is unconfirmed; otherwise an unpaired device could learn what the user copies just by connecting.
+
+**Consequences.** The MVP is text-only, requires a tap on the Android side, and cannot be sold as
+"clipboard sync" in the background on Android — that is the platform's rule, not a missing feature.
+Rich content, images and file promises are out of scope for this phase.

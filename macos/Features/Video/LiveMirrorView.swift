@@ -37,6 +37,29 @@ struct LiveMirrorView: View {
                     .font(.system(.caption, design: .monospaced))
             }
 
+            GroupBox("Clipboard") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(model.clipboardStatus)
+                        .font(.system(.caption, design: .monospaced))
+                        .textSelection(.enabled)
+                    HStack(spacing: 10) {
+                        Button("Send Mac clipboard") { model.clipboard.sendLocalClipboard() }
+                        Toggle("Pause sync", isOn: Binding(
+                            get: { model.clipboard.paused },
+                            set: { paused in
+                                model.clipboard.paused = paused
+                                if !paused { model.clipboard.startPolling() }
+                            }
+                        ))
+                    }
+                    Text("Text is kept in memory only; nothing is written to disk or to a log.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(4)
+            }
+
             Text("event: \(model.lastEvent)")
                 .font(.system(.caption, design: .monospaced))
                 .foregroundStyle(.secondary)

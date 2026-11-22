@@ -69,6 +69,35 @@ object ControlMessage {
 
         /** One access unit. Payload: `[8-byte big-endian ptsUs][AVCC access unit]`. */
         VIDEO(0x20),
+
+        /**
+         * Clipboard (Phase 3, NETWORK_PROTOCOL §6).
+         *
+         * The offer/accept/text/ack shape is kept rather than collapsing everything into one "here is
+         * text" message, because the receiver has to be able to *decline*: Android can only write the
+         * clipboard while its app has focus (R-09), so a delivery that arrives while the app is in the
+         * background must be refusable without the sender thinking it succeeded.
+         *
+         * Offer payload: `ClipboardPayload` JSON without the text (hash, byte length, origin).
+         * Text payload: the raw UTF-8 bytes; the offer already fixed the length and hash.
+         * Ack payload: the 32-byte content hash as hex, so a mismatched delivery is detectable.
+         */
+        CLIPBOARD_OFFER(0x30),
+
+        /** The sender accepted: the text bytes follow in a CLIPBOARD_TEXT message. */
+        CLIPBOARD_ACCEPT(0x31),
+
+        /** The transfer body: raw UTF-8 text, at most [com.droidbridge.protocol.clipboard.ClipboardSync.MAX_TEXT_BYTES]. */
+        CLIPBOARD_TEXT(0x32),
+
+        /** The receiver applied the text to its clipboard. Payload: content hash, hex. */
+        CLIPBOARD_ACK(0x33),
+
+        /** The receiver declined. Payload: a short machine-readable reason, no clipboard content. */
+        CLIPBOARD_REJECT(0x34),
+
+        /** Either side paused or resumed sync. Payload: `"pause"` or `"resume"`, never content. */
+        CLIPBOARD_PAUSE(0x35),
         ;
 
         /** True for media, which is paced and limited separately from control traffic. */
