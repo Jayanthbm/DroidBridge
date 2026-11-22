@@ -23,6 +23,7 @@ dependencies {
     // Discovery and the session controller are asynchronous; the controller publishes state as a
     // Flow so the UI never has to poll a socket.
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.androidx.annotation)
 
     testImplementation(libs.junit)
 }

@@ -22,6 +22,18 @@ import com.droidbridge.core.network.ServiceDiscovery
 import com.droidbridge.core.pairing.Pairing
 
 /**
+ * What discovery is doing, as the screen needs it.
+ *
+ * The distinction that matters is between "nothing found yet", "waiting for you in the system
+ * picker" and "the OS refuses LAN access". Collapsing those into an empty list is what makes a
+ * permission problem look like a broken product.
+ */
+data class DiscoveryUiState(
+    val status: ServiceDiscovery.Status = ServiceDiscovery.Status.Idle,
+    val needsPermission: Boolean = false,
+)
+
+/**
  * The Phase 2 dashboard: find the Mac, pair, and show the live session.
  *
  * Everything the user sees here is derived from [Pairing.State] — the screen does not decide whether
@@ -42,6 +54,7 @@ fun DashboardScreen(
     onReject: () -> Unit,
     onDrop: () -> Unit,
     onStop: () -> Unit,
+    discovery: DiscoveryUiState = DiscoveryUiState(),
 ) {
     Scaffold { padding ->
         Column(
@@ -97,8 +110,29 @@ fun DashboardScreen(
             }
 
             Text("Nearby", style = MaterialTheme.typography.titleMedium)
-            if (peers.isEmpty()) {
-                Text("no Mac found yet", style = MaterialTheme.typography.bodySmall)
+            when {
+                discovery.needsPermission -> Card {
+                    Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("Local network access is off", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "Android 17 needs this permission before the app can find your Mac. " +
+                                "Nothing is scanned until you allow it.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Button(onClick = onStartDiscovery, modifier = Modifier.fillMaxWidth()) {
+                            Text("Allow local network access")
+                        }
+                    }
+                }
+                discovery.status is ServiceDiscovery.Status.AwaitingPicker -> Text(
+                    "Choose DroidBridge on your Mac in the system picker",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                discovery.status is ServiceDiscovery.Status.Failed -> Text(
+                    "discovery failed: ${(discovery.status as ServiceDiscovery.Status.Failed).detail}",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                peers.isEmpty() -> Text("no Mac found yet", style = MaterialTheme.typography.bodySmall)
             }
             peers.forEach { peer ->
                 Card {

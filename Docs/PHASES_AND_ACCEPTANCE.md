@@ -69,6 +69,15 @@ fixed by this run — a main-thread socket connect (`NetworkOnMainThreadExceptio
 cancelled its own coroutine and doubled every retry. The Mac also published no TXT record at all until
 this phase (ADR-046).
 
+ADR-021 requires the `ACCESS_LOCAL_NETWORK` handling, picker UX and denied-state UX to exist before
+Phase 2 closes, so all three are now implemented: a contextual runtime request on API 37 (never at
+launch), the `DiscoveryRequest`/`FLAG_SHOW_PICKER` path that does not need the broad permission, and
+a distinct "local network access is off" state so a refusal can never look like "no Mac nearby".
+**These three are untested at API 37** — the S24 Ultra was unplugged for this session and the OnePlus
+runs Android 12, where the permission does not exist and the picker falls back to direct browsing
+(verified: "Find the Mac" still resolves `pv=1`). The API 37 path therefore remains the last Phase 2
+item to measure, together with the debugging-off sweep.
+
 - Android NSD picker/direct LAN strategy.
 - macOS Bonjour discovery.
 - Secure pairing.

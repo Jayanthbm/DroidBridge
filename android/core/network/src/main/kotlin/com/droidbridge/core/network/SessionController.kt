@@ -67,6 +67,9 @@ class SessionController(
     private val peersFlow = MutableStateFlow<List<ServiceDiscovery.Peer>>(emptyList())
     val peers: StateFlow<List<ServiceDiscovery.Peer>> = peersFlow.asStateFlow()
 
+    /** How discovery is going, so the UI can distinguish "refused" from "nothing found". */
+    val discoveryStatus: StateFlow<ServiceDiscovery.Status> get() = discovery.status
+
     /** The live session, if any. Only authenticated sessions are ever exposed here. */
     @Volatile private var session: SecureSession? = null
 
@@ -92,10 +95,23 @@ class SessionController(
         }
     }
 
-    /** Starts discovery; the UI calls this when the screen appears. */
+    /**
+     * Starts discovery; the UI calls this when the screen appears.
+     *
+     * On API 37 the system picker is used (ADR-010) because it is the path that does not need the
+     * broad LAN permission; below 37 the direct browse that P02 measured is used. Both feed the same
+     * peer list, so nothing downstream cares which one ran.
+     */
     fun startDiscovery() {
         update(Event.DiscoveryStarted)
-        discovery.start { found ->
+        val usedPicker = discovery.startWithPicker { found -> onPeersChanged(found) }
+        if (!usedPicker) {
+            discovery.start { found -> onPeersChanged(found) }
+        }
+    }
+
+    private fun onPeersChanged(found: List<ServiceDiscovery.Peer>) {
+        run {
             peersFlow.value = found
             // A peer disappearing while we believe we are connected is a drop, not a detail.
             val current = selected

@@ -24,6 +24,7 @@ droidbridgeProtocol = "0.1.0"
 # Shared wire format, resolved through the composite build in settings.gradle.kts.
 droidbridge-protocol = { group = "com.droidbridge", name = "droidbridge-protocol", version.ref = "droidbridgeProtocol" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version = "1.9.1" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntime" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
