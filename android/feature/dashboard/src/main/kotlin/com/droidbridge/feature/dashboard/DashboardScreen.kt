@@ -55,6 +55,7 @@ fun DashboardScreen(
     onDrop: () -> Unit,
     onStop: () -> Unit,
     discovery: DiscoveryUiState = DiscoveryUiState(),
+    onGrantLocalNetwork: () -> Unit = {},
 ) {
     Scaffold { padding ->
         Column(
@@ -119,7 +120,7 @@ fun DashboardScreen(
                                 "Nothing is scanned until you allow it.",
                             style = MaterialTheme.typography.bodySmall,
                         )
-                        Button(onClick = onStartDiscovery, modifier = Modifier.fillMaxWidth()) {
+                        Button(onClick = onGrantLocalNetwork, modifier = Modifier.fillMaxWidth()) {
                             Text("Allow local network access")
                         }
                     }

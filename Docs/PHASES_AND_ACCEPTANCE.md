@@ -73,10 +73,23 @@ ADR-021 requires the `ACCESS_LOCAL_NETWORK` handling, picker UX and denied-state
 Phase 2 closes, so all three are now implemented: a contextual runtime request on API 37 (never at
 launch), the `DiscoveryRequest`/`FLAG_SHOW_PICKER` path that does not need the broad permission, and
 a distinct "local network access is off" state so a refusal can never look like "no Mac nearby".
-**These three are untested at API 37** — the S24 Ultra was unplugged for this session and the OnePlus
-runs Android 12, where the permission does not exist and the picker falls back to direct browsing
-(verified: "Find the Mac" still resolves `pv=1`). The API 37 path therefore remains the last Phase 2
-item to measure, together with the debugging-off sweep.
+**All three are now measured at API 37** on the S24 Ultra (Android 17) on 2026-11-22: the permission
+dialog was shown and allowed, the `FLAG_SHOW_PICKER` path (`flags=2`) presented the system picker,
+approving `DroidBridge-P08-Mac` resolved it at `pv=1`, and a first pairing derived **`280928`** on both
+screens and bound only after it matched (`PAIRING_CONFIRMED` / `AUTHENTICATED`). A forced drop
+reconnected once on the stored pin with no code prompt. A new Mac service instance required one fresh
+picker approval, which is the documented P02 limitation.
+
+The run also overturned the permission design: with `ACCESS_LOCAL_NETWORK` explicitly **denied**
+(`granted=false`), the picker still resolved the Mac and the session still connected with heartbeats.
+The picker is therefore the real consent path and the broad permission is not required for it, so the
+app no longer requests it at launch — it starts picker discovery directly and offers the runtime
+request only as a user-initiated fallback. Finally, the session survived **Bluetooth switched off**
+(`bluetooth_on=0`) with heartbeats continuing (n=5…7, RTT 80–294 ms), which is the "Bluetooth off" half
+of the exit criterion.
+
+Remaining for the Phase 2 exit: the same flow with USB physically disconnected and both debugging
+modes off, which severs the only control channel and so must be the last action of a session.
 
 - Android NSD picker/direct LAN strategy.
 - macOS Bonjour discovery.

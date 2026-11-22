@@ -471,6 +471,12 @@ shaped a decision.
 instead of silently trusting a rebuilt app; and the accepted Phase 2 exit run is documented as
 functionally complete with the debugging-off sweep still outstanding.
 
+6. **The picker is the consent path; the broad LAN permission is a fallback.** Measured on the S24 by
+   denying `ACCESS_LOCAL_NETWORK` and running anyway: the picker resolved the Mac and the session
+   connected, so asking for the broad permission at launch bought nothing and requested more access
+   than the feature needs. The app now starts picker discovery directly on API 37 and offers the
+   runtime request only when the picker path reports that it needs it, as a user-initiated action.
+
 **Environment constraint (not a product defect):** Little Snitch on this Mac silently blocks inbound
 connections from a freshly re-signed binary, so the app was run through `/usr/bin/python3`'s
 `execv`, whose responsible process it allows. This is the same class of problem as the P15 Keychain

@@ -1,7 +1,5 @@
 package com.droidbridge.app
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -44,19 +42,18 @@ class MainActivity : ComponentActivity() {
             scope = lifecycleScope,
         )
 
-        // API 37 gates direct LAN discovery behind ACCESS_LOCAL_NETWORK; the system picker does not
-        // need it (ADR-010). The request is made in context, on the first discovery attempt, and a
-        // refusal is shown as its own state rather than as "no Mac found".
-        if (needsLocalNetworkPermission()) {
-            launcher.launch(ServiceDiscovery.PERMISSION_LOCAL_NETWORK)
-        } else {
-            controller.startDiscovery()
-        }
+        // Discovery starts immediately on every platform. API 37 uses the system picker, which is
+        // the scoped consent path and needs no broad permission (ADR-010) — measured on the S24 with
+        // ACCESS_LOCAL_NETWORK explicitly denied: the picker still resolved the Mac and the session
+        // connected. So the broad permission is never requested unless the picker path itself fails,
+        // and then only because the user asks for it.
+        controller.startDiscovery()
 
         setContent {
             val state by controller.state.collectAsState()
             val peers by controller.peers.collectAsState()
             val discoveryStatus by controller.discoveryStatus.collectAsState()
+            val needsPermission = discoveryStatus is ServiceDiscovery.Status.NeedsPermission
             DashboardScreen(
                 // The dashboard shows a one-line environment baseline; the full record is logged.
                 buildInfo = describeDevice(),
@@ -70,10 +67,10 @@ class MainActivity : ComponentActivity() {
                 onReject = { controller.rejectPairing() },
                 onDrop = { controller.dropForTest() },
                 onStop = { controller.stop() },
-                discovery = DiscoveryUiState(
-                    status = discoveryStatus,
-                    needsPermission = discoveryStatus is ServiceDiscovery.Status.NeedsPermission,
-                ),
+                discovery = DiscoveryUiState(status = discoveryStatus, needsPermission = needsPermission),
+                onGrantLocalNetwork = {
+                    if (Build.VERSION.SDK_INT >= 37) launcher.launch(ServiceDiscovery.PERMISSION_LOCAL_NETWORK)
+                },
             )
         }
     }
@@ -84,11 +81,6 @@ class MainActivity : ComponentActivity() {
     ) { granted ->
         android.util.Log.i("P03Shell", "ACCESS_LOCAL_NETWORK granted=$granted")
         controller.startDiscovery()
-    }
-
-    private fun needsLocalNetworkPermission(): Boolean {
-        if (Build.VERSION.SDK_INT < 37) return false
-        return checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED
     }
 
     private fun describeDevice(): String {
