@@ -46,13 +46,21 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # The runner image ships an Android SDK; drive its sdkmanager directly. The third-party
+      # setup-android action failed on this image ("Wrong version in preinstalled sdkmanager") and
+      # crashed its own Node process before this job reached a single Gradle task.
       - name: Install required platform
         run: |
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
-          yes | sdkmanager --licenses > /dev/null || true
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKM="$(ls -d "$SDK"/cmdline-tools/*/bin/sdkmanager 2>/dev/null | tail -1)"
+          echo "sdk=$SDK"
+          echo "sdkmanager=$SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-37.0" "build-tools;37.0.0"
+          ls "$SDK/platforms"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
 
       - name: Assemble, test and lint
         working-directory: android
