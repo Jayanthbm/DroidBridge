@@ -1,9 +1,9 @@
 [versions]
-agp = "9.5.1"
+agp = "9.5.2"
 kotlin = "2.4.21"
 coreKtx = "1.19.1"
 activityCompose = "1.13.0"
-composeBom = "2026.09.00"
+composeBom = "2026.11.01"
 junit = "4.13.2"
 androidxJunit = "1.3.0"
 espresso = "3.7.0"
@@ -11,6 +11,8 @@ espresso = "3.7.0"
 # SDK levels. Single source of truth for the whole Android build.
 # See Docs/TECHNICAL_DECISIONS.md ADR-021 for targetSdk 37.
 androidCompileSdk = "37"
+# Minor SDK version: API 37 line. Compose 2026.11 requires 37.1+ AAR metadata.
+androidCompileSdkMinor = "1"
 androidTargetSdk = "37"
 androidMinSdk = "31"
 

@@ -57,7 +57,7 @@ jobs:
           echo "sdk=$SDK"
           echo "sdkmanager=$SDKM"
           yes | "$SDKM" --licenses > /dev/null || true
-          "$SDKM" --install "platforms;android-37.0" "build-tools;37.0.0"
+          "$SDKM" --install "platforms;android-37.0" "platforms;android-37.1" "build-tools;37.0.0"
           ls "$SDK/platforms"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"

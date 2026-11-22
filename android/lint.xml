@@ -20,9 +20,11 @@
 
     <!--
       "A newer version of this dependency exists" is a release notification, not a defect: it turns
-      red purely because time passed, with no change in this repository. It is tracked as a scheduled,
-      verified upgrade (see Docs/PROGRESS_LOCAL.md, 2026-11-21) and must not gate CI, where a red run
-      has to mean something broke. Code-level lint findings are still errors.
+      red purely because time passed, with no change in this repository. It is tracked as a scheduled
+      upgrade rather than a CI gate, because a red run has to mean something broke. Verified
+      2026-11-21: after the AGP 9.5.2 / Compose 2026.11.01 / compileSdk 37.1 upgrade these checks
+      report nothing, so this ignore is insurance against the next release, not cover for a finding.
+      Code-level lint findings are still errors.
     -->
     <issue id="GradleDependency">
         <ignore path="gradle/libs.versions.toml" />

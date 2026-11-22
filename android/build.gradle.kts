@@ -3,7 +3,8 @@
 // Plugin declarations plus the shared Android configuration every module inherits, so SDK levels
 // and the lint policy exist in exactly one place and cannot drift between modules. Justification
 // for the numbers lives in Docs/TECHNICAL_DECISIONS.md:
-//   - compileSdk / targetSdk 37 — ADR-021 (Android 17; above Play's API 36 floor).
+//   - compileSdk 37.1 / targetSdk 37 — ADR-021 (Android 17; above Play's API 36 floor). API 37 ships
+//     minor versions, and Compose 2026.11 requires the 37.1 AAR metadata, hence compileSdkMinor.
 //   - minSdk 31 — Android 12, the OS on the available test device and the level at which the
 //     clipboard and foreground-service rules in the specs are the current ones.
 
@@ -19,6 +20,8 @@ subprojects {
     plugins.withId("com.android.library") {
         extensions.configure<com.android.build.api.dsl.LibraryExtension>("android") {
             compileSdk = libs.versions.androidCompileSdk.get().toInt()
+            // API 37 ships minor versions (37.0, 37.1, ...); Compose 2026.11 requires 37.1+.
+            compileSdkMinor = libs.versions.androidCompileSdkMinor.get().toInt()
             defaultConfig {
                 minSdk = libs.versions.androidMinSdk.get().toInt()
             }
@@ -39,6 +42,8 @@ subprojects {
     plugins.withId("com.android.application") {
         extensions.configure<com.android.build.api.dsl.ApplicationExtension>("android") {
             compileSdk = libs.versions.androidCompileSdk.get().toInt()
+            // API 37 ships minor versions (37.0, 37.1, ...); Compose 2026.11 requires 37.1+.
+            compileSdkMinor = libs.versions.androidCompileSdkMinor.get().toInt()
             defaultConfig {
                 minSdk = libs.versions.androidMinSdk.get().toInt()
                 targetSdk = libs.versions.androidTargetSdk.get().toInt()
