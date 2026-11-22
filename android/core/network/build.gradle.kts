@@ -17,6 +17,12 @@ dependencies {
     // api, not implementation: a consumer of a session needs the control-message types it sends.
     api(project(":core:protocol"))
     implementation(project(":core:security"))
+    // The session controller publishes pairing state, which is defined in this module's sibling.
+    api(project(":core:pairing"))
+
+    // Discovery and the session controller are asynchronous; the controller publishes state as a
+    // Flow so the UI never has to poll a socket.
+    implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)
 }

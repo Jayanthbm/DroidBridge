@@ -146,6 +146,14 @@ public final class LiveMirrorReceiver: ObservableObject {
     /// When set, an unauthenticated peer whose pin matches is confirmed without a click.
     public var expectedPeerPin: String?
 
+    /// When set, an unauthenticated peer is confirmed without a click **only if** the short
+    /// authentication code derived from this handshake equals this value.
+    ///
+    /// This exists because unattended runs have no way to click, and confirming on an operator's
+    /// behalf without checking is exactly what the pairing design forbids. The operator reads the
+    /// code on both screens first, then passes it here; a different code is never confirmed.
+    public var expectedPairingCode: String?
+
     /// Seconds of silence before the listener drops the session. Long runs that pause between
     /// phases (consent prompts, screen-off checks) need a wider window than the 120 s default.
     public var idleTimeoutSeconds: TimeInterval = 120
@@ -203,6 +211,16 @@ public final class LiveMirrorReceiver: ObservableObject {
                     self.confirmPairing()
                 } else if !authenticated, self.expectedPeerPin != nil {
                     self.emit("AUTO_CONFIRM_SKIPPED peer pin does not match the expected pin")
+                }
+                // Code-verified confirmation: only the exact code the operator matched is accepted.
+                if !authenticated, let expectedCode = self.expectedPairingCode {
+                    let displayed = ShortAuthenticationCode.formatForDisplay(code)
+                    if displayed == expectedCode || code == expectedCode {
+                        self.emit("AUTO_CONFIRM_CODE_VERIFIED code=\(displayed)")
+                        self.confirmPairing()
+                    } else {
+                        self.emit("AUTO_CONFIRM_CODE_SKIPPED displayed=\(displayed) expected=\(expectedCode)")
+                    }
                 }
             }
         }

@@ -2,22 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-      Phase 0 shell manifest. The permission set is deliberately empty.
+      Phase 2 permissions. Each is justified in Docs/PERMISSIONS_MATRIX.md before it is added here.
 
-      Every permission must be justified in Docs/PERMISSIONS_MATRIX.md before it is added here,
-      and each one needs a feature owner, a user-facing reason and a test proving it is needed
-      (ANDROID_APP_SPEC.md §8). Nothing in the shell needs one yet:
+      INTERNET: the LAN session and NSD. Normal permission; on targetSdk 37 the local-network access
+      it used to imply is no longer granted implicitly.
+      ACCESS_LOCAL_NETWORK: required on API 37 to resolve and connect to a discovered service. It is
+      declared and requested in context at the moment the user taps "Find the Mac", never at launch.
+      On devices below API 37 the permission does not exist and the request is a no-op.
 
-      - No INTERNET / ACCESS_LOCAL_NETWORK: no networking code exists. ADR-010 targets the
-        system NSD picker path, so the broad LAN permission may never be needed at all.
-      - No FOREGROUND_SERVICE*: no service exists.
-      - No POST_NOTIFICATIONS: no notifications exist.
-      - No BLUETOOTH*: Bluetooth is optional and not in the MVP (ADR-016).
-      - No READ/WRITE_CLIPBOARD: clipboard access needs no permission on Android; it needs
-        foreground focus, which is a runtime behaviour, not a manifest entry (R-09).
-
-      Adding any of these is a permission-matrix change and a reviewable decision, not a build fix.
+      Deliberately still absent: FOREGROUND_SERVICE* (no background session yet — that is ADR-023's
+      P14 decision, not Phase 2), POST_NOTIFICATIONS (no notifications), BLUETOOTH* (ADR-016), and
+      every clipboard permission (none exists; clipboard needs foreground focus, R-09).
     -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
 
     <application
         android:allowBackup="false"

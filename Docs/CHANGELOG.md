@@ -1,3 +1,12 @@
+## Verified — Phase 2: discovery, pairing and the authenticated session (2026-11-22)
+
+- **The Android app can find the Mac.** Bonjour discovery resolves the advertised service and reads the protocol version from its TXT record (`pv=1`); a peer advertising a version this build does not speak is shown as incompatible and is never dialled.
+- **Pairing requires the same code on both screens.** A first pairing shows a six-digit code on the phone and the Mac, and the session refuses to carry a single application byte until the user confirms the match. A stored pin skips the prompt; an unconfirmed session is never reported as connected.
+- **The Mac refuses identities it has not paired with.** A rebuilt app with a new identity was rejected with a pin mismatch rather than accepted, so a silent re-pairing cannot happen.
+- **A dropped connection reconnects once, with the stored pin, and keeps working.** Reconnect re-resolves the peer instead of dialling the remembered address, backs off exponentially with jitter, and never shows "connected" for a socket that has not answered a ping.
+- **The Mac now publishes its protocol version.** The advertised TXT record was empty, so compatibility could not be checked and a stale advertisement looked identical to a live one.
+- **Three defects found by the end-to-end run and fixed:** the socket connect ran on the main thread, the "needs confirmation" flag was inverted, and the reconnect path cancelled its own coroutine so every retry fired twice.
+
 ## Verified — audio capture measured, call audio closed (2026-11-22)
 
 - **Media audio capture works and is bit-exact.** Under a MediaProjection consent, Android's playback capture reproduces an allowed app's audio exactly (`rms=5791.5 peak=8190` against a source amplitude of 8192), including a real third-party YouTube client. Public APIs only — no root, no Accessibility.

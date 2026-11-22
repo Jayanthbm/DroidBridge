@@ -423,3 +423,56 @@ measured" rule).
 **Consequences:** `RECORD_AUDIO` lives in `:experiments:audio-capture` and nowhere else; `:app` is
 unchanged. Audio stays an experiment until a product decision adds it, and that decision now has a
 number to reason about instead of a documentation claim.
+
+## ADR-046 — One coroutine owns a session; the pairing code is confirmed on both sides or not at all
+
+**Date:** 2026-11-22
+**Status:** Accepted, verified on the OnePlus Nord (Android 12) against the macOS product app.
+
+**Context:** Phase 2 turned the P02/P03 prototypes into product code: `ServiceDiscovery`, a
+`Pairing` state machine in `:core:pairing`, and `SessionController` in `:core:network`, with the
+Mac side unchanged (`SecureListener` + `LiveMirrorReceiver` already advertised, pinned and answered
+PING). Building it surfaced three defects that only a real end-to-end run exposes, and each one
+shaped a decision.
+
+**Decisions:**
+
+1. **Sockets run off the main thread, always.** `SecureSession.connect` blocks, and the first
+   end-to-end run failed every attempt with `NetworkOnMainThreadException` while `curl` from the same
+   device reached the same port. `SessionController` defaults to `Dispatchers.IO` rather than trusting
+   the caller's scope, because the failure looks exactly like a network fault from the outside.
+
+2. **One coroutine owns the whole connection lifecycle.** Connect, keepalive and retry live in a single
+   loop. The first implementation launched a replacement worker from inside its own failure handler;
+   the older worker's cleanup then cancelled the newer one, so every drop produced two overlapping
+   reconnects that appeared to succeed and instantly died. A deliberate drop now only closes the
+   socket — the single loop observes it and takes the one retry path.
+
+3. **"Requires confirmation" is derived from the session, not from its own inverse.** The wiring
+   passed `requiresConfirmation = (state == AUTHENTICATED)`, so an unconfirmed session was announced
+   as connected. The state machine was right; the caller was wrong, and only a live one-shot run
+   showed it. The flag is now `state != AUTHENTICATED`, and the prompt-bearing state is the only one
+   that can reach `CONNECTED`.
+
+4. **An unprompted confirmation is allowed only for a code the operator has already matched.** An
+   unattended run cannot click "Confirm pairing", and a blind auto-confirm would defeat the whole
+   design. `--p08-confirm-code <code>` confirms **only** when the derived code equals that value, and
+   logs `AUTO_CONFIRM_CODE_VERIFIED`; anything else logs `AUTO_CONFIRM_CODE_SKIPPED`. The same rule
+   already existed for pins (`--p08-expect-pin`).
+
+5. **The Mac advertises its protocol version.** `ServiceTxtRecord` existed but the listener published
+   `txtRecord: nil`, so a peer could not be checked for compatibility and a stale advertisement was
+   indistinguishable from a live one. The listener now publishes `v`+`sid`, and Android reads `v`
+   (`ServiceDiscovery.TXT_PROTOCOL_VERSION`). The two sides previously used different key names —
+   `pv` on Android, `v` on the Mac — which discovery reported as "unstated" rather than failing.
+
+**Consequences:** the pairing rules are testable on the JVM (15 tests across `Pairing` and
+`BackoffPolicy`, plus the discovery compatibility rule); the Mac keeps refusing unknown identities
+instead of silently trusting a rebuilt app; and the accepted Phase 2 exit run is documented as
+functionally complete with the debugging-off sweep still outstanding.
+
+**Environment constraint (not a product defect):** Little Snitch on this Mac silently blocks inbound
+connections from a freshly re-signed binary, so the app was run through `/usr/bin/python3`'s
+`execv`, whose responsible process it allows. This is the same class of problem as the P15 Keychain
+ACL: a rebuild invalidates a per-binary trust record. It does not affect shipped behaviour, but any
+unattended Mac-side test must account for it.

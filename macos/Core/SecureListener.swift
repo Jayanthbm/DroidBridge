@@ -290,11 +290,16 @@ public final class SecureListener {
         }
 
         // Advertise the same service type P02 verified, so Android's picker finds it.
+        //
+        // The TXT record carries the protocol version and a per-session id (NETWORK_PROTOCOL.md §2).
+        // It was `nil` until Phase 2: discovery worked, but Android had no way to tell an
+        // incompatible peer from a compatible one, and a stale advertisement from an earlier run was
+        // indistinguishable from the current one.
         listener.service = NWListener.Service(
             name: serviceName,
-            type: "_droidbridge-dev._tcp",
+            type: ServiceType.droidBridge,
             domain: nil,
-            txtRecord: nil
+            txtRecord: NWTXTRecord(ServiceTxtRecord(sessionId: ServiceTxtRecord.randomSessionId()).dictionary)
         )
 
         listener.start(queue: queue)

@@ -96,11 +96,24 @@ struct DroidBridgeApp: App {
                 if let expected = Self.argumentValue("--p08-expect-pin") {
                     liveMirror.expectedPeerPin = expected
                 }
+                // Phase 2 harness: confirm a first pairing only for a code the operator has already
+                // compared on both screens. Never a blind confirm.
+                if let code = Self.argumentValue("--p08-confirm-code") {
+                    liveMirror.expectedPairingCode = code
+                }
                 if let raw = Self.argumentValue("--p08-idle-timeout"), let seconds = TimeInterval(raw) {
                     liveMirror.idleTimeoutSeconds = seconds
                 }
                 if CommandLine.arguments.contains("--p08-listen") {
-                    liveMirror.startListening()
+                    // Phase 2 harness: the peer id and service name select which stored pin applies,
+                    // so a run can start from a genuinely unpinned peer instead of inheriting the
+                    // pin left by an earlier prototype. Without this, a first pairing is impossible to
+                    // exercise on a Mac that has ever paired with anything.
+                    liveMirror.startListening(
+                        peerId: Self.argumentValue("--p08-peer-id") ?? "android-p08",
+                        serviceName: Self.argumentValue("--p08-service-name") ?? "DroidBridge-P08-Mac",
+                        resetPin: CommandLine.arguments.contains("--p08-reset-pin")
+                    )
                 }
                 if CommandLine.arguments.contains("--p08-allow-capture") {
                     liveMirror.allowScreenCapture()

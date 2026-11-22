@@ -53,6 +53,22 @@ Owner: Local Development Agent. Follow `PROTOTYPE_PLAN.md` P00–P17 and its per
 Exit: every required prototype has an evidence-based report; blocked/untested items are explicitly identified; decisions and permissions are updated; commit pushed.
 
 ## Phase 2 — Shared protocol, discovery and pairing
+
+**Status (2026-11-22): implemented and verified end-to-end on the OnePlus Nord (AC2001, Android 12)
+against the macOS product app. The "USB disconnected and Bluetooth off" confirmation of the exit
+criterion is the one remaining step and needs the owner present, because turning debugging off severs
+the only control channel.** What was measured: discovery found the Mac at
+`192.168.31.109:59649` with `pv=1` from the TXT record; a first pairing displayed the same code
+(`537797`) on both screens and bound `PAIRING_CONFIRMED`/`AUTHENTICATED` only after it matched; the
+authenticated session carried `~37` PING/PONG round trips with RTT 32–340 ms; a forced drop
+reconnected exactly once (`RECONNECTING attempt=1 → CONNECTING → CONNECTED`) using the stored pin
+with no second code prompt; and the Mac **refused** an unknown peer identity
+(`PIN MISMATCH expected 4ba5… got 7eded5…`) rather than trusting it. Three real defects were found and
+fixed by this run — a main-thread socket connect (`NetworkOnMainThreadException`), an inverted
+"requires confirmation" flag that reported an unconfirmed peer as connected, and a reconnect path that
+cancelled its own coroutine and doubled every retry. The Mac also published no TXT record at all until
+this phase (ADR-046).
+
 - Android NSD picker/direct LAN strategy.
 - macOS Bonjour discovery.
 - Secure pairing.
