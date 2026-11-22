@@ -187,3 +187,29 @@ adb shell am start -n com.droidbridge.experiment.backgroundsession/.MainActivity
 ```
 
 That starts the session with no UI interaction, which is how every future P14 row should be driven.
+
+## Run staged 2026-11-22 23:06 — conditions recorded before unplugging
+
+The deep-Doze and overnight rows need the phone **unplugged, screen off, stationary, Wi-Fi on**; while
+it charges, `deviceidle` refuses to leave `ACTIVE`. Everything below was verified with the cable still
+attached, so the unplug is the only remaining action and the first gap in the log is the start of the
+measurement.
+
+| Item | Value at start |
+|---|---|
+| Mac listener | `--listen --port 59670 --expect-pin b710a0b7…` (P14's own identity), 24 h window, under `caffeinate -dimsu -t 57600` |
+| Listener log | `/tmp/p14-night.log`, **every line timestamped** by a wrapper, because the harness itself prints no times and gap durations are the measurement |
+| Heartbeat | phone `PING` every 15 s; the Mac answers each one and logs `FRAME type=ping seq=N`, so a missing sequence number is an undelivered heartbeat |
+| Mac heartbeat sink | `P03: FRAME type=ping …` + `SENT pong …`, one pair per 15 s |
+| Phone app | `com.droidbridge.experiment.backgroundsession`, `SessionService` foreground, `isForeground=true`, `foregroundServiceType=0x10` (connectedDevice) |
+| Battery exemption | **none** — `dumpsys deviceidle whitelist` does not list the app (ADR-043 forbids one) |
+| Wake locks | none held by the experiment |
+| Battery | 100 %, USB powered at start |
+| Wi-Fi | enabled, `192.168.31.197/24`; host/port/pin are persisted in SharedPreferences, so a process restart resumes against the same listener |
+| Screen | `screen_off_timeout=30000`, `stay_on_while_plugged_in=0` |
+| Doze | `mState=ACTIVE` (still charging at staging time) |
+| USB debugging | enabled (needed to stage); wireless debugging disabled — the run itself needs no ADB |
+
+Gaps are summarised the next morning with `python3 /tmp/p14-gaps.py /tmp/p14-night.log`, which prints
+every gap longer than three missed heartbeats with its wall-clock start, end, duration and the number of
+heartbeats the radio did not deliver.
