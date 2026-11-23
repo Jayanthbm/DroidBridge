@@ -425,14 +425,21 @@ class MirroringService : Service() {
                     // A reconnect gives us a fresh session that has never seen a format, so the Mac has
                     // no SPS/PPS and discards everything. Re-announce before the next frame rather than
                     // waiting for a resolution change that may never come.
-                    if (activeTransport.generation != announcedGeneration) {
+                    val pendingFormat = lastFormat
+                    if (activeTransport.generation != announcedGeneration && pendingFormat != null) {
                         announcedGeneration = activeTransport.generation
-                        lastFormat?.let { (w, h, sets) ->
-                            gate.requireKeyframe()
-                            encoder?.requestSyncFrame()
-                            publishFormat(w, h, sets)
-                            Log.i(TAG, "re-announced format ${w}x${h} on new session gen=$announcedGeneration")
-                        }
+                        val (w, h, sets) = pendingFormat
+                        // Order matters: drop the frames queued before the drop, arm the gate, ask for
+                        // an IDR, then announce — and discard the frame currently in hand, which was
+                        // queued on the dead session. The receiver closes the connection if the first
+                        // frame after `mirror.format` is not an IDR, which is exactly what happened
+                        // while a stale P-frame led the new session.
+                        queue.clear()
+                        gate.requireKeyframe()
+                        encoder?.requestSyncFrame()
+                        publishFormat(w, h, sets)
+                        Log.i(TAG, "re-announced format ${w}x${h} on new session gen=$announcedGeneration")
+                        continue
                     }
                     val payload = VideoPayload.encode(entry.ptsUs, entry.payload)
                     val startedNs = System.nanoTime()

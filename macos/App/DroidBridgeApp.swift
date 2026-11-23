@@ -116,7 +116,9 @@ struct DroidBridgeApp: App {
                     liveMirror.startListening(
                         peerId: Self.argumentValue("--p08-peer-id") ?? "android-p08",
                         serviceName: Self.argumentValue("--p08-service-name") ?? "DroidBridge-P08-Mac",
-                        resetPin: CommandLine.arguments.contains("--p08-reset-pin")
+                        resetPin: CommandLine.arguments.contains("--p08-reset-pin"),
+                        // Fixed port so a run can drop and restore the listener on the same address.
+                        port: Self.argumentValue("--p08-port").flatMap { UInt16($0) } ?? 0
                     )
                 }
                 if CommandLine.arguments.contains("--p08-allow-capture") {

@@ -11,7 +11,9 @@ import com.droidbridge.core.security.PeerPinning
 import com.droidbridge.protocol.session.ControlMessage
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.channels.Channel
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -116,8 +118,11 @@ class SessionController(
      */
     private class Outbound(val type: ControlMessage.Type, val payload: ByteArray)
 
-    /** Unbounded so a send from a UI thread can never block; drained in order by one writer. */
-    private val outbox = Channel<Outbound>(Channel.UNLIMITED)
+    /**
+     * Bounded so a stalled writer cannot grow without limit, but large enough that a burst of media
+     * frames never blocks a caller. Media that cannot be written is worthless anyway.
+     */
+    private val outbox = Channel<Outbound>(capacity = 256)
 
     /**
      * Sends one control frame on the live session.
@@ -138,15 +143,21 @@ class SessionController(
      * clipboard offer/body pairs in the order they were produced.
      */
     private suspend fun outboxWriter() {
-        for (frame in outbox) {
-            val live = session ?: continue
+        while (coroutineContext.isActive) {
+            val frame = outbox.receiveCatching().getOrNull() ?: return
+            val live = session
+            if (live == null || !live.isAuthenticated) {
+                // No session: a media frame is worthless, so dropping it is honest. Control frames are
+                // one-off state changes (format, stop) and are re-sent on the next session anyway.
+                continue
+            }
             try {
                 live.send(frame.type, frame.payload)
             } catch (e: Exception) {
+                // Keep draining. Returning here left the queue with no consumer after a reconnect, so
+                // every later send looked successful while nothing was written — measured as a phone
+                // that kept encoding and a Mac that received only pings.
                 Log.i(TAG, "send ${frame.type} failed: ${e.javaClass.simpleName}")
-                // A dead socket is a reconnect, not a lost message: let the keepalive observe it
-                // rather than pretending the frame was delivered.
-                return
             }
         }
     }
@@ -154,6 +165,13 @@ class SessionController(
     private fun update(event: Event) {
         val next = Pairing.reduce(stateFlow.value, event)
         if (next != stateFlow.value) {
+            // Every transition into CONNECTED is a session features must re-establish, whether it was
+            // reached by confirming a code or by reconnecting on a stored pin. Bumping only on the
+            // pairing path left automatic reconnects sharing a generation with the dead session, so
+            // mirroring never re-announced its format and the Mac silently dropped every frame.
+            if (next.phase == Phase.CONNECTED && stateFlow.value.phase != Phase.CONNECTED) {
+                generation += 1
+            }
             stateFlow.value = next
             onStateChanged?.invoke()
             Log.i(TAG, "state=${next.phase} attempt=${next.attempt} code=${next.code ?: "none"} failure=${next.failure ?: "none"}")
@@ -219,7 +237,6 @@ class SessionController(
             // Only now is the peer trusted enough to pin: a rejected code must leave no pin behind.
             pinStore.remember(peerIdFor(selected), live.peerPin)
             confirmationCompleted = true
-            generation += 1
             update(Event.Confirmed)
             Log.i(TAG, "PAIRING_CONFIRMED code=$code")
         } catch (e: Exception) {

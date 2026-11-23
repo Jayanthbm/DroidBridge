@@ -116,7 +116,8 @@ public final class LiveMirrorReceiver: ObservableObject {
     public func startListening(
         peerId: String = "android-p08",
         serviceName: String = "DroidBridge-P08-Mac",
-        resetPin: Bool = false
+        resetPin: Bool = false,
+        port: UInt16 = 0
     ) {
         stop()
         do {
@@ -154,7 +155,10 @@ public final class LiveMirrorReceiver: ObservableObject {
                 }
             }
             wire(secure)
-            try secure.start(serviceName: serviceName)
+            // A fixed port lets a harness restart the listener on the same address, which is the only
+            // way to reproduce "the peer's session dropped and came back" without a fresh discovery
+            // round: reconnect uses the cached host:port.
+            try secure.start(serviceName: serviceName, port: port)
             listener = secure
             state = .listening
             emit("LISTENING port=\(secure.port) peer-id=\(peerId) identity-pin=\(identity.pin)")

@@ -1,3 +1,15 @@
+## Verified — a reconnect resumes the stream instead of showing black (2026-11-23)
+
+- **Dropping the session and restoring it on the same address now resumes video.** Format re-announced on the new
+  session (`MIRROR_FORMAT 590x1280`), then `received=60 → 120 → 180 dropped=0 status=rendering` — no restart, no
+  tap, no re-discovery.
+- **Three defects fixed, all found by watching frames not arrive:** the session generation only advanced on first
+  pairing so reconnects never re-announced; the send queue's writer exited on the first post-reconnect failure and
+  silently swallowed every later frame; and the re-announce was followed by a stale P-frame, which the Mac correctly
+  rejects (`expected IDR after mirror.format`).
+- **Adds `--p08-port`** to the Mac harness so a listener can be dropped and restored on a fixed address, which is how
+  the reconnect scenario is reproduced without a human.
+
 ## Verified — background session survives a full night of deep Doze (2026-11-23)
 
 - **The session is reconnectable overnight, not just while the screen is on.** 8 h 17 m unplugged in deep Doze:
