@@ -213,3 +213,31 @@ measurement.
 Gaps are summarised the next morning with `python3 /tmp/p14-gaps.py /tmp/p14-night.log`, which prints
 every gap longer than three missed heartbeats with its wall-clock start, end, duration and the number of
 heartbeats the radio did not deliver.
+
+## Deep Doze and overnight — measured 2026-11-22 23:10 → 2026-11-23 07:23
+
+Run: S24 Ultra `SM-S928B`, Android 17 / API 37, unplugged at **23:10:24** (`status=discharging plug=none`
+in batterystats), screen off (`display_state_changed state=DOZE`), stationary, Wi-Fi on. No battery
+exemption, no wake lock, ADB not used during the run. Evidence: `/tmp/p14-night.log` (timestamped
+harness output, 935 pings, 22 authentications) plus `dumpsys batterystats` as an independent check.
+
+| # | Row | Result | Evidence |
+| --- | --- | --- | --- |
+| G | **Deep Doze: heartbeats continue, in bursts** | **PASS** | 935 pings over 8 h 17 m; median inter-heartbeat **15.0 s**; 210 stalls of 20–45 s (median 29 s, max 30 s) where the app was frozen but the session survived — no reconnect, sequence numbers continuous |
+| H | **Deep Doze: the session recovers without user action** | **PASS** | **21 automatic reconnects**, each preceded by ~36 s of silence and followed by a new authenticated session (`AUTHENTICATED (stored pin matched; no user action needed)`); no prompt, no tap, no code |
+| I | **Overnight: Doze windows lengthen as the night deepens** | **PASS** | session lengths between authentications: 76 min, then 6, 27, 7, 4, 4, 5, 30, 17, 13, 14, 10, 8, 5, 22, 27, 49, 16 min, then the long windows — **80 min** (04:44 → 06:04), **45 min** (06:04 → 06:50), **30 min** (06:50 → 07:20) |
+| J | **Overnight: silence is Doze, not a dead app** | **PASS** | 221 min of the 497 min window had no heartbeat at all (44 %), yet every window ended with the phone reconnecting on its own and the foreground service still running (`isForeground=true` after the night) |
+| K | **Overnight: cost is bounded and reported** | **measured** | battery 100 % → **75 %** over 8 h 10 m (≈3.0 %/h) with the foreground service, Wi-Fi and 21 reconnects; backoff grew to 60 s inside the deepest windows (`state=reconnecting in 60s`), which is why the 80-minute window recovered promptly rather than retry-storming |
+
+**What this does and does not establish.** It establishes that a `connectedDevice` foreground service
+with a real protocol heartbeat survives a full night of deep Doze on this device class: the app is
+never killed, the session always comes back, and nothing needs the user. It does **not** establish a
+stable single session — Doze freezes the app for ~30 s at a time and the session drops roughly hourly
+(21 times), so "connected overnight" means *reconnectable overnight*: the product must treat reconnect
+as routine and keep it cheap, idempotent and invisible. That is exactly what ADR-043's heartbeat-age
+stall detection buys, and the cost is visible here as the reconnect count rather than as a silent lie
+about being connected.
+
+Corroboration, not assumption: `dumpsys batterystats` shows `status=discharging plug=none` from 23:10,
+screen `DOZE`/`DOZE_SUSPEND` transitions through the night, and level 100 → 75 by 07:20; the Mac log
+shows every ping and pong with a wall-clock timestamp, so silence cannot be confused with a logging gap.

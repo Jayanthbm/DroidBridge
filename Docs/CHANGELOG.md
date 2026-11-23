@@ -1,3 +1,14 @@
+## Verified — background session survives a full night of deep Doze (2026-11-23)
+
+- **The session is reconnectable overnight, not just while the screen is on.** 8 h 17 m unplugged in deep Doze:
+  935 heartbeats, 21 automatic reconnects, every one authenticated on the stored pin with no prompt and no tap.
+- **Doze freezes the app, and the session comes back.** 210 freezes of 20–45 s were survived in place; the long
+  Doze windows (80, 45 and 30 minutes between 04:44 and 07:20) each ended with the phone reconnecting on its own.
+- **The service is never killed.** `isForeground=true` after the night, no battery exemption, no wake lock, and the
+  battery cost is 100 % → 75 % over 8 h (≈3 %/h) for the service, Wi-Fi and 21 reconnects.
+- **Honest framing:** "connected overnight" means *reconnectable overnight*. Deep Doze drops the session about hourly,
+  so the product must keep reconnect cheap, idempotent and invisible rather than promise one unbroken connection.
+
 ## Verified — Phase 4: the product streams the screen, survives rotation, recovers from a fault (2026-11-22)
 
 - **Mirroring now runs over the one authenticated session.** Measured end to end: `mirror.format 590x1280`,
