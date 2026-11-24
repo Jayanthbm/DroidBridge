@@ -106,6 +106,10 @@ public final class SecureListener {
     private var replayWindow = ReplayWindow()
     private var outboundSequence: UInt32 = 0
     private var lastActivity = Date()
+
+    /// A connection that arrived while another session was live. It completes its handshake while
+    /// parked; if it verifies as the same phone it supersedes the live session, otherwise it is dropped.
+    private var parkedConnection: NWConnection?
     private var controlRateLimiter: FrameRateLimiter
     private var mediaRateLimiter: FrameRateLimiter
     private var authenticationFailures = 0
@@ -420,14 +424,45 @@ public final class SecureListener {
     // MARK: - Connection handling
 
     private func handle(_ connection: NWConnection) {
-        if self.connection != nil {
-            emit("rejecting an additional connection: one session per listener in this prototype")
+        // A parked connection is already completing its handshake; a newcomer while one is parked is
+        // refused, because a flapping phone can outrun the handshake (a connection every ~2 s replaced
+        // each parked one before it reached .ready and nobody ever superseded).
+        if parkedConnection != nil {
+            emit("rejecting an additional connection: one is already parked and verifying")
             connection.cancel()
             return
         }
+        if self.connection != nil {
+            // The identity cannot be verified until the handshake completes, so the supersede decision
+            // is deferred: a second connection from the same phone (same verified pin) must win, because
+            // the phone's retry budget is shorter than the idle reap of a half-open session it abandoned
+            // — measured as the phone reaching GAVE_UP ~56 s before the 120 s idle timeout freed the
+            // slot, leaving the user to tap Find the Mac by hand. A different phone still waits.
+            parkedConnection = connection
+            connection.stateUpdateHandler = { [weak self] state in
+                guard let self, self.parkedConnection === connection else { return }
+                switch state {
+                case .ready:
+                    self.parkedConnectionReady(connection)
+                case .failed, .cancelled:
+                    connection.cancel()
+                    self.parkedConnection = nil
+                default:
+                    break // .setup/.preparing/.waiting are part of a healthy handshake
+                }
+            }
+            connection.start(queue: queue)
+            emit("parking an additional connection until its identity verifies")
+            return
+        }
+        adopt(connection, freshHandshake: true)
+    }
+
+    /// Takes ownership of a connection that has completed (or will complete) its TLS handshake.
+    private func adopt(_ connection: NWConnection, freshHandshake: Bool) {
 
         self.connection = connection
-        verdict.clear()
+        if freshHandshake { verdict.clear() }
         decoder = FrameDecoder()
         replayWindow = ReplayWindow()
         outboundSequence = 0
@@ -453,7 +488,29 @@ public final class SecureListener {
             }
         }
 
-        connection.start(queue: queue)
+        if freshHandshake { connection.start(queue: queue) }
+    }
+
+    /// A parked connection reached .ready: its identity is now known. Same pin as the live session
+    /// means the same phone returned — it wins. Anything else waits for nothing and is dropped.
+    private func parkedConnectionReady(_ connection: NWConnection) {
+        guard let verdict = self.verdict.snapshot() else {
+            emit("parked connection had no verified identity; dropping it")
+            parkedConnection = nil
+            connection.cancel()
+            return
+        }
+        let livePin = locked { peerPinValue }
+        guard livePin == verdict.pin, let live = self.connection, live !== connection else {
+            emit("dropping a parked connection: it does not match the live session's phone")
+            parkedConnection = nil
+            connection.cancel()
+            return
+        }
+        emit("superseding the live session: the same phone reconnected")
+        parkedConnection = nil
+        close(live, reason: "superseded: the same phone reconnected")
+        adopt(connection, freshHandshake: false)
     }
 
     private func connectionReady(_ connection: NWConnection) {
@@ -464,8 +521,6 @@ public final class SecureListener {
             return
         }
 
-        let code = ShortAuthenticationCode.derive(identity.sasIdentityBytes, verdict.spki)
-
         // Second layer, independent of the verify block: never grant data access to a key that is
         // not the pinned one. If a future change makes the handshake accept a different identity,
         // this still closes before a frame is accepted.
@@ -475,6 +530,7 @@ public final class SecureListener {
             return
         }
         let authenticated = storedPin != nil
+        let code = ShortAuthenticationCode.derive(identity.sasIdentityBytes, verdict.spki)
 
         locked {
             peerPinValue = verdict.pin
