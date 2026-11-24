@@ -156,3 +156,26 @@ cd shared/protocol && ./gradlew test --tests "*VectorPrinter*" -i | grep VECTOR
   compared by a person across two screens. See Run P3.
 - **Not yet done:** on-device tamper/oversize input (no UI path exists; covered by loopback and unit
   tests), and the GUI app's own pairing path.
+
+## Diagnostics cheatsheet (added in Phase 6)
+
+Everything the app logs is safe to share: no clipboard content, no keys, no pairing codes beyond the
+short code that is displayed for comparison anyway. Content-bearing values are always hashes + byte
+counts (ADR-047).
+
+**Android (logcat tags):** `P03Session` (state machine, attempts, heartbeat, routing),
+`P05Discovery` (NSD events, resolution), `P04Clipboard` (offers/sends/skips, hashes only),
+`P08Mirror`/encoder tags for capture. A failed session reads bottom-up: the last
+`connect attempt=N failed` line + the surrounding `HEARTBEAT`/`GAVE_UP` lines is the story.
+
+**macOS:** `log stream --predicate 'process == "DroidBridge"'` (all subsystems log `.public`).
+`P08Mirror` covers the live session; the HID peripheral's activity is also in the app's Activity
+list on the HID Keyboard tab (same lines as the log).
+
+**Known failure signatures:**
+- `0xE00002BC` — bluetoothd holds a stale HID session after an abrupt process death; recovery: cycle
+  the Mac's Bluetooth (ADR-052).
+- `0xE00002D6` — I/O timeout: either the phone's HID host holds a half-open session (same recovery)
+  or the connection attempt dialled the wrong peer — check `opening ACL to <address>` first.
+- `one session per listener in this process` — a second simultaneous connection arrived; supersede
+  (ADR-049) handles the same-pin case, a different pin is refused.

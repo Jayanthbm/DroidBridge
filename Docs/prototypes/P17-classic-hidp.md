@@ -254,3 +254,50 @@ sub-second gap is not yet measured.
 
 Kept (correct regardless): record withdrawn before close, ACL dropped explicitly, close callbacks own
 the cleanup, termination awaits them (bounded) and exits through AppKit rather than `exit(0)`.
+
+### Instrumented SIGTERM teardown 18:19 (same day) — the phone is clean; bluetoothd is the holder
+
+With the phone's full Bluetooth stack captured over `logcat` across a SIGTERM of the connected app:
+
+- `.417/.418` — the phone's HID host receives proper L2CAP disconnect indications for both CIDs
+  (`hidh_l2cif_disconnect_ind`), closes the UHID fd, and the HID host state machine goes
+  `2 (CONNECTED) → 3 (CONNECTING) → 0 (NONE)` within 30 ms. **The phone ends clean and does not
+  retry.** No reconnect attempt followed, despite the record-withdrawal gap being sub-second.
+- 90 s later (ruled out a slow-cleanup delay), a relaunch connect still failed `0xE00002BC`, with
+  bluetoothd logging `No known channel on <peer> with psm 17`.
+
+Conclusion: the half-open state is Mac-side bluetoothd, not the phone, and not a transient cleanup
+window. It survives every measured app-side teardown; only cycling the Mac's Bluetooth clears it.
+The next fix attempt needs bluetoothd's own view (what it thinks it is holding), not more app-side
+ordering changes.
+
+## Pairing-revocation device verification 2026-11-24 (forget-pin flow, S24 Ultra)
+
+Run conditions: USB connected, USB debugging on; ADB drove the phone, AppleScript clicks drove the Mac's
+own UI. The state under test was real, not staged: the Mirror-tab listener uses the default peer id
+`android-p08`, whose stored pin was stale from an earlier identity era, so the phone's connect produced
+a genuine `PIN MISMATCH` (expected `4ba527ba…`, got the phone's current `f68f9062…`).
+
+Measured flow:
+1. `PIN MISMATCH` on connect → after repeated failures the listener closes itself
+   (`CLOSED too many failed handshakes`) — the failure is loud, not silent.
+2. **Forget phone pin** → `FORGET done peer-id=android-p08`.
+3. Listener restart → phone connects → Mac `awaitingConfirmation`, code `903 717`, verified against the
+   phone's recorded pairing code (the same device identity — the code matches the Phase 2 record).
+4. Confirm pairing → `PAIRING_CONFIRMED`, `pin stored for android-p08`.
+5. Clipboard over the re-paired session: offer → `reason=accept` → held → applied on tap →
+   `clipboard.ack` on the Mac. The re-paired session is fully functional.
+
+Findings recorded on the way:
+- **Two peer ids, two pins.** The harness listener (`com.droidbridge.app`) and the Mirror-tab listener
+  (`android-p08`) store pins under different keychain keys. The stale-pin mismatch this session was
+  between them. Worth a follow-up decision: share one peer-id/pin namespace, or surface which peer id
+  a pin belongs to in the UI.
+- **Asymmetric re-pair gap (minor):** after a one-sided forget (Mac forgot, phone still holds its
+  pin), the phone authenticates immediately and displays *no code* while the Mac demands confirmation.
+  The Mac's code has no counterpart to compare against in the phone UI unless the phone also forgot.
+  The phone should surface its own short code while the peer is unconfirmed.
+
+The Android revocation button ("Forget the Mac's pin") is in the installed build and renders; its
+behaviour (session dropped, pins cleared, next connection is a first pairing) follows the same
+controller path already verified by unit review and awaits its own device pass.

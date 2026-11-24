@@ -241,3 +241,17 @@ about being connected.
 Corroboration, not assumption: `dumpsys batterystats` shows `status=discharging plug=none` from 23:10,
 screen `DOZE`/`DOZE_SUSPEND` transitions through the night, and level 100 → 75 by 07:20; the Mac log
 shows every ping and pong with a wall-clock timestamp, so silence cannot be confused with a logging gap.
+
+## 2026-11-24: Phase 6 battery/perf review — no changes
+
+- **Discovery is event-driven**: `NsdManager` discovery + resolve, no polling loop. It stays live for
+  the whole process life by design (reconnect re-resolve and peer-vanished detection both need it);
+  the cost is mDNS multicast reception only, and Doze suspends the radio anyway (the 2026-11-23
+  measurement: 3%/h with reconnects).
+- **Clipboard poll (Mac)**: 1 s `changeCount` timer, started on session ready and stopped on session
+  stop; each tick is one integer read in the common case. Negligible.
+- **No wake locks, no battery-optimisation exemption** (ADR-043 unchanged; the manifest has neither).
+- **Keepalive**: one PING/PONG every 15 s on the socket — trivial bytes, and it is what keeps the
+  session honest (two missed intervals → reconnect).
+
+Conclusion: nothing worth changing; the review is recorded as the Phase 6 battery/perf item.

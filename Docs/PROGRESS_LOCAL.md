@@ -1042,3 +1042,25 @@ settings.
 - **SIGTERM teardown (ADR-052, still open)**: four teardown variants measured; every abrupt kill while
   connected leaves stale HID state that only a Mac Bluetooth cycle clears. Kept the awaitable-close
   improvements; recorded the honest limitation and the manual recovery in P17.
+
+**2026-11-24 Phase 6 second batch.**
+
+- **Log/diagnostics audit (clean):** no raw clipboard payload, key or code-derivation value is logged
+  on either platform — hashes + byte counts only (ADR-047 holds); both platform log surfaces reviewed
+  and a diagnostics cheatsheet (tags, failure signatures `0xE00002BC`/`0xE00002D6`, the
+  wrong-peer trap) is now in P03's doc.
+- **Battery/perf review (no changes):** NSD discovery is event-driven and stays live by design;
+  the Mac clipboard poll is a 1 s `changeCount` timer while a session is live only; no wake locks
+  (ADR-043 unchanged); P14's 3%/h Doze measurement stands.
+- **SIGTERM instrumented measurement (closes the hypothesis):** phone-side logcat across a SIGTERM of
+  the connected app shows the HID host receiving clean L2CAP disconnect indications and reaching
+  state 0 within 30 ms — the phone is NOT the half-open holder, and 90 s later the Mac-side failure
+  persists (not a cleanup delay). The stale holder is Mac bluetoothd; recorded in ADR-052/P17 with
+  the evidence and the recovery.
+- **Forget-pin flow verified on the S24 (real stale-pin state):** the Mirror listener's `android-p08`
+  pin was stale from an earlier identity era → genuine `PIN MISMATCH` → Forget → code `903 717`
+  (matches the phone's recorded code) → `PAIRING_CONFIRMED` → clipboard round-trips over the
+  re-paired session. Two follow-ups recorded: the two-peer-id pin namespaces (harness vs mirror tab)
+  and the asymmetric re-pair gap (one-sided forget leaves the phone showing no code to compare).
+- **Phase 6 Android build deployed to the S24** (failure states, revocation button, a11y, ADR-051
+  retry budget now on-device).
