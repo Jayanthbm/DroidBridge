@@ -1015,3 +1015,10 @@ own UI.
   silently while the log said `handler=true`. The dispatch now separates clipboard types from MIRROR types.
   Re-measured: offer → accept → held → applied on tap → ack (`phone applied the text`); then
   `SEND_SKIPPED reason=echo` (loop prevention firing correctly).
+
+**2026-11-24 Phase 5 cross-device row measured (OnePlus Nord, promoted build).** `Connected peer:
+5c17cfb41bb9`, `HID channels ready: yes`, `Report`; all four arrows delivered one per confirmed check.
+Phase 5 device acceptance is now measured on both phones of record; the pairing-prompt row still needs a
+deliberately unpaired device. OnePlus housekeeping: `settings put` is denied to adb shell on this device
+(known), so its screen timeout (raised to 30 min for the session) needs a manual restore in Display
+settings.

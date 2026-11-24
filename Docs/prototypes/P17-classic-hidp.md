@@ -211,3 +211,18 @@ awaitable before exit.
 
 The pairing-prompt row and the OnePlus repeat remain for a session where the OnePlus is attached (and for a
 freshly unpaired device if one is convenient).
+
+## Cross-device row measured 2026-11-24 (promoted build, OnePlus Nord AC2001, Android 12 / API 31)
+
+Run conditions: USB connected, USB debugging on; ADB drove the phone, AppleScript clicks drove the Mac's
+own UI. The OnePlus was bonded from P17, so no SSP prompt was exercised.
+
+| Row | Result |
+|---|---|
+| Connect | **Pass** — `Connected peer: 5c17cfb41bb9`, `HID channels ready: yes`, `Negotiated protocol: Report` |
+| Arrow delivery (one per confirmed check) | **Pass** — receiver counters `UP: 1 DOWN: 1 LEFT: 1 RIGHT: 1`, one press per confirmation toggle |
+
+Both devices of record have now verified the promoted build end to end (publish → connect → negotiate →
+four confirmed arrows). What remains open for Phase 5: the **pairing-prompt row**, which needs a device
+whose HID bond is removed first (unpair on one side, reconnect, answer the SSP prompt), and that row is
+shared with the Android-side acceptance evidence for pairing UX.
