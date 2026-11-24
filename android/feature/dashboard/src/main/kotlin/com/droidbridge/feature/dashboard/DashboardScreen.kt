@@ -16,6 +16,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.droidbridge.core.network.ServiceDiscovery
@@ -75,6 +77,7 @@ fun DashboardScreen(
     onReject: () -> Unit,
     onDrop: () -> Unit,
     onStop: () -> Unit,
+    onForgetPairing: () -> Unit = {},
     discovery: DiscoveryUiState = DiscoveryUiState(),
     onGrantLocalNetwork: () -> Unit = {},
     clipboard: ClipboardUiState = ClipboardUiState(),
@@ -100,7 +103,11 @@ fun DashboardScreen(
 
             Card {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Connection", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                    "Connection",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
                     Text("state: ${describe(state)}", style = MaterialTheme.typography.bodyLarge)
                     state.code?.let { code ->
                         Text(code, style = MaterialTheme.typography.headlineMedium, fontFamily = FontFamily.Monospace)
@@ -111,6 +118,13 @@ fun DashboardScreen(
                     }
                     state.failure?.let { failure ->
                         Text("reason: ${explain(failure)}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (state.phase == Pairing.Phase.FAILED) {
+                        // A failed state with no next step reads as a dead app. The retry always
+                        // existed (start discovery again), but nothing on screen said so.
+                        Button(onClick = onStartDiscovery, modifier = Modifier.fillMaxWidth()) {
+                            Text("Try again")
+                        }
                     }
                     if (state.phase == Pairing.Phase.CONNECTED) {
                         Text(
@@ -124,6 +138,11 @@ fun DashboardScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(onClick = onStartDiscovery, modifier = Modifier.weight(1f)) { Text("Find the Mac") }
                 OutlinedButton(onClick = onStop, modifier = Modifier.weight(1f)) { Text("Disconnect") }
+            }
+            // Pairing revocation: the stored pin is what makes reconnects silent. Forgetting it
+            // makes the next connection a first pairing again, code comparison included.
+            OutlinedButton(onClick = onForgetPairing, modifier = Modifier.fillMaxWidth()) {
+                Text("Forget the Mac's pin")
             }
 
             if (state.phase == Pairing.Phase.CONFIRMING) {
@@ -222,7 +241,7 @@ private fun explain(failure: Pairing.Failure): String = when (failure) {
     Pairing.Failure.HANDSHAKE -> "the secure connection could not be established"
     Pairing.Failure.PIN_MISMATCH -> "the Mac's identity does not match the one you paired with"
     Pairing.Failure.CODE_REJECTED -> "you rejected the code; nothing was saved"
-    Pairing.Failure.GAVE_UP -> "the connection kept dropping, so retrying stopped"
+    Pairing.Failure.GAVE_UP -> "the connection kept dropping, so retrying stopped; tap Try again when the Mac is back"
 }
 
 /**
@@ -239,8 +258,21 @@ private fun MirroringCard(
 ) {
     Card {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Screen", style = MaterialTheme.typography.titleMedium)
+            Text(
+                    "Screen",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.semantics { heading() },
+                )
             Text(state.state, style = MaterialTheme.typography.bodySmall)
+            if (!state.capturing && state.connected) {
+                // Permission explanation: the notification permission is requested as part of the
+                // start flow; say why before the system dialog appears.
+                Text(
+                    "Starting a share asks Android to post a notification. That notification " +
+                        "carries the Stop control, so the share can be ended from anywhere.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Button(

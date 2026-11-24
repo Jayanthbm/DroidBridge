@@ -25,6 +25,9 @@ struct LiveMirrorView: View {
                 Button("Reject pairing") { model.rejectPairing() }
                 Button("Request keyframe") { model.requestKeyframe() }
                 Button("Stop") { model.stop() }
+                // Pairing revocation: the stored phone pin is what makes reconnects silent.
+                // Forgetting it makes the next connection a first pairing again.
+                Button("Forget phone pin") { model.forgetPeerPin() }
             }
 
             Text("state=\(model.state.rawValue) received=\(model.framesReceived) " +

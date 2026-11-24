@@ -1022,3 +1022,23 @@ Phase 5 device acceptance is now measured on both phones of record; the pairing-
 deliberately unpaired device. OnePlus housekeeping: `settings put` is denied to adb shell on this device
 (known), so its screen timeout (raised to 30 min for the session) needs a manual restore in Display
 settings.
+
+**2026-11-24 Phase 6 hardening (first batch).** USB connected, USB debugging on (S24 attached).
+
+- **Session routing regression pinned by a unit test** (`SessionMessageRoutingTest`): the routing table
+  is now a pure function (`SessionController.messageTarget`); clipboard/PAUSE → clipboard hook, MIRROR
+  types → mirroring hook, keepalive → none. Guards the 2026-11-24 Mac→phone clipboard fix.
+- **Failure-state UX**: `GAVE_UP` now says what to do, and a `FAILED` state shows a "Try again" button
+  (the retry always existed; nothing on screen said so).
+- **Pairing revocation**: phone side "Forget the Mac's pin" (`forgetPinnedPeers` — drops the session,
+  clears every stored pin, next connection is a first pairing); Mac side "Forget phone pin" on the
+  mirror tab (`LiveMirrorReceiver.forgetPeerPin`). Built; device verification pending.
+- **Permission explanations**: the Screen card explains the notification permission before the system
+  dialog (why: the notification carries Stop). Local-network card already explained.
+- **A11y of the app's own UI**: section titles are headings for TalkBack; the clipboard Sync switch is
+  named ("Sync clipboard").
+- **Retry budget raised 6 → 10 attempts (ADR-051)**: phone patience (~150 s) now covers the Mac's
+  120 s idle reap window; the 2026-11-24 reboot-gap give-up is covered from the phone side.
+- **SIGTERM teardown (ADR-052, still open)**: four teardown variants measured; every abrupt kill while
+  connected leaves stale HID state that only a Mac Bluetooth cycle clears. Kept the awaitable-close
+  improvements; recorded the honest limitation and the manual recovery in P17.

@@ -71,6 +71,9 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     private let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "", category: "P17ClassicHIDP")
     private var serviceRecord: IOBluetoothSDPServiceRecord?
     private var device: IOBluetoothDevice?
+    /// Signalled once when both L2CAP channels report closed after a termination close; the
+    /// signal handlers wait on it (bounded) so bluetoothd sees the disconnect before exit.
+    var closeWaitContinuation: (() -> Void)?
     private var pairer: IOBluetoothDevicePair?
     private var pendingAddress: String?
     /// Set only for an automated run whose numeric value the owner has already verified.
@@ -312,26 +315,50 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     }
 
     func disconnect(keepError: Bool = false) {
+        let hadChannels = controlChannel != nil || interruptChannel != nil
         controlChannel?.close()
         interruptChannel?.close()
-        controlChannel = nil
-        interruptChannel = nil
-        if let device {
-            device.closeConnection()
+        if hadChannels {
+            // The close is asynchronous; the closed callback owns the cleanup and the termination
+            // hold. Nil-ing the references and releasing the hold here raced the HCI teardown and
+            // bluetoothd kept the HID session: the next launch failed with 0xE00002BC (measured
+            // 2026-11-24, both with an immediate exit and with a 1.5 s hold after stop()).
+            awaitingChannelClose = true
+            // Drop the ACL too: with only the L2CAP channels closed, the peer's HID host kept a
+            // half-open session and never answered the next PSM 17 open (kIOReturnTimeout-style
+            // stall), while an ACL drop makes the HID host clean its own state.
+            if let device {
+                device.closeConnection()
+            }
+        } else {
+            controlChannel = nil
+            interruptChannel = nil
+            finishDisconnect(keepError: keepError)
         }
-        device = nil
+    }
+
+    /// True while the L2CAP closed-callbacks have not run yet after a close.
+    public private(set) var awaitingChannelClose = false
+
+    private func finishDisconnect(keepError: Bool) {
         connectedAddress = nil
         isReady = false
         protocolMode = 0x01
         idleRate = 0
         if !keepError { lastError = nil }
+        awaitingChannelClose = false
         releaseTerminationHold()
         refreshPairedDevices()
     }
 
     func stop() {
-        disconnect()
+        // Unpublish FIRST: a HID host auto-reconnects when the control channel drops while the
+        // service record is still advertised, so the dying process would immediately own a fresh
+        // session it cannot clean up. Measured 2026-11-24: SIGTERM with channels closed and the
+        // record still up left the peer's HID host half-open and the next launch failed with
+        // 0xE00002BC until the Mac's Bluetooth was cycled.
         unpublishService()
+        disconnect()
         note("stopped")
     }
 
@@ -684,10 +711,17 @@ extension ClassicHIDPeripheral: @preconcurrency IOBluetoothL2CAPChannelDelegate 
             if channel === self.controlChannel { self.controlChannel = nil }
             if channel === self.interruptChannel { self.interruptChannel = nil }
             if self.controlChannel == nil, self.interruptChannel == nil {
-                self.isReady = false
-                self.connectedAddress = nil
+                let wasAwaiting = self.awaitingChannelClose
+                if let device {
+                    device.closeConnection()
+                }
+                self.device = nil
+                self.finishDisconnect(keepError: false)
                 self.note("HID channels closed")
-                self.releaseTerminationHold()
+                if wasAwaiting {
+                    self.closeWaitContinuation?()
+                    self.closeWaitContinuation = nil
+                }
             }
         }
     }

@@ -142,6 +142,7 @@ class MainActivity : ComponentActivity() {
                 onReject = { controller.rejectPairing() },
                 onDrop = { controller.dropForTest() },
                 onStop = { controller.stop() },
+                onForgetPairing = { controller.forgetPinnedPeers() },
                 discovery = DiscoveryUiState(status = discoveryStatus, needsPermission = needsPermission),
                 onGrantLocalNetwork = {
                     if (Build.VERSION.SDK_INT >= 37) launcher.launch(ServiceDiscovery.PERMISSION_LOCAL_NETWORK)

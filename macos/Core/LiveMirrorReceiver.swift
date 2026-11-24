@@ -34,6 +34,8 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var renderer: AVSampleBufferVideoRenderer { layer.sampleBufferRenderer }
 
     private var listener: SecureListener?
+    private var pinStore: PeerPinStore?
+    private var pinnedPeerId: String?
 
     /// One identity for the life of the app run.
     ///
@@ -130,6 +132,8 @@ public final class LiveMirrorReceiver: ObservableObject {
                 identity = fresh
             }
             let store = PeerPinStore(service: "com.droidbridge.p08.peer-pins")
+            pinStore = store
+            pinnedPeerId = peerId
             if resetPin { store.forget(peerId) }
             let secure = SecureListener(
                 identity: identity,
@@ -217,6 +221,18 @@ public final class LiveMirrorReceiver: ObservableObject {
         publishFrameCounters(force: true)
         state = .stopped
         emit("STOPPED framesReceived=\(totalFramesReceived) framesEnqueued=\(totalFramesEnqueued) dropped=\(totalFramesDropped)")
+    }
+
+    /// Pairing revocation: clears the stored phone pin so the next connection is a first pairing
+    /// again — the code must be compared and confirmed by a human. Kept next to the store that
+    /// `startListening` created, so revocation cannot miss the pin that the live listener uses.
+    public func forgetPeerPin() {
+        guard let pinStore, let pinnedPeerId else {
+            emit("FORGET skipped: no listener has stored a pin in this run")
+            return
+        }
+        pinStore.forget(pinnedPeerId)
+        emit("FORGET done peer-id=\(pinnedPeerId)")
     }
 
     private func wire(_ secure: SecureListener) {

@@ -193,6 +193,8 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.enableSuddenTermination()
     }
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        // Normal path: stop() is idempotent (channels already closed and cleaned up when the
+        // signal handler awaited them; nothing pending here) and the app terminates now.
         hidPeripheral?.stop()
         return .terminateNow
     }
@@ -211,11 +213,26 @@ private func installTerminationSignalHandlers() {
         let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
         source.setEventHandler {
             MainActor.assumeIsolated {
-                if let delegate = NSApp.delegate as? BridgeAppDelegate {
-                    delegate.hidPeripheral?.stop()
+                guard let delegate = NSApp.delegate as? BridgeAppDelegate else { exit(0) }
+                let peripheral = delegate.hidPeripheral
+                peripheral?.stop()
+                // Measured 2026-11-24: exit(0) after stop() — immediately, after a fixed 1.5 s
+                // hold, and after awaiting the L2CAP closed-callbacks — each left bluetoothd
+                // holding the HID session (0xE00002BC on the next launch), while an AppleEvent
+                // quit while connected relaunches clean. So: await the closes, bounded, then let
+                // the process die through AppKit's normal termination instead of exit(0).
+                let finish: () -> Void = { NSApp.terminate(nil) }
+                guard let peripheral, peripheral.awaitingChannelClose else { finish(); return }
+                var closed = false
+                peripheral.closeWaitContinuation = { closed = true }
+                var waited = 0.0
+                func tick() {
+                    if closed || waited >= 4.0 { finish(); return }
+                    waited += 0.1
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: tick)
                 }
+                tick()
             }
-            exit(0)
         }
         source.resume()
         terminationSignalSources.append(source)

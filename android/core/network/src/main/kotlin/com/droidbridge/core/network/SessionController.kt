@@ -42,14 +42,23 @@ import kotlinx.coroutines.launch
  *   skips the prompt; anything else requires the user to compare the code.
  * * **Discovery never stops being live.** Service-lost events are forwarded into the state machine so
  *   a vanished Mac shows up as a drop rather than as silence.
+ * * **The retry budget outlasts the Mac's reap window.** The Mac closes a silent session after
+ *   120 s (ADR-051); a phone that gave up at ~60 s sat in a dead zone until the user tapped
+ *   again. Ten attempts with the 30 s backoff cap span roughly 150 s, so a reconnect after a
+ *   reboot gap lands inside the phone's own patience, and supersede (ADR-049) makes it a
+ *   first-try success.
  */
+
+/** See [SessionController.messageTarget]: the routing contract is pinned by a unit test. */
+internal enum class MessageTarget { CLIPBOARD, MIRROR }
+
 class SessionController(
     private val identity: DeviceIdentity,
     private val pinStore: PeerPinning.PinStore,
     private val discovery: ServiceDiscovery,
     private val scope: CoroutineScope,
     private val pingIntervalMs: Long = 15_000,
-    private val maxAttempts: Int = 6,
+    private val maxAttempts: Int = 10,
     private val backoff: BackoffPolicy = BackoffPolicy(),
     /**
      * Where socket work runs. [Dispatchers.IO] by default because `SecureSession.connect` blocks:
@@ -62,6 +71,27 @@ class SessionController(
 
     companion object {
         private const val TAG = "P03Session"
+
+        /**
+         * Which feature hook a session message belongs to. Pure so a unit test can pin the
+         * contract: the 2026-11-24 regression had clipboard types flowing into the mirroring
+         * hook (which ignores them) and nothing failed at build or test time — only a human
+         * watching a dead clipboard card caught it. Keep every message type routed explicitly.
+         */
+        internal fun messageTarget(type: ControlMessage.Type): MessageTarget? = when (type) {
+            ControlMessage.Type.CLIPBOARD_OFFER,
+            ControlMessage.Type.CLIPBOARD_TEXT,
+            ControlMessage.Type.CLIPBOARD_ACCEPT,
+            ControlMessage.Type.CLIPBOARD_ACK,
+            ControlMessage.Type.CLIPBOARD_REJECT,
+            ControlMessage.Type.CLIPBOARD_PAUSE -> MessageTarget.CLIPBOARD
+            ControlMessage.Type.MIRROR_KEYFRAME_REQUEST,
+            ControlMessage.Type.MIRROR_STOP,
+            ControlMessage.Type.MIRROR_STARTED,
+            ControlMessage.Type.MIRROR_FORMAT -> MessageTarget.MIRROR
+            // Keepalive and lifecycle types are interpreted by the keepalive loop itself.
+            else -> null
+        }
     }
 
     private val stateFlow = MutableStateFlow(Pairing.State())
@@ -108,6 +138,12 @@ class SessionController(
      */
     @Volatile var onMirrorMessage: ((ControlMessage.Type, ByteArray) -> Unit)? = null
 
+    /**
+     * Which feature hook a session message belongs to. Pure so a unit test can pin the contract:
+     * the 2026-11-24 regression had clipboard types flowing into the mirroring hook (which ignores
+     * them) and nothing failed at build or test time — only a human watching a dead clipboard card
+     * caught it. Keep every new message type routed here explicitly.
+     */
     /** Called whenever the pairing state changes, so feature UIs can refresh without polling. */
     @Volatile var onStateChanged: (() -> Unit)? = null
 
@@ -264,6 +300,20 @@ class SessionController(
     }
 
     /**
+     * Revokes pairing: drops the session (if any) and clears every stored Mac pin, so the next
+     * connection is a first pairing again — the code must be compared and confirmed by a human.
+     * Pins are keyed by peer id; the phone pairs with one Mac in practice, but revocation must not
+     * depend on a session being live to know which id to forget, so every stored pin goes.
+     */
+    fun forgetPinnedPeers() {
+        stop()
+        val forgotten = pinStore.snapshot().keys
+        forgotten.forEach { pinStore.forget(it) }
+        Log.i(TAG, "pairing revoked for ${forgotten.size} peer(s)")
+        onStateChanged?.invoke()
+    }
+
+    /**
      * Tears down the current session but keeps the controller usable (used to prove reconnect).
      *
      * This deliberately does **not** schedule a reconnect itself. Closing the socket makes the
@@ -416,39 +466,24 @@ class SessionController(
                     ControlMessage.Type.CLOSE -> {
                         return "peer closed: ${String(message.payload)}"
                     }
-                    ControlMessage.Type.CLIPBOARD_OFFER,
-                    ControlMessage.Type.CLIPBOARD_TEXT,
-                    ControlMessage.Type.CLIPBOARD_ACCEPT,
-                    ControlMessage.Type.CLIPBOARD_ACK,
-                    ControlMessage.Type.CLIPBOARD_REJECT,
-                    ControlMessage.Type.MIRROR_KEYFRAME_REQUEST,
-                    ControlMessage.Type.MIRROR_STOP,
-                    ControlMessage.Type.MIRROR_STARTED,
-                    ControlMessage.Type.MIRROR_FORMAT -> {
+                    else -> {
                         // Logged because this path is otherwise invisible: when a keyframe request was
                         // dropped here the Mac kept flushing while the phone kept sending P-frames, and
                         // nothing in either log said why.
-                        Log.i(TAG, "session message ${message.type}")
-                        // Clipboard types belong to the clipboard feature; MIRROR types to the capture
-                        // feature. The Phase 4 hook addition routed clipboard types here into the
-                        // mirroring callback, which ignores them — Mac→phone clipboard receive then
-                        // silently died (the card stayed idle and no ack was ever sent) while the log
-                        // claimed the message had a handler.
-                        if (message.type == ControlMessage.Type.MIRROR_KEYFRAME_REQUEST ||
-                            message.type == ControlMessage.Type.MIRROR_STOP ||
-                            message.type == ControlMessage.Type.MIRROR_STARTED ||
-                            message.type == ControlMessage.Type.MIRROR_FORMAT) {
-                            onMirrorMessage?.invoke(message.type, message.payload)
-                        } else {
-                            onClipboardMessage?.invoke(message.type, message.payload)
+                        Log.i(TAG, "session message ${message.type} target=${messageTarget(message.type)}")
+                        when (messageTarget(message.type)) {
+                            MessageTarget.CLIPBOARD ->
+                                // Clipboard types belong to the clipboard feature. The Phase 4 hook
+                                // addition routed them into the mirroring callback, which ignores
+                                // them — Mac→phone clipboard receive then silently died (the card
+                                // stayed idle and no ack was ever sent) while the log claimed the
+                                // message had a handler.
+                                onClipboardMessage?.invoke(message.type, message.payload)
+                            MessageTarget.MIRROR ->
+                                onMirrorMessage?.invoke(message.type, message.payload)
+                            null -> Unit
                         }
                     }
-                    ControlMessage.Type.CLIPBOARD_PAUSE -> {
-                        // Handed to the feature, which owns the clipboard rules. The keepalive loop
-                        // must not interpret them: a clipboard pause is not a session event.
-                        onClipboardMessage?.invoke(message.type, message.payload)
-                    }
-                    else -> Unit
                 }
             }
             if (!answered) {

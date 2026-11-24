@@ -618,3 +618,65 @@ sandboxed by audit (ADR-026).
 experiment target is removed from the project. Phase 5 device acceptance rows (pairing prompts, arrow
 delivery on both phones) remain to be measured on the next device session; the prior P17 evidence does not
 transfer to the promoted build without at least one verification run.
+
+## ADR-051 — The 120 s idle reap stays; the phone's retry budget is raised to outlast it
+
+**Status:** accepted 2026-11-24.
+
+**Context.** The Mac closes a session that receives nothing for 120 s (`SecureListener` idle reap), on
+the grounds that a phone whose radio went silent without a goodbye must be reaped or the session and
+its single reader leak forever. The overnight-run finding made the cost concrete: the phone's retry
+budget (6 attempts, ~60 s) expired while the Mac was still inside its own 120 s window, so a phone
+that should have reconnected — a reboot gap, a Wi-Fi toggle — showed `GAVE_UP` to the user while the
+Mac sat willing. ADR-049's supersede already made any reconnect that did arrive a first-try success,
+so the remaining question was purely the budget mismatch.
+
+**Decision.**
+- The Mac's 120 s reap is unchanged. Shortening it reaps healthy Doze-suspended sessions; lengthening
+  it widens the window where a dead session occupies the one-reader slot.
+- The phone's budget rises from 6 attempts (~60 s) to 10 attempts (~150 s with the 30 s backoff
+  cap), so the phone's patience now covers the Mac's reap window plus margin. Deliberate stops and
+  pin mismatches remain terminal; nothing else changes about the retry rules.
+- The `GAVE_UP` failure state gains an explicit "Try again" affordance, because any finite budget
+  must end in a clear next step, not a dead-looking card.
+
+**Consequences.** A real network outage now takes ~150 s instead of ~60 s to surface as `GAVE_UP`;
+that is the correct trade — an outage is invisible to the user until they look at the phone, while a
+spurious give-up during a reboot gap is user-visible failure. The 2026-11-24 measured scenario
+(reboot gap, phone `GAVE_UP` 56 s before the reap) is now covered from the phone side; the
+"Try again" button covers the rest.
+
+## ADR-052 — HID teardown: the close is awaited, but SIGTERM-while-connected still leaves stale state (open)
+
+**Status:** revised 2026-11-24 after four measured variants.
+
+**Context.** Killing the connected app leaves the next launch's connect failing with
+`L2CAP control channel (0x0011) failed (0xE00002BC)`. P17 recorded that an AppleEvent quit was clean
+and a phone-side Bluetooth cycle did not clear the stale session, but the kill path was never fixed.
+
+**Measured 2026-11-24 on the S24 Ultra (promoted build).**
+1. `stop()` + `exit(0)`: stale.
+2. `stop()` + 1.5 s hold + `exit(0)`: stale.
+3. SDP withdrawn before closing, ACL explicitly dropped, L2CAP closed-callbacks awaited (bounded
+   4 s), then `exit(0)`: stale.
+4. Same awaited teardown, then `NSApp.terminate(nil)` (AppKit's normal exit): stale.
+5. The relaunch failure mode differs by symptom: `0xE00002BC` (bluetoothd holds the session) or
+   `0xE00002D6` (`kIOReturnTimeout` — the phone's HID host stops answering PSM 17 while it holds a
+   half-open session). Both clear only after cycling the Mac's Bluetooth.
+
+**Decision.**
+- Keep the improvements that are correct regardless: the SDP record is withdrawn before the channels
+  close, the ACL is dropped explicitly, the close callbacks own the cleanup (no eager nil), and the
+  termination path waits (bounded 4 s) for them before the process exits through AppKit termination
+  rather than `exit(0)`. These remove real races and are strictly better than the old code.
+- SIGTERM-while-connected is recorded as an open known limitation for this macOS/phone pair: the
+  stale session requires a Mac-side Bluetooth cycle to clear. The product implication: the HID
+  peripheral should not be presented as kill-safe; the graceful quit path is the documented way to
+  stop it, and a relaunch after a kill should surface the error and the recovery (publish again,
+  cycle Mac Bluetooth if `0xE00002BC`/`0xE00002D6` recurs).
+- Not papered over: the phone-side auto-reconnect behaviour (a HID host reconnects when the control
+  channel drops while the record is still advertised) is the leading suspect for the half-open state
+  and needs its own measurement before another fix attempt.
+
+**Consequences.** The kill-path recovery is manual and documented; the shutdown code no longer races
+the teardown; the wrong conclusion "the hold fixes it" is withdrawn.

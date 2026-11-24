@@ -226,3 +226,31 @@ Both devices of record have now verified the promoted build end to end (publish 
 four confirmed arrows). What remains open for Phase 5: the **pairing-prompt row**, which needs a device
 whose HID bond is removed first (unpair on one side, reconnect, answer the SSP prompt), and that row is
 shared with the Android-side acceptance evidence for pairing UX.
+
+## SIGTERM teardown — measured 2026-11-24, four variants, still open (ADR-052)
+
+On the promoted build with the S24 Ultra connected (`channels ready: yes`), `kill -TERM` was measured
+four ways. All four left the next launch's connect failing until the Mac's Bluetooth was cycled:
+
+| Variant | Next connect |
+|---|---|
+| `stop()` + immediate `exit(0)` | `0xE00002BC` |
+| `stop()` + 1.5 s hold + `exit(0)` | `0xE00002BC` |
+| SDP withdrawn first + ACL dropped + close callbacks awaited (≤4 s) + `exit(0)` | `0xE00002BC` |
+| Same awaited teardown + `NSApp.terminate(nil)` | `0xE00002BC` |
+
+The failure symptom alternates between `0xE00002BC` (bluetoothd holds the session) and `0xE00002D6`
+(`kIOReturnTimeout` — the phone's HID host stops answering the PSM 17 open while holding a half-open
+session). Recovery in every case: cycle the Mac's Bluetooth, relaunch, publish, connect.
+
+One false lead worth recording for the next attempt: during these measurements a connect dialled the
+wrong peer (an offline earbud) and produced `0xE00002D6` — check the ACL address in the activity log
+(`opening ACL to <address>`) before blaming Bluetooth state.
+
+Leading suspect for the half-open state: the phone's HID host auto-reconnects when the control
+channel drops while the SDP record is still advertised, so the dying process briefly owns a fresh
+session. The current code withdraws the record first; whether the reconnect still happens in the
+sub-second gap is not yet measured.
+
+Kept (correct regardless): record withdrawn before close, ACL dropped explicitly, close callbacks own
+the cleanup, termination awaits them (bounded) and exits through AppKit rather than `exit(0)`.

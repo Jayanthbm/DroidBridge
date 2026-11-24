@@ -13,6 +13,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
 /**
@@ -62,7 +64,13 @@ fun ClipboardCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("Sync", style = MaterialTheme.typography.bodySmall)
-                Switch(checked = !paused, onCheckedChange = { onPausedChange(!it) })
+                Switch(
+                    checked = !paused,
+                    onCheckedChange = { onPausedChange(!it) },
+                    // A bare switch next to a label is two focus targets for TalkBack; naming the
+                    // control itself makes the row one understandable stop.
+                    modifier = Modifier.semantics { contentDescription = "Sync clipboard" },
+                )
             }
         }
     }
