@@ -80,7 +80,7 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     private var controlChannel: IOBluetoothL2CAPChannel?
     private var interruptChannel: IOBluetoothL2CAPChannel?
     private var lastReports: [UInt8: Data] = [
-        P17Identity.ReportID.keyboard.rawValue: P17Identity.neutralReport
+        HIDIdentity.ReportID.keyboard.rawValue: HIDIdentity.neutralReport
     ]
     private var terminationHold = false
     private var harnessRan = false
@@ -254,11 +254,11 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         // whether to accept a device-initiated HID connection. The change is temporary.
         if let host = IOBluetoothHostController.default() {
             let codResult = host.setClassOfDevice(
-                P17Identity.classOfDevice,
-                forTimeInterval: P17Identity.classOfDeviceDuration
+                HIDIdentity.classOfDevice,
+                forTimeInterval: HIDIdentity.classOfDeviceDuration
             )
             note(codResult == kIOReturnSuccess
-                ? "class of device -> 0x\(String(P17Identity.classOfDevice, radix: 16))"
+                ? "class of device -> 0x\(String(HIDIdentity.classOfDevice, radix: 16))"
                 : "class of device change failed (\(Self.ioCode(codResult)))")
         }
 
@@ -410,10 +410,10 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
             lastError = "Not connected: no HID channels"
             return
         }
-        var pressed = P17Identity.neutralReport
+        var pressed = HIDIdentity.neutralReport
         pressed[2] = usage
-        sendInputReport(P17Identity.ReportID.keyboard.rawValue, payload: pressed)
-        sendInputReport(P17Identity.ReportID.keyboard.rawValue, payload: P17Identity.neutralReport)
+        sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: pressed)
+        sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: HIDIdentity.neutralReport)
     }
 
     private func sendInputReport(_ reportID: UInt8, payload: Data) {

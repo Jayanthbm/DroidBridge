@@ -26,11 +26,15 @@ struct DroidBridgeApp: App {
     /// P08 live mirror receiver.
     @StateObject private var liveMirror = LiveMirrorReceiver()
 
+    /// Phase 5: Bluetooth Classic HID keyboard peripheral (promoted from P17).
+    @StateObject private var hidPeripheral = ClassicHIDPeripheral()
+
     /// Open a prototype tab directly for a scripted or manual run.
     @State private var selectedTab: Int = CommandLine.arguments.contains("--p06-monitor")
         ? 2
         : (CommandLine.arguments.contains("--p08-mirror") ? 4
-            : (CommandLine.arguments.contains("--p07") ? 3 : 0))
+            : (CommandLine.arguments.contains("--p17-hid") ? 5
+                : (CommandLine.arguments.contains("--p07") ? 3 : 0)))
 
     private static func argumentValue(_ flag: String) -> String? {
         guard let index = CommandLine.arguments.firstIndex(of: flag),
@@ -75,8 +79,15 @@ struct DroidBridgeApp: App {
                 LiveMirrorView(model: liveMirror)
                     .tabItem { Label("P08 Mirror", systemImage: "display") }
                     .tag(4)
+                HIDRemoteView(peripheral: hidPeripheral)
+                    .tabItem { Label("HID Keyboard", systemImage: "keyboard") }
+                    .tag(5)
             }
             .onAppear {
+                appDelegate.hidPeripheral = hidPeripheral
+                if CommandLine.arguments.contains("--p17-hid") {
+                    appDelegate.holdTermination(reason: "HID peripheral is active")
+                }
                 // Force the monitor to start with the window, independent of SwiftUI's lazy tab
                 // creation. The prompt needs a real app window, not a headless harness.
                 if CommandLine.arguments.contains("--p06-monitor") {
@@ -148,6 +159,10 @@ struct DroidBridgeApp: App {
 final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
     private var holdReason: String?
 
+    /// Set by the SwiftUI scene after the state objects exist; the HID peripheral must be
+    /// withdrawn (SDP record removed, L2CAP channels closed) before the process dies.
+    weak var hidPeripheral: ClassicHIDPeripheral?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let arguments = CommandLine.arguments
         if arguments.contains("--p08-mirror")
@@ -155,8 +170,15 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
             || arguments.contains("--listen") {
             holdTermination(reason: "mirror receiver or advertiser is active")
         }
+        installTerminationSignalHandlers()
     }
 
+    /// Withdraws the HID SDP record and closes the L2CAP channels before the process goes away.
+    ///
+    /// Without this, quitting while connected leaves the peer and bluetoothd holding a HID session
+    /// that no longer has an owner, and the next launch is refused with
+    /// `L2CAP control channel (0x0011) failed (0xE00002BC)` until the phone's Bluetooth is cycled.
+    /// Measured in P17; the promotion inherits the requirement, not just the code.
     func holdTermination(reason: String) {
         guard holdReason == nil else { return }
         holdReason = reason
@@ -170,4 +192,34 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.enableAutomaticTermination(holdReason)
         ProcessInfo.processInfo.enableSuddenTermination()
     }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        hidPeripheral?.stop()
+        return .terminateNow
+    }
 }
+
+/// Runs the same shutdown path for `SIGTERM`/`SIGINT` as for a normal quit.
+///
+/// AppKit does not turn these signals into an `applicationShouldTerminate` call, so a `kill` or a
+/// logout would drop the process without withdrawing the SDP record or closing the L2CAP channels.
+/// The peer then kept a HID session nobody owned and the next launch was refused with `0xE00002BC`
+/// until Bluetooth was cycled on one side. Confirmed by measurement in P17: `pkill` caused exactly
+/// that, while an AppleEvent quit logged `stopped` and reconnected cleanly.
+private func installTerminationSignalHandlers() {
+    for sig in [SIGTERM, SIGINT] {
+        signal(sig, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: sig, queue: .main)
+        source.setEventHandler {
+            MainActor.assumeIsolated {
+                if let delegate = NSApp.delegate as? BridgeAppDelegate {
+                    delegate.hidPeripheral?.stop()
+                }
+            }
+            exit(0)
+        }
+        source.resume()
+        terminationSignalSources.append(source)
+    }
+}
+
+private var terminationSignalSources: [DispatchSourceSignal] = []

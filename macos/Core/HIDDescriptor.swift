@@ -11,8 +11,8 @@
 import Foundation
 
 /// Minimal keyboard-only HID identity for the experiment.
-enum P17Identity {
-    static let serviceName = "DroidBridge P17"
+enum HIDIdentity {
+    static let serviceName = "DroidBridge HID"
     static let providerName = "DroidBridge"
     static let serviceDescription = "Keyboard"
 
@@ -132,7 +132,7 @@ enum P17SDPRecord {
             "0009 - BluetoothProfileDescriptorList": [
                 [
                     uuid16(0x1124),
-                    unsigned(P17Identity.profileVersion, bytes: 2)
+                    unsigned(HIDIdentity.profileVersion, bytes: 2)
                 ]
             ],
             // Interrupt channel (PSM 0x0013), expressed as an additional protocol descriptor.
@@ -147,21 +147,21 @@ enum P17SDPRecord {
                     ]
                 ]
             ],
-            "0100 - ServiceName": P17Identity.serviceName,
-            "0101 - ServiceDescription": P17Identity.serviceDescription,
-            "0102 - ProviderName": P17Identity.providerName,
+            "0100 - ServiceName": HIDIdentity.serviceName,
+            "0101 - ServiceDescription": HIDIdentity.serviceDescription,
+            "0102 - ProviderName": HIDIdentity.providerName,
 
-            "0200 - HIDDeviceReleaseNumber": unsigned(P17Identity.deviceReleaseNumber, bytes: 2),
-            "0201 - HIDParserVersion": unsigned(P17Identity.parserVersion, bytes: 2),
-            "0202 - HIDDeviceSubclass": unsigned(P17Identity.deviceSubclass, bytes: 1),
-            "0203 - HIDCountryCode": unsigned(P17Identity.countryCode, bytes: 1),
+            "0200 - HIDDeviceReleaseNumber": unsigned(HIDIdentity.deviceReleaseNumber, bytes: 2),
+            "0201 - HIDParserVersion": unsigned(HIDIdentity.parserVersion, bytes: 2),
+            "0202 - HIDDeviceSubclass": unsigned(HIDIdentity.deviceSubclass, bytes: 1),
+            "0203 - HIDCountryCode": unsigned(HIDIdentity.countryCode, bytes: 1),
             "0204 - HIDVirtualCable": true,
             "0205 - HIDReconnectInitiate": true,
             // HIDDescriptorList: one entry, report-descriptor type 0x22, raw descriptor bytes.
             "0206 - HIDDescriptorList": [
                 [
                     unsigned(0x22, bytes: 1),
-                    text(P17Identity.reportMap)
+                    text(HIDIdentity.reportMap)
                 ]
             ],
             "0207 - HIDLANGIDBaseList": [
@@ -172,8 +172,8 @@ enum P17SDPRecord {
             ],
             "0209 - HIDBatteryPower": true,
             "020A - HIDRemoteWake": true,
-            "020B - HIDProfileVersion": unsigned(P17Identity.profileVersion, bytes: 2),
-            "020C - HIDSupervisionTimeout": unsigned(P17Identity.supervisionTimeout, bytes: 2),
+            "020B - HIDProfileVersion": unsigned(HIDIdentity.profileVersion, bytes: 2),
+            "020C - HIDSupervisionTimeout": unsigned(HIDIdentity.supervisionTimeout, bytes: 2),
             "020D - HIDNormallyConnectable": true,
             "020E - HIDBootDevice": true
         ]

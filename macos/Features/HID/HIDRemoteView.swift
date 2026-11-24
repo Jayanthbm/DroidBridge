@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: none — internal feasibility experiment, not for distribution.
 import SwiftUI
 
-struct P17ClassicHIDPView: View {
+/// The Phase 5 HID remote: the P17 feasibility surface promoted into the product app.
+///
+/// Every safety control from the experiment survives the promotion unchanged, because the
+/// acceptance evidence (P17, 48/48 arrow presses on both phones) was gathered with exactly
+/// these controls: one arrow press per confirmed foreground check, no pointer, no text entry.
+struct HIDRemoteView: View {
     @ObservedObject var peripheral: ClassicHIDPeripheral
     @State private var receiverConfirmed = false
     @State private var peerAddress = ""
@@ -13,9 +18,9 @@ struct P17ClassicHIDPView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("P17 — Bluetooth Classic HID device")
+            Text("Bluetooth Classic HID keyboard")
                 .font(.title2.weight(.semibold))
-            Text("Isolated HIDP experiment. Public IOBluetooth APIs only. Not production code.")
+            Text("The Mac appears as a keyboard to the paired phone. Public IOBluetooth APIs only.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -107,7 +112,7 @@ struct P17ClassicHIDPView: View {
 
             GroupBox("Send one arrow press/release") {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Confirm the harmless DroidBridge receiver is focused on the phone before each arrow. Confirmation is used up by one click.")
+                    Text("Confirm a DroidBridge receiver is focused on the phone before each arrow. Confirmation is used up by one click.")
                         .font(.callout)
                     Toggle("The P16 receiver is foreground and focused", isOn: $receiverConfirmed)
                     HStack {
@@ -140,8 +145,7 @@ struct P17ClassicHIDPView: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("• Keyboard arrow usages only; no pointer, text entry or touch-equivalent control.")
                     Text("• No Accessibility permission, event tap or Mac input capture.")
-                    Text("• Use only the purpose-built DroidBridge receiver and never a sensitive app.")
-                    Text("• Not for distribution; feasibility evidence only.")
+                    Text("• Send only to the purpose-built DroidBridge receiver, never to a sensitive app.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

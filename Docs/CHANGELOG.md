@@ -1,3 +1,14 @@
+## Phase 5 started — the Bluetooth HID keyboard moves into the app (2026-11-24)
+
+- The Mac app now has a **HID Keyboard** tab: the proven P17 Classic HIDP peripheral, promoted unchanged in
+  behaviour. The Mac appears as a Bluetooth keyboard to the paired phone; one arrow press per confirmed
+  foreground check, no pointer, no text entry, explicit publish/stop, and the same clean-shutdown path on
+  quit and SIGTERM.
+- The app adopts one new entitlement, `com.apple.security.device.bluetooth`, and links IOBluetooth —
+  measured working under the App Sandbox (SDP publication succeeded), not assumed.
+- The standalone P17 experiment target is removed from the project; its evidence stays in
+  `Docs/prototypes/P17-classic-hidp.md`.
+
 ## Verified — a returning phone takes back its session without a human (2026-11-24)
 
 - **Dropping and restoring Wi-Fi mid-session now recovers by itself.** The listener used to refuse every

@@ -588,3 +588,33 @@ produced a zombie session with no receive loop and no PONG.
 **Consequences.** A returning phone always wins its session back within one handshake (~1 s), no manual tap.
 A port scanner or a second phone cannot take the slot (pin must match the live session). The parked
 connection's frames are never read before adoption, so nothing bypasses the one-reader invariant.
+
+## ADR-050 — Phase 5: the Classic HIDP peripheral is promoted into the product app, sandboxed
+
+**Status:** accepted 2026-11-24.
+
+**Context.** P17 proved the Mac-side Classic HIDP device role (SDP publication, outbound L2CAP control and
+interrupt channels, HIDP handshake and report writes) against both phones with `48/48` arrow presses —
+unsandboxed. The experiment deliberately carried no App Sandbox and its entitlement comment said the file
+must not be adopted without review. Phase 5 promotes the peripheral into `DroidBridge.app`, which is
+sandboxed by audit (ADR-026).
+
+**Decision.**
+
+1. `ClassicHIDPeripheral.swift` and the HID report descriptor move to `macos/Core/` unchanged in behaviour;
+   the view becomes `Features/HID/HIDRemoteView.swift` on a new "HID Keyboard" tab. Every P17 safety control
+   survives the promotion: one arrow per confirmed foreground check, no pointer, no text entry, explicit
+   publish/stop.
+2. The app adopts `com.apple.security.device.bluetooth` and links `IOBluetooth.framework`. The sandbox
+   question is answered by measurement, not assumption: the sandboxed app published the HID SDP record
+   (`published: yes`) with no entitlement rejection on 2026-11-24.
+3. The shutdown obligations measured in P17 are inherited, not copied: `applicationShouldTerminate` stops
+   the peripheral, and SIGTERM/SIGINT run the same path, because quitting while connected leaves a HID
+   session no one owns and the next launch is refused with `0xE00002BC`.
+4. The SDP service name becomes `DroidBridge HID`; the phone's HID host accepts any HID keyboard, so no
+   phone-side coupling to the name exists.
+
+**Consequences.** One app now owns discovery, transport, mirroring, clipboard and HID input. The P17
+experiment target is removed from the project. Phase 5 device acceptance rows (pairing prompts, arrow
+delivery on both phones) remain to be measured on the next device session; the prior P17 evidence does not
+transfer to the promoted build without at least one verification run.

@@ -983,3 +983,19 @@ taken with the cable physically disconnected and USB debugging off, no ADB in th
 - Phase 1 acceptance status: P08 closed cable-out. P10 has fresh evidence cable-in; its cable-out variant
   (password field open while unplugged) needs one more unplug cycle with the dialog on screen. The Mac→phone
   clipboard ack needs one reconnect. Both are single-step items on the next session.
+
+**2026-11-24 Phase 5 started: Classic HIDP promoted into the product app.** Commits `4be0e32`…`8e0a079`
+(session-recovery) preceded it; the promotion commit follows.
+
+- `ClassicHIDPeripheral.swift` + HID descriptor → `macos/Core/`; the view → `Features/HID/HIDRemoteView.swift`
+  on a new "HID Keyboard" tab (tag 5, `--p17-hid` opens it). The SDP service name is now `DroidBridge HID`
+  (the phone's HID host accepts any keyboard; no coupling).
+- `BridgeAppDelegate` owns the peripheral: `applicationShouldTerminate` and SIGTERM/SIGINT handlers stop it
+  (inherited P17 requirement — quitting connected otherwise poisons the next launch with `0xE00002BC`).
+- **Entitlement change (ADR-050)**: `com.apple.security.device.bluetooth` adopted + `IOBluetooth.framework`
+  linked; PERMISSIONS_MATRIX updated. **Measured, not assumed:** the sandboxed app published the HID SDP
+  record (`published: yes`, publish button self-disabled) on the first try.
+- The `P17ClassicHIDP` target is removed from `project.yml` and the experiment folder deleted; `xcodegen`
+  regenerated the project. Build + 67 macOS unit tests + `verify-all --skip-macos` all pass.
+- Not yet measured: the promoted build's device rows (pairing prompt, arrow delivery) on the phones — the
+  P17 evidence does not transfer without at least one verification run.

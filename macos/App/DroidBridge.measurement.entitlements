@@ -3,14 +3,19 @@
 <plist version="1.0">
 <dict>
 	<!--
-	  The audited entitlement set (ADR-026, MACOS_APP_SPEC §8). Exactly three keys, and each one
-	  is load-bearing:
+	  The audited entitlement set (ADR-026, MACOS_APP_SPEC §8), extended in Phase 5 (ADR-050).
+	  Each key is load-bearing:
 
 	  - app-sandbox: on from the first build, so a Mac App Store build stays possible and the
 	    app cannot reach anything the user did not grant.
 	  - network.client: the Mac dials nothing, but Bonjour advertising is UDP and the client
 	    entitlement gates sending. Without it, discovery silently fails.
 	  - network.server: the Mac is the listener (ADR-010) and accepts the Android TCP connection.
+	  - device.bluetooth (Phase 5, ADR-050): the Mac publishes a Bluetooth Classic HID SDP record
+	    and opens outbound L2CAP channels to the phone. The P17 experiment proved the code path
+	    unsandboxed; whether the sandboxed combination accepts the classic device role is
+	    measured, not assumed. If the sandbox refuses, that is a recorded blocker, not a silent
+	    entitlement loosening.
 
 	  Deliberately absent: every com.apple.security.cs.* hardened-runtime exception (nothing here
 	  needs JIT or unsigned libraries, and each exception weakens a protection), and
@@ -19,22 +24,23 @@
 
 	  Keep this file ASCII XML with no BOM and no comments inside a key's value: codesign parses it
 	  literally.
-	-->
-	<!--
+
 	  MEASUREMENT-ONLY variant (P10 luma evidence). Adds a scoped absolute-path write exception for
 	  one recording directory so the offline luma measurement can read the received stream. This file
 	  is used only for instrumented harness runs; the shipped and acceptance builds use
 	  DroidBridge.entitlements unchanged.
 	-->
-	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
-	<array>
-		<string>/private/tmp/p10-rec/</string>
-	</array>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<key>com.apple.security.device.bluetooth</key>
+	<true/>
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+	<array>
+		<string>/tmp/droidbridge-measure/</string>
+	</array>
 </dict>
 </plist>
