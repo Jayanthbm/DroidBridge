@@ -110,6 +110,9 @@ public final class SecureListener {
     /// A connection that arrived while another session was live. It completes its handshake while
     /// parked; if it verifies as the same phone it supersedes the live session, otherwise it is dropped.
     private var parkedConnection: NWConnection?
+
+    /// True once completeHandshake has run for the adopted connection. Reset on every adoption.
+    private var completedHandshake = false
     private var controlRateLimiter: FrameRateLimiter
     private var mediaRateLimiter: FrameRateLimiter
     private var authenticationFailures = 0
@@ -462,6 +465,7 @@ public final class SecureListener {
     private func adopt(_ connection: NWConnection, freshHandshake: Bool) {
 
         self.connection = connection
+        completedHandshake = false
         if freshHandshake { verdict.clear() }
         decoder = FrameDecoder()
         replayWindow = ReplayWindow()
@@ -511,9 +515,21 @@ public final class SecureListener {
         parkedConnection = nil
         close(live, reason: "superseded: the same phone reconnected")
         adopt(connection, freshHandshake: false)
+        // Network.framework does not redeliver the current state to a replacement handler, so the
+        // adopted connection's .ready is never seen by the new stateUpdateHandler. Finish the
+        // handshake here, exactly as the fresh-connection path would.
+        completeHandshake(connection)
     }
 
     private func connectionReady(_ connection: NWConnection) {
+        completeHandshake(connection)
+    }
+
+    /// Runs once per adopted connection: reads the verdict, checks the pin, publishes state, and
+    /// starts the receive loop. The once-guard matters because a superseded connection is adopted
+    /// while already .ready, and a redelivered state event must not start a second receive loop.
+    private func completeHandshake(_ connection: NWConnection) {
+        guard !completedHandshake else { return }
         guard let verdict = verdict.snapshot() else {
             // Defensive: verification is required, so reaching ready without a recorded peer means
             // the handshake did not do what this code assumes. Refuse rather than guess.
@@ -543,6 +559,8 @@ public final class SecureListener {
         emit("connection ready peer-pin=\(verdict.pin) authenticated=\(authenticated) code=\(ShortAuthenticationCode.formatForDisplay(code))")
         notify { self.onReady?(verdict.pin, code, authenticated) }
 
+        completedHandshake = true
+        completedHandshake = true
         receiveLoop(on: connection)
     }
 
