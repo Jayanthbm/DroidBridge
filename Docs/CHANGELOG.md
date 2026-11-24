@@ -1,3 +1,18 @@
+## Fixed — Mac-to-phone clipboard receive was silently dead (2026-11-24)
+
+- **Found by running the Phase 3 rows again.** Since the Phase 4 hook work, the session dispatcher routed
+  clipboard messages into the mirroring callback, which ignores them: offers arrived but the clipboard card
+  stayed idle and no ack was ever sent, while the log claimed a handler existed. Clipboard types now go to
+  the clipboard feature and mirroring types to the capture feature. Re-measured: offer → accept → held →
+  applied on tap → ack (`phone applied the text`), with the echo-suppression rule firing correctly after.
+- **Phase 5 HID device rows measured on the promoted build (S24 Ultra):** publish, connect (`HID channels
+  ready: yes`), Report-protocol negotiation, and all four arrow keys delivered one per confirmed check.
+  Clean quit and relaunch republish without the `0xE00002BC` lockout.
+- **Measured follow-up:** killing a connected HID instance with SIGTERM leaves stale L2CAP state that
+  survived cycling Bluetooth on the phone; it cleared after cycling the Mac's Bluetooth and relaunching the
+  app. The SIGTERM shutdown path likely exits before bluetoothd finishes tearing the channels down —
+  recorded as follow-up work rather than papered over.
+
 ## Phase 5 started — the Bluetooth HID keyboard moves into the app (2026-11-24)
 
 - The Mac app now has a **HID Keyboard** tab: the proven P17 Classic HIDP peripheral, promoted unchanged in

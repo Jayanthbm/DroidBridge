@@ -85,3 +85,23 @@ Three real defects, all found by running the product rather than by reading it:
 - A live cross-network or throttled link (clipboard was measured on one Wi-Fi LAN).
 - Clipboard during Doze or while the phone is locked — P14 covers session survival, not clipboard UX.
 - Rich content types, images and file promises: text only, by design for the MVP.
+
+## 2026-11-24: a Phase 4 regression in Mac→phone receive, found and fixed
+
+Running the Phase 3 rows against the current build exposed a silent regression introduced by the Phase 4
+`SessionController` hook work: the shared `when` block routed `CLIPBOARD_OFFER/TEXT/ACCEPT/ACK/REJECT` into
+`onMirrorMessage` — the mirroring hook, which only handles `MIRROR_KEYFRAME_REQUEST` — so clipboard messages
+never reached `onClipboardMessage` and the `ClipboardBridge`. The log still said `handler=true`, the card
+stayed `idle`, and no ack was ever sent. Mac→phone receive had been dead since the 2026-11-22/23 Phase 4
+commits; only the phone→Mac direction (which does not use the receive dispatch) kept working, which is why
+the 2026-11-23 Phase 3 measurements and today's cable-out phone→Mac row both passed while receive failed.
+
+The dispatch now routes clipboard types to `onClipboardMessage` and MIRROR types to `onMirrorMessage`.
+Re-measured end to end on the S24 Ultra: `CLIPBOARD sent 26 bytes` (Mac) → `OFFER hash=ba6dd913 bytes=27
+reason=accept` → `TEXT_READY` → card `ready to apply 27 bytes` → tap **Put it on the clipboard** →
+`APPLIED hash=ba6dd913 bytes=27` → Mac `clipboard.ack:17:ba6dd913…` and `CLIPBOARD phone applied the text`.
+The send path then logged `SEND_SKIPPED reason=echo`, the loop-prevention rule firing exactly as designed
+(the phone's clipboard now holds the Mac's text).
+
+Note: the apply step needed the card's button because Android can only write the clipboard while the app is
+on screen; the offer was held pending foreground state at arrival time.

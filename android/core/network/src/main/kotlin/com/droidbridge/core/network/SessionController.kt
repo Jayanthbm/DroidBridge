@@ -428,8 +428,20 @@ class SessionController(
                         // Logged because this path is otherwise invisible: when a keyframe request was
                         // dropped here the Mac kept flushing while the phone kept sending P-frames, and
                         // nothing in either log said why.
-                        Log.i(TAG, "mirror message ${message.type} handler=${onMirrorMessage != null}")
-                        onMirrorMessage?.invoke(message.type, message.payload)
+                        Log.i(TAG, "session message ${message.type}")
+                        // Clipboard types belong to the clipboard feature; MIRROR types to the capture
+                        // feature. The Phase 4 hook addition routed clipboard types here into the
+                        // mirroring callback, which ignores them — Mac→phone clipboard receive then
+                        // silently died (the card stayed idle and no ack was ever sent) while the log
+                        // claimed the message had a handler.
+                        if (message.type == ControlMessage.Type.MIRROR_KEYFRAME_REQUEST ||
+                            message.type == ControlMessage.Type.MIRROR_STOP ||
+                            message.type == ControlMessage.Type.MIRROR_STARTED ||
+                            message.type == ControlMessage.Type.MIRROR_FORMAT) {
+                            onMirrorMessage?.invoke(message.type, message.payload)
+                        } else {
+                            onClipboardMessage?.invoke(message.type, message.payload)
+                        }
                     }
                     ControlMessage.Type.CLIPBOARD_PAUSE -> {
                         // Handed to the feature, which owns the clipboard rules. The keepalive loop

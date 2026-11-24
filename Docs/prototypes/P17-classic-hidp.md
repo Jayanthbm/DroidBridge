@@ -186,3 +186,28 @@ approved.
 
 Outstanding from 2026-11-24 (same session or next): the Mac→phone clipboard ack needs one reconnect; the P10
 cable-out variant wants the password dialog open while unplugged.
+
+## Phase 5 device-acceptance rows measured 2026-11-24 (promoted build, S24 Ultra)
+
+Run conditions: USB connected, USB debugging on; ADB drove the phone (receiver launch, taps) and AppleScript
+clicks drove the Mac's own UI; no ADB input entered the HID path. The S24 was already bonded from P17, so no
+SSP prompt was exercised in this run.
+
+| Row | Result |
+|---|---|
+| Publish from the product app | **Pass** — `published: yes`, button self-disabled |
+| Connect | **Pass** — `Connected peer: c0d5e2f6d7c2`, `HID channels ready: yes`; activity log `SDP published (handle …) → opening ACL → class of device 0x2540 → control channel open → interrupt channel open` |
+| Protocol negotiation | **Pass** — `Negotiated protocol: Report`, no errors |
+| Arrow delivery (one per confirmed check) | **Pass** — UP/DOWN/LEFT/RIGHT each incremented the receiver's counters exactly once per press (UP: 1 → 1/1/0/0 … 1/1/1/1), and again after a reconnect (UP: 2) |
+| Clean shutdown | **Pass (AppleEvent quit)** — quit while connected, relaunch republished without `0xE00002BC` |
+| Cross-device | **Pending** — the OnePlus Nord was not attached; row 2–4 repeat there |
+
+**Measured follow-up (not papered over):** killing the connected app with SIGTERM left stale L2CAP state
+that the next instance's connect failed with (`L2CAP control channel (0x0011) failed (0xE00002BC)`), which
+survived cycling Bluetooth on the phone; it cleared after cycling the Mac's Bluetooth and relaunching the
+app. P17's earlier note said one side's cycle sufficed. The likely cause is the SIGTERM handler calling
+`exit(0)` immediately after `stop()`, racing bluetoothd's teardown. Follow-up: make the shutdown path
+awaitable before exit.
+
+The pairing-prompt row and the OnePlus repeat remain for a session where the OnePlus is attached (and for a
+freshly unpaired device if one is convenient).

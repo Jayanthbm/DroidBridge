@@ -999,3 +999,19 @@ taken with the cable physically disconnected and USB debugging off, no ADB in th
   regenerated the project. Build + 67 macOS unit tests + `verify-all --skip-macos` all pass.
 - Not yet measured: the promoted build's device rows (pairing prompt, arrow delivery) on the phones — the
   P17 evidence does not transfer without at least one verification run.
+
+**2026-11-24 Phase 5 device rows measured on the promoted build (S24 Ultra); a Phase 3 receive regression
+found and fixed.** USB connected, USB debugging on. ADB drove the phone, AppleScript clicks drove the Mac's
+own UI.
+
+- **HID rows: publish/connect/negotiation/arrows/clean-quit all pass.** All four arrows delivered one per
+  confirmed check; reconnected and delivered again (UP: 2). Cross-device repeat on the OnePlus is pending.
+- **SIGTERM follow-up measured**: a SIGTERM-killed connected instance leaves stale L2CAP state
+  (`0xE00002BC` on the next connect) that survives a phone-side Bluetooth cycle; cleared after a Mac-side
+  Bluetooth cycle plus app relaunch. Likely the handler exiting before bluetoothd teardown completes.
+  Recorded in P17 with repro; fix is follow-up work.
+- **Phase 3 receive regression found and fixed.** The Phase 4 `SessionController` hook work routed
+  CLIPBOARD_OFFER/TEXT/ACCEPT/ACK/REJECT into `onMirrorMessage`, which ignores them: Mac→phone receive died
+  silently while the log said `handler=true`. The dispatch now separates clipboard types from MIRROR types.
+  Re-measured: offer → accept → held → applied on tap → ack (`phone applied the text`); then
+  `SEND_SKIPPED reason=echo` (loop prevention firing correctly).
