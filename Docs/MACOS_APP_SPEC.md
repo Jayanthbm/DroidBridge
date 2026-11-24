@@ -77,7 +77,7 @@
 
 ## 8. Distribution and sandbox
 
-- **App Sandbox on from the first build**, with exactly `com.apple.security.app-sandbox`, `com.apple.security.network.client` and `com.apple.security.network.server` (ADR-026). Both network entitlements are needed: the server one for accepting the Android TCP connection, the client one because Bonjour advertising is UDP and the client entitlement gates sending.
+- **App Sandbox on from the first build**, with `com.apple.security.app-sandbox`, `com.apple.security.network.client`, `com.apple.security.network.server` (ADR-026) and, from Phase 5, `com.apple.security.device.bluetooth` (ADR-050). Both network entitlements are needed: the server one for accepting the Android TCP connection, the client one because Bonjour advertising is UDP and the client entitlement gates sending. The Bluetooth key gates the Classic HIDP device role (publishing the HID SDP record and opening outbound L2CAP to the phone), measured working under the sandbox on 2026-11-24.
 - Do not add `com.apple.security.cs.*` hardened-runtime exceptions. Nothing in the app needs JIT, unsigned libraries or disabled library validation, and each exception weakens a protection.
 - **Identity storage (ADR-025):** data protection keychain (`kSecUseDataProtectionKeychain: true`) under the app's own `keychain-access-groups` entry, authorized by an embedded **Developer ID** provisioning profile. `kSecAttrSynchronizable` stays off. The private key is non-exportable.
 - **Signing:** Developer ID Application identity, hardened runtime (`-o runtime`), secure timestamp (`--timestamp`), signed **inside-out**; never `codesign --deep`, never `sudo`. No `get-task-allow` in a release build. Entitlements file is ASCII XML with no BOM or comments.

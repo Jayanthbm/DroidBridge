@@ -165,3 +165,24 @@ macOS **automatic termination** killed the upstream probe 16 seconds after the c
 ## Conclusion
 
 **GO** for the Classic HIDP route on Android using DroidBridge's own implementation, demonstrated on one OnePlus Nord AC2001 / Android 12 device with USB disconnected. **BLE HOGP from this Mac to Android is NO-GO** (see [P16](P16-ble-hid.md) and ADR-041). What remains before any production input claim: reproduce on the **S24 Ultra**, repeat with **both debugging modes disabled**, and extend beyond arrow keys only if a requirement demands it. Treat the macOS Bluetooth privacy grant, the single pairing-agent slot and the one-session-per-connection rule as known environment constraints (ADR-042).
+
+## Phase 5 device-acceptance checklist (promoted build, pending 2026-11-25)
+
+The peripheral now lives in `DroidBridge.app` (ADR-050). The P17 evidence does not transfer to the
+promoted build without at least one verification run, so the next device session measures:
+
+| # | Row | Procedure | Pass criterion |
+|---|---|---|---|
+| 1 | Publish from the product app | `DroidBridge --p17-hid`, tap **Publish HID service** | `published: yes`; the button self-disables |
+| 2 | Pairing prompt on the phone | Connect from the Mac's **Paired peers** list (or by address); answer the SSP prompt on the phone | Pairing completes; the Mac's log shows the HID handshake (control + interrupt channels open, `HID channels ready: yes`) |
+| 3 | Protocol negotiation | Observe the negotiated mode with the phone connected | `Negotiated protocol: Report` (or Boot if the host asks); no error line |
+| 4 | Arrow delivery (one per confirmed check) | On the phone, open the DroidBridge receiver (or any harmless screen the owner chose); on the Mac, toggle the foreground confirmation and press one arrow | The phone receives the key event; `Input reports written` increments by 1; the toggle resets |
+| 5 | Clean shutdown | Quit the app (⌘Q and separately `pkill -TERM`) while connected | `stopped` in the activity log; the next launch publishes and reconnects without `0xE00002BC` |
+| 6 | Cross-device | Repeat 2–4 on the OnePlus Nord (Android 12) and the S24 Ultra (Android 17) | Both PASS |
+
+Run conditions to record per row: USB connected yes/no, USB debugging, wireless debugging. The one-key-per-
+confirmation rule is unchanged; mapping, text entry and an input matrix remain out of scope until separately
+approved.
+
+Outstanding from 2026-11-24 (same session or next): the Mac→phone clipboard ack needs one reconnect; the P10
+cable-out variant wants the password dialog open while unplugged.
