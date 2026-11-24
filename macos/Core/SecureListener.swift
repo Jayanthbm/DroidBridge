@@ -518,6 +518,14 @@ public final class SecureListener {
         }
     }
 
+    /// True when the frame's type byte is PING. Used only for the pre-confirmation keepalive check, so
+    /// it reads the envelope's type byte rather than trusting a decode that has not run yet.
+    private static func isPingFrame(_ frame: Data) -> Bool {
+        // [version][type][sequence:4][payload]
+        // Data carries the indices of the slice it came from, so this must not assume index 0.
+        frame.count >= 6 && frame[frame.startIndex + 1] == ControlMessageType.ping.rawValue
+    }
+
     /// Feeds bytes through the frame decoder and dispatches every completed frame.
     private func ingest(_ data: Data) throws {
         let frames = try decoder.feed(data)
@@ -527,9 +535,14 @@ public final class SecureListener {
     }
 
     private func handleFrame(_ frame: Data) throws {
-        // Data before the user confirmed is not "early" — it is a protocol violation, because the
-        // peer was told the session is not yet authenticated.
-        guard state == .authenticated else {
+        // Data before the user confirmed is not "early" — it is a protocol violation for content,
+        // because the peer was told the session is not yet authenticated. Keepalive is the exception:
+        // confirming is a human act on this side, so the peer's heartbeat always arrives first and
+        // closing on it made a first pairing impossible to complete — measured as an endless
+        // "peer sent data before the pairing was confirmed" loop where the confirm arrived one frame
+        // too late. PING carries no user data and is answered; everything else is still refused.
+        let isKeepalive = state != .authenticated && Self.isPingFrame(frame)
+        guard state == .authenticated || isKeepalive else {
             throw SecureListenerError.dataBeforeAuthentication
         }
 
@@ -538,6 +551,17 @@ public final class SecureListener {
             message = try ControlMessageCodec.decode(frame)
         } catch {
             throw SecureListenerError.malformedControl(String(describing: error))
+        }
+
+        if state != .authenticated, message.type == .ping {
+            // Answer only. No pin is stored and nothing is delivered to the app until the user
+            // confirms. Written straight to the socket because sendControl() requires an authenticated
+            // session and would also re-enter the serial queue we are already running on.
+            if let connection {
+                outboundSequence &+= 1
+                try? send(type: .pong, sequence: outboundSequence, payload: message.payload, on: connection)
+            }
+            return
         }
 
         do {

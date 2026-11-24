@@ -217,3 +217,51 @@ Two operational findings worth keeping:
 
 - **A sleeping screen ends the projection.** `svc power stayon usb` was set and the screen still timed out at the configured 30 minutes, which stopped capture. Any long endurance run must hold the screen awake, and the row's failure mode (`system onStop`) must not be mistaken for a transport fault.
 - **The phone's window manager can wedge.** Mid-run, focus stuck on a stale `NotificationShade` window, `uiautomator` returned no hierarchy and every tap missed. A reboot recovered it; taps against a wedged WM look exactly like a broken app.
+
+## Matrix rows measured 2026-11-24 (S24 Ultra, Android 17 / API 37; USB connected, USB debugging on)
+
+Run conditions: S24 Ultra `RZCY81TKBSV`, phone pins intact from the 2026-11-23 pairing, Mac listener on fixed
+port 59695, USB connected and USB debugging enabled for the whole run (the final acceptance sweep still needs
+USB out and debugging off). ADB drove setup only: launching the app, choosing the Mac in the picker, tapping
+`Share this screen`, and selecting **Share entire screen** in the capture dialog. No ADB input went into the
+measured stream, and no screen capture or clipboard read was performed.
+
+| Row | Result |
+|---|---|
+| 30-minute continuous session | **Pass** — capture started 07:34:10, last sample 08:06:47 (32 min 56 s of capture, uninterrupted). Receiver: `received=10800 enqueued=10800 dropped=0 status=rendering`, `keyframeRequests=0`, zero closes in the whole run. Phone: `frames=10885 bytes=57106207 keyframes=182 fps=5.5 kbps=231 dropped=0 formats=2 keyframeRequests=0 reEncodes=0 largestFrame=201133 maxSendMs=9 durationMs=1976212 stopReason=active`. Nothing was tapped or touched during the window; the screen was held awake with `svc power stayon true` and `screen_off_timeout=3600000`. |
+| Reconnect re-announce through the product path | **Pass** — listener killed at 08:07:16 with the stream live. Phone `RECONNECTING` 08:07:22.760 → `CONNECTED` 08:07:28.271 (5.9 s, inside one backoff step), `re-announced format 590x1280 on new session gen=2`, and the new receiver saw `MIRROR_FORMAT 590x1280 … sps=18 pps=4` at 08:07:28 followed by `FRAMES received=60 → 120 dropped=0 status=rendering`. The restarted listener authenticated on the stored pin (`authenticated=true`) with no code comparison and no tap. |
+| Stop path (notification action, system sharing chip) | **Not measured.** The affordance is verified present — `dumpsys notification` shows `id=8108 android.title="Mirroring your screen"`, `numWithActions=2`, `[0] "Stop" -> PendingIntent … com.droidbridge.app startService` — but it cannot be exercised by ADB on this build: expanding the shade makes `uiautomator` fail with `ERROR: could not get idle state`, leaves `mCurrentFocus=null`, and every subsequent tap is swallowed until the device is rebooted. Reproduced twice. The in-app `Stop sharing` control could not be measured for the same reason: the window manager had already wedged, so the tap was never delivered. |
+
+Three defects were found by running this, and all three are fixed:
+
+- **A first pairing could never complete.** A clean install confirmed the code on the phone, whose heartbeat
+  then arrived while the Mac was still `awaitingConfirmation`; the Mac closed with `peer sent data before the
+  pairing was confirmed`, the confirm then failed (`PAIRING_CONFIRM_FAILED session is not awaiting pairing
+  confirmation`), no pin was stored, and the two sides looped forever. The receiver now answers PING before
+  confirmation (carrying no user data) and still refuses everything else until the user confirms. Measured
+  after the fix: `AUTO_CONFIRM_CODE_VERIFIED code=903 717` → `AUTHENTICATED`, heartbeats `rttMs=10/131/237`.
+  The first attempt at this fix crashed the listener (`SIGTRAP` in `isPingFrame`, because `Data` slices keep
+  their parent's indices) — the crash report named the exact line.
+- **The capture notification — the only stop affordance outside the app — was never requested.**
+  `POST_NOTIFICATIONS` was declared in the manifest and described there as "requested at the moment mirroring
+  starts", but nothing requested it. After a plain reinstall, `dumpsys notification` reported
+  `importance=NONE` and `granted=false`, so the ongoing notification and its Stop action were invisible to
+  the user. It is now requested exactly when capture starts, chained *before* the capture consent: launching
+  both in one frame makes the system drop one, and the consent is the one that must not be lost.
+- **Granting consent crashed the app.** `RemoteServiceException$ForegroundServiceDidNotStartInTimeException`,
+  with `Last startServiceCommon()` pointing at `MirroringService$Companion.start` called from
+  `MainActivity.onCreate$lambda$3`. `MirroringService.handleStart` validated its inputs before calling
+  `startForegroundWithNotification()`, and the early-return path never posted the notification, which Android
+  treats as a fatal FGS violation. Foreground is now claimed first, before anything can fail.
+
+One operational finding: the Mac receiver's `CLOSED idle timeout after 120s` fired during a reboot gap
+(08:24:26) and closed a session that was merely waiting. A reconnect test must restore the listener inside
+120 s, and the product needs to decide whether 120 s is the right idle policy for a phone that may be
+reconnecting.
+
+## End of the overnight run (2026-11-23 22:00:27)
+
+The 2026-11-23 endurance attempt ended at 22:00:27 with 6960 frames received, `dropped=0` — 20 min 42 s of
+clean stream — at the moment the USB cable was pulled and the phone was picked up and locked. The last
+received frame coincides with the lock, which matches the recorded platform behaviour (a locked screen ends
+the projection, U10) rather than a transport fault: pulling the cable alone does not stop capture.

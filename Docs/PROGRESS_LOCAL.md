@@ -909,3 +909,41 @@ Two things were learned while staging. The P14 experiment has its own device ide
 When the phone is unplugged and its screen times out, `deviceidle` should move ACTIVE → INACTIVE → IDLE and the measurement is whether heartbeats resume across the Doze windows (ADR-043 expects network suspension, so gaps are the expected result rather than a failure).
 
 **2026-11-22 P08 regression smoke after the toolchain upgrade (S24 Ultra, Android 17, USB connected, USB debugging enabled, wireless debugging disabled).** The AGP 9.5.2 / Compose 2026.11.01 / compileSdk 37.1 upgrade rebuilt every experiment app, and all P08/P10 evidence predates it, so mirroring was re-measured on the upgraded build: `pipeline 590x1280 from content 1080x2340 encoder=c2.qti.avc.encoder`, `mirror.format MirrorFormat(590x1280…)`, and the receiver reporting `FRAMES received=480 enqueued=480 dropped=0 status=rendering`. The rotation row was re-checked on the new build too — `MirrorFormat(1280x590…)` mid-session and back to `590x1280` — and a 45 s window produced `error_lines=0`. The toolchain upgrade did not change mirroring behaviour.
+
+**2026-11-24 Phase 4 rows measured on the S24 Ultra, and three defects fixed from running them.** A fresh
+install was used for the whole session (all six packages had been uninstalled at the owner's request on
+2026-11-23). USB connected, USB debugging on, wireless debugging off. ADB drove setup only — launching the
+app, choosing the Mac in the local-network picker, tapping `Share this screen`, and picking **Share entire
+screen**; no ADB input entered the measured stream and no screen capture or clipboard read was performed.
+
+- **30-minute continuous session: pass.** 07:34:10 → 08:06:47, nothing touched. Receiver
+  `received=10800 enqueued=10800 dropped=0 status=rendering` with `keyframeRequests=0` and no closes; phone
+  `frames=10885 bytes=57106207 keyframes=182 fps=5.5 kbps=231 dropped=0 formats=2 maxSendMs=9
+  durationMs=1976212 stopReason=active`.
+- **Reconnect re-announce through the product path: pass.** Listener killed mid-stream at 08:07:16; phone
+  `RECONNECTING` 08:07:22.760 → `CONNECTED` 08:07:28.271, `re-announced format 590x1280 on new session gen=2`,
+  new receiver `MIRROR_FORMAT` then `received=60 → 120 dropped=0`, authenticated on the stored pin with no code.
+- **Stop path: still not measured.** The notification's `Stop` action is verified present
+  (`numWithActions=2`, `[0] "Stop" -> PendingIntent`) but cannot be tapped through ADB: expanding the shade
+  makes `uiautomator` report `ERROR: could not get idle state`, leaves `mCurrentFocus=null`, and swallows every
+  later tap until a reboot. Reproduced twice, including on the in-app `Stop sharing` control after the wedge.
+
+Defects fixed this session (details in ADR-048 and P08):
+
+1. **First pairing could never complete** — the Mac closed on the phone's pre-confirmation heartbeat, so the
+   confirm always landed on a dead session and no pin was ever stored. Keepalive is now answered before
+   confirmation; content is still refused. A `Data` slice-indexing crash in the first version of that fix
+   (`SIGTRAP` in `isPingFrame`) was found in the crash report and corrected.
+2. **`POST_NOTIFICATIONS` was never requested** — declared in the manifest, described as requested when
+   capture starts, but nothing requested it, so after a reinstall the ongoing notification ran at
+   `importance=NONE` and the only out-of-app stop affordance was invisible. Now requested at capture start,
+   chained before the capture consent because two dialogs in one frame lose one.
+3. **Capture start crashed after consent** — `ForegroundServiceDidNotStartInTimeException` because
+   `handleStart` could return before claiming foreground. Foreground is now claimed first.
+
+The previous night's run closed cleanly at 22:00:27 with 6960 frames and `dropped=0` (20 min 42 s) at the
+moment the cable was pulled and the phone was locked, consistent with the recorded rule that a locked screen
+ends the projection.
+
+Note: `verify-all.sh` now exports `JAVA_HOME` for JDK 17 when the caller has not set one — this machine's
+default `java` is 27, which the pinned Gradle 8.10.2 refuses to run, so a plain checkout failed to verify.

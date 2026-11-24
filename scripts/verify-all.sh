@@ -22,6 +22,15 @@ done
 
 step() { printf '\n=== %s ===\n' "$1"; }
 
+# This machine now ships a JDK the pinned Gradle cannot read (its default `java` is 27, and
+# Gradle 8.10.2 aborts on it). Prefer the toolchain the project is built and tested against so a
+# plain checkout verifies without the caller having to export JAVA_HOME first.
+if [[ -z "${JAVA_HOME:-}" ]]; then
+    if [[ -x /usr/libexec/java_home ]] && JAVA17=$(/usr/libexec/java_home -v 17 2>/dev/null); then
+        export JAVA_HOME="$JAVA17"
+    fi
+fi
+
 step "Shared protocol (JVM, platform-independent)"
 "$REPO_ROOT/shared/protocol/gradlew" -p "$REPO_ROOT/shared/protocol" test
 

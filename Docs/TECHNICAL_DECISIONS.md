@@ -527,3 +527,40 @@ recognised, or it will echo received text straight back.
 **Consequences.** The MVP is text-only, requires a tap on the Android side, and cannot be sold as
 "clipboard sync" in the background on Android — that is the platform's rule, not a missing feature.
 Rich content, images and file promises are out of scope for this phase.
+
+## ADR-048 — Keepalive is allowed before the pairing is confirmed; content is not
+
+**Status:** accepted 2026-11-24. Supersedes nothing; refines ADR-046 d4.
+
+**Context.** A first pairing from a clean install could never complete on a real device. The phone confirms
+its side and starts its 15 s heartbeat immediately; confirming on the Mac is a human act that finishes a
+moment later. The receiver refused *every* frame while `awaitingConfirmation`, so it closed on the heartbeat
+with `peer sent data before the pairing was confirmed`. The user's confirm then landed on a closed session
+(`PAIRING_CONFIRM_FAILED session is not awaiting pairing confirmation`), no pin was stored, and both sides
+retried in a loop — measured as an endless reconnect cycle at 2026-11-23 21:30, and reproduced on every
+attempt.
+
+The rule "no data before confirmation" exists to protect *user content*: clipboard text and video frames must
+not reach an unconfirmed peer. A PING carries a sequence number and nothing else.
+
+**Decision.**
+
+1. While `awaitingConfirmation`, a PING is answered with PONG and nothing else happens: no pin is stored, no
+   frame reaches the app, and the session is not authenticated. Every other frame type is still refused.
+2. The receiver answers that PONG by writing to the socket directly, because `sendControl` requires an
+   authenticated session and would also re-enter the serial queue the receive loop is already on.
+3. `Data` slices keep their parent's indices, so the type byte is read as `frame[frame.startIndex + 1]`. The
+   first version used `frame[1]` and crashed with `SIGTRAP` inside `isPingFrame` on the very first pairing.
+4. A capture service claims the foreground state at the top of `onStartCommand` for `ACTION_START`, before any
+   validation can return early. Returning from `startForegroundService()` without `startForeground()` is a
+   fatal platform violation (`ForegroundServiceDidNotStartInTimeException`), which is exactly what happened
+   when the consent data or the session was missing.
+5. `POST_NOTIFICATIONS` is requested when capture starts, chained before the capture consent rather than
+   alongside it. Two runtime dialogs launched in one frame lose one, and the consent must not be the one lost.
+   Denial never blocks capture; it only removes the ongoing notification, which is the sole stop affordance
+   outside the activity.
+
+**Consequences.** First pairing completes unattended and the pin is stored once. The ongoing notification and
+its Stop action exist on a fresh install. A capture start that fails validation no longer crashes the app, it
+reports and stops. The keepalive exception is narrow by construction (one message type, answered, not
+delivered), and the clipboard and media paths still refuse an unconfirmed peer.

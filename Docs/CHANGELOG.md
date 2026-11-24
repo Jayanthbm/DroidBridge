@@ -1,3 +1,22 @@
+## Verified — a first pairing completes, and the stop affordance exists (2026-11-24)
+
+- **A fresh install can pair again.** Confirming the code on the phone used to be followed by the Mac closing
+  the connection the instant the phone's heartbeat arrived, because confirming on the Mac is a human act that
+  finishes a moment later; the confirm then failed and the two sides looped. The receiver now answers a
+  keepalive before confirmation and still refuses every other frame, so the pin is stored once and normal
+  heartbeats follow (`AUTO_CONFIRM_CODE_VERIFIED code=903 717` → `AUTHENTICATED`).
+- **The ongoing capture notification — and its Stop action — is now visible.** `POST_NOTIFICATIONS` was
+  declared but never requested, so a fresh install ran with `importance=NONE` and the notification was
+  invisible; it is now requested exactly when capture starts, before the capture consent.
+- **Starting capture no longer crashes after consent is granted.** The service validated its inputs before
+  claiming the foreground state, which Android treats as a fatal violation
+  (`ForegroundServiceDidNotStartInTimeException`); foreground is now claimed first.
+- **30-minute continuous mirroring measured through the product path**: `received=10800 dropped=0`, phone
+  `frames=10885 bytes=57106207 fps=5.5 maxSendMs=9`, no keyframe requests and no reconnects.
+- **Reconnect re-announce measured live**: the listener was killed mid-stream and restored; the phone
+  reconnected in 5.9 s, logged `re-announced format 590x1280 on new session gen=2`, and the new receiver
+  resumed at `received=60 → 120 dropped=0`.
+
 ## Verified — a reconnect resumes the stream instead of showing black (2026-11-23)
 
 - **Dropping the session and restoring it on the same address now resumes video.** Format re-announced on the new

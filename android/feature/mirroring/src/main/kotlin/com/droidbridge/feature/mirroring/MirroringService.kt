@@ -167,6 +167,10 @@ class MirroringService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Claim the foreground state before anything can fail. An early return from handleStart() after
+        // startForegroundService() killed the process with ForegroundServiceDidNotStartInTimeException —
+        // measured as an app crash right after the capture consent was granted, with no stream started.
+        if (intent?.action == ACTION_START) startForegroundWithNotification()
         when (intent?.action) {
             ACTION_START -> handleStart(intent)
             ACTION_STOP -> {

@@ -185,6 +185,27 @@ class MainActivity : ComponentActivity() {
         controller.startDiscovery()
     }
 
+    /**
+     * The capture service's ongoing notification is the only stop affordance that exists outside this
+     * activity. It was declared in the manifest but never requested, so on a fresh install the service
+     * ran with `importance=NONE` and the notification — including its Stop action — was invisible to the
+     * user. Denial does not block capture; it only removes that affordance, so this never gates the run.
+     */
+    private val notificationLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        android.util.Log.i("P03Shell", "POST_NOTIFICATIONS granted=$granted")
+        // Chained, not fired together: launching both dialogs in one frame makes the system drop one,
+        // and the capture consent is the one that must never be lost.
+        if (pendingMirroringRequest) {
+            pendingMirroringRequest = false
+            launchProjectionConsent()
+        }
+    }
+
+    /** Set while a capture consent is waiting behind the notification prompt. */
+    private var pendingMirroringRequest = false
+
     private fun describeDevice(): String {
         val info = BuildInfo.describe()
         android.util.Log.i(
@@ -194,8 +215,36 @@ class MainActivity : ComponentActivity() {
         return "${info.manufacturer} ${info.model} · Android ${info.androidRelease} (API ${info.sdkInt})"
     }
 
-    /** Shows the system capture-consent dialog; the service only starts if the user allows it. */
+    /**
+     * Shows the system capture-consent dialog; the service only starts if the user allows it.
+     *
+     * Same inlined-constant reasoning as [needsNotificationPermission]: both uses of the API 33 permission
+     * constant live behind a version guard, which lint's InlinedApi check cannot follow.
+     */
+    @android.annotation.SuppressLint("InlinedApi")
     private fun requestMirroring() {
+        if (needsNotificationPermission()) {
+            pendingMirroringRequest = true
+            notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+        launchProjectionConsent()
+    }
+
+    /**
+     * Asked exactly when capture is about to start, never at launch.
+     *
+     * The permission constant is inlined by the compiler, so referencing it below API 33 is safe; lint's
+     * InlinedApi check cannot see that the only use is behind the version guard.
+     */
+    @android.annotation.SuppressLint("InlinedApi")
+    private fun needsNotificationPermission(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return false
+        return checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun launchProjectionConsent() {
         val manager = getSystemService(MediaProjectionManager::class.java)
         projectionLauncher.launch(manager.createScreenCaptureIntent())
     }
