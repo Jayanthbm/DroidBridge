@@ -564,3 +564,27 @@ not reach an unconfirmed peer. A PING carries a sequence number and nothing else
 its Stop action exist on a fresh install. A capture start that fails validation no longer crashes the app, it
 reports and stops. The keepalive exception is narrow by construction (one message type, answered, not
 delivered), and the clipboard and media paths still refuse an unconfirmed peer.
+
+## ADR-049 — The same phone returning supersedes a half-open session
+
+**Status:** accepted 2026-11-24. Amends ADR-046 d1 ("one reader per session, the session owner").
+
+**Context.** "One session per listener" protected the prototype from a second app instance stealing the
+stream, but it made recovery from a half-open session a manual act: the Mac holds the dead session until its
+120 s idle reap, the phone's retry budget gives up in ~60 s, and every measured flap ended with the phone in
+`FAILED` and a human tapping Find the Mac. Reproduced three times, with the give-up landing 56 s before the
+reap in the best case.
+
+**Decision.** An additional connection is parked, not refused. It completes its TLS handshake while the live
+session continues. When it verifies with the same identity pin as the live session, it supersedes: the old
+session is closed (`superseded: the same phone reconnected`) and the new one is adopted, preserving the
+one-live-session invariant. A different identity pin is dropped exactly as before. Because a flapping phone
+opens a connection every ~2 s and can outrun a handshake, only one connection parks at a time and newcomers
+while one is parked are refused. Mid-handshake states do not cancel the parked connection. The adopted
+connection's handshake is completed explicitly (`completeHandshake`, once per adoption) because
+Network.framework does not redeliver `.ready` to a replacement state handler — the first version of this fix
+produced a zombie session with no receive loop and no PONG.
+
+**Consequences.** A returning phone always wins its session back within one handshake (~1 s), no manual tap.
+A port scanner or a second phone cannot take the slot (pin must match the live session). The parked
+connection's frames are never read before adoption, so nothing bypasses the one-reader invariant.

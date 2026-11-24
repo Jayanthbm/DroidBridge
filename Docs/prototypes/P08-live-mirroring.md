@@ -298,3 +298,50 @@ OnePlus-specific note: `settings put system user_rotation` is denied to adb shel
 (`WRITE_SETTINGS` SecurityException), so rotation had to be driven with
 `cmd window fixed-to-user-rotation -d 0 enabled` + `cmd window user-rotation -d 0 lock 0` and unlocked with
 `user-rotation -d 0 free` afterwards.
+
+## 2026-11-24 afternoon session (S24 Ultra, USB in; ADB operator mode)
+
+Run conditions: USB connected, USB debugging re-enabled by the owner after the cable-out sweep; wireless
+debugging off. ADB drove setup (app launch, picker, consent dialog) and no ADB input entered the measured
+stream. Three measured rows and a class of defect found and fixed:
+
+- **Cable-out acceptance, P08: pass.** ~33 minutes of mirroring with the USB cable physically disconnected
+  and USB debugging disabled (`received=10380 enqueued=10380 dropped=0`, heartbeats every 15 s, listener
+  restart mid-run reconnected pin-only and resumed the stream). Closed the P08 cable-out acceptance row.
+- **Cable-out acceptance, phone→Mac clipboard: pass.** 117 bytes (113 chars, `sha=8a9bf01e5f95`,
+  `reason=manual`) applied on the Mac pasteboard with the cable out and debugging off; verified by reading
+  the pasteboard.
+- **Cable-out acceptance, Mac→phone clipboard: sent, not acknowledged.** The 27-byte offer raced a session
+  flap; the phone's card never showed an ack in the log. One tap on the phone (or a reconnect) re-arms it;
+  left open.
+- **P10 re-measured with fresh numbers (cable-in).** With the Wi-Fi password dialog focused on the phone,
+  the mirrored video mean luma was **0.18** (black; only the status bar rendered) versus **12.75** with the
+  home screen. The earlier P10 numbers stand; the protected-surface withholding reproduces.
+
+### Stop path on the S24: the window-manager wedge is total
+
+After the capture-consent dialog closes, `mCurrentFocus=null` and **every** tap is swallowed — in-app
+`Stop sharing`, the system screen-sharing chip, and home/launcher taps included, while `uiautomator` dumps
+keep working. The notification route is the only stop that works (measured on the OnePlus). Reproduced
+across four attempts today. The in-app stop and chip-stop rows on this device remain unmeasured for that
+reason; the wedge is a device/window-manager defect, not an app defect.
+
+### Defect: a returning phone could not take back its session (fixed in two commits)
+
+Three independent reproductions today (reboot mid-session, reconnect after give-up, Wi-Fi toggle):
+
+1. The listener rejected every returning connection with `one session per listener` until its 120 s idle
+   timeout reaped the half-open session. The phone gives up in ~60 s, so it always lost the race
+   (`GAVE_UP` 56 s before the reap in the measured case) and recovery needed a manual tap.
+2. First fix (`4be0e32`): park the extra connection, verify its identity during the handshake, and
+   supersede the live session when the pin matches the same phone. A flapping phone can outrun the
+   handshake, so a newcomer while one is parked is refused, and mid-handshake states no longer cancel the
+   parked connection.
+3. Second fix (`8e0a079`): an adopted connection that was already `.ready` never received the state event
+   again, so `connectionReady` never ran — no receive loop, no PONG, `peerPinValue` stayed nil, and every
+   later parked connection was rejected as `does not match the live session's phone`. The post-verify body
+   now runs in `completeHandshake` (once per adoption), called directly from the supersede path.
+
+Final measurement: `svc wifi disable/enable` mid-session → `parking an additional connection` →
+`superseding the live session: the same phone reconnected` → phone `CONNECTED` on the first attempt →
+heartbeats n=6 with normal RTTs on the adopted session.

@@ -1,3 +1,18 @@
+## Verified — a returning phone takes back its session without a human (2026-11-24)
+
+- **Dropping and restoring Wi-Fi mid-session now recovers by itself.** The listener used to refuse every
+  returning connection until its 120 s idle reap, while the phone gave up in ~60 s — every hiccup ended with
+  `GAVE_UP` and a manual tap. The listener now parks the extra connection, verifies it is the same phone,
+  and supersedes the dead session (`parking an additional connection` → `superseding the live session` →
+  phone `CONNECTED` on the first attempt, heartbeats flowing).
+- **P08 cable-out acceptance row closed**: ~33 minutes of mirroring with the USB cable physically out and
+  USB debugging off, 10380 frames, 0 dropped, heartbeats every 15 s.
+- **Phone→Mac clipboard verified cable-out**: 117 bytes applied on the Mac pasteboard, hash checked.
+- **Protected content re-verified with fresh numbers**: the Wi-Fi password dialog mirrors at mean luma 0.18
+  (black, status bar only) versus 12.75 with ordinary content on screen.
+- The in-app Stop and the system screen-sharing chip remain unmeasurable on the S24: after the capture
+  consent dialog its window manager loses focus and swallows every tap (reproduced four times).
+
 ## Verified — a first pairing completes, and the stop affordance exists (2026-11-24)
 
 - **A fresh install can pair again.** Confirming the code on the phone used to be followed by the Mac closing

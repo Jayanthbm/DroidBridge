@@ -964,3 +964,22 @@ connected, USB debugging on. ADB drove setup only (launch, peer choice, `Share t
   listener rejected every returning connection with `one session per listener in this process` for over
   three minutes, past its own 120 s idle timeout; only a listener restart cleared it. Recorded in
   `P08-live-mirroring.md` with repro.
+
+**2026-11-24 Phase 1 acceptance sweep, cable-out row closed for P08; session-recovery defect class fixed.**
+The owner re-enabled USB debugging after the cable-out window; the cable-out measurements themselves were
+taken with the cable physically disconnected and USB debugging off, no ADB in the loop.
+
+- **P08 cable-out: pass.** 33 min mirroring cable-out, `received=10380 dropped=0`, heartbeats every 15 s.
+- **Phone→Mac clipboard cable-out: pass.** 117 bytes (`sha=8a9bf01e5f95`) verified on the Mac pasteboard.
+- **Mac→phone clipboard cable-out: offer sent, no ack** (it raced a session flap; one reconnect re-arms it).
+- **P10 re-measured (cable-in)**: password dialog mean luma 0.18 vs 12.75 for ordinary content.
+- **Stop path on the S24**: in-app Stop and the system sharing chip are both swallowed by the
+  window-manager focus wedge (fourth reproduction today); notification Stop remains the working route
+  (measured on the OnePlus).
+- **Session-recovery defect class fixed (ADR-049, commits `4be0e32` + `8e0a079`)**: the listener now parks a
+  returning connection, verifies it is the same phone, and supersedes the half-open session; the adopted
+  handshake completes explicitly because Network.framework does not redeliver `.ready`. Measured end to end:
+  Wi-Fi drop/restore mid-session → phone `CONNECTED` on the first attempt, heartbeats flowing, no human.
+- Phase 1 acceptance status: P08 closed cable-out. P10 has fresh evidence cable-in; its cable-out variant
+  (password field open while unplugged) needs one more unplug cycle with the dialog on screen. The Mac→phone
+  clipboard ack needs one reconnect. Both are single-step items on the next session.
