@@ -117,6 +117,14 @@ class SessionController(
     @Volatile var lastRttMs: Long = -1
         private set
 
+    /**
+     * The live session's short authentication code, or null with no session. Shown while CONNECTED
+     * so a one-sided re-pair (the Mac forgot the pin, the phone did not) still has a code to
+     * compare; the code is derived from public keys and is not a secret (ADR-011).
+     */
+    @Volatile var liveSessionCode: String? = null
+        private set
+
     /** Increases each time a session authenticates, so features can re-establish their state. */
     @Volatile private var generation = 0L
 
@@ -285,6 +293,7 @@ class SessionController(
     fun rejectPairing() {
         session?.close("pairing rejected")
         session = null
+        liveSessionCode = null
         update(Event.Rejected)
         Log.i(TAG, "PAIRING_REJECTED")
     }
@@ -295,6 +304,7 @@ class SessionController(
         worker = null
         session?.close("stopped by app")
         session = null
+        liveSessionCode = null
         discovery.stop()
         update(Event.Stopped)
     }
@@ -378,6 +388,13 @@ class SessionController(
             session = opened
             roundTrips = 0
             lastRttMs = -1
+            // The code travels with the session either way: when the phone authenticated the Mac
+            // but the Mac has not yet confirmed the phone (a one-sided forget — measured
+            // 2026-11-24), the phone shows CONNECTED with no code while the Mac displays one and
+            // waits. The code is derived from public keys (not a secret), so displaying the
+            // phone's own while connected gives the human something to compare against the Mac's
+            // confirmation dialog.
+            liveSessionCode = opened.shortAuthenticationCode(identity)
             // The flag is "does the user still have to compare a code?", so it is true exactly when
             // the session is NOT already authenticated. Getting this backwards reports an unconfirmed
             // peer as connected, which is the one mistake this design exists to prevent.
@@ -396,6 +413,7 @@ class SessionController(
                 if (!opened.isAuthenticated) {
                     runCatching { opened.close("pairing did not complete") }
                     if (session === opened) session = null
+                    liveSessionCode = null
                     return
                 }
                 attempt = 0
@@ -404,6 +422,7 @@ class SessionController(
             val ended = keepAlive(opened)
             runCatching { opened.close(ended) }
             if (session === opened) session = null
+            liveSessionCode = null
 
             // A deliberate stop must not schedule a retry.
             if (stateFlow.value.phase == Phase.IDLE) return

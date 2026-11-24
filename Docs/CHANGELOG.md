@@ -412,3 +412,14 @@ All notable project changes are recorded here.
 - Security, privacy and permissions policies.
 - Prototype roadmap and test plan.
 - AI agent workflow and phase acceptance criteria.
+
+## Phase 6 hardening batch 2 (2026-11-24, internal)
+
+- Connection card: when a session is live, the phone now shows its own short pairing code ("compare
+  it if the Mac asks you to confirm a re-pair"). Closes the one-sided-forget gap measured on the S24:
+  after the Mac forgot the pin, its screen displayed a code the phone gave nothing to compare against.
+- One pin namespace: every Mac surface now uses the canonical peer id `android-p08` for the phone of
+  record (ADR-053), so "forget the pin" clears exactly one record no matter which tab accepted the
+  connection. The P03 harness default was unified to the same value.
+- Diagnostics cheatsheet added to the P03 doc; permission matrix audited against the built APK and
+  bundle (product permission diff vs Phase 5: none).

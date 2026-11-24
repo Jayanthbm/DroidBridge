@@ -171,3 +171,53 @@ P11.
 Ad-hoc (`Signature=adhoc`, `TeamIdentifier=not set`). Hardened runtime is requested in the build
 settings but Xcode disables it for ad-hoc signing. Notarisation not attempted. **This build is not a
 release candidate** and must not be described as one.
+
+### 6.6 Measured audit — Phase 6 (2026-11-24)
+
+Method: `aapt2 dump permissions` on the freshly built `:app` debug APK and `codesign -d --entitlements :-`
+on the Debug bundle at `~/Applications/DroidBridge.app` (signed with the stable measurement identity,
+no measurement-entitlements file).
+
+Android (`:app` merges `:feature:*` transitively):
+
+| Permission | Present | Required by | Verdict |
+|---|---:|---|---|
+| `INTERNET` | yes | Phase 2 LAN session | Correct |
+| `ACCESS_LOCAL_NETWORK` | yes | API 37 grant (ADR-023) | Correct |
+| `FOREGROUND_SERVICE` | yes | mirroring | Correct |
+| `FOREGROUND_SERVICE_MEDIA_PROJECTION` | yes | mirroring | Correct |
+| `FOREGROUND_SERVICE_CONNECTED_DEVICE` | no in `:app` | background clipboard sync (experiment module only) | Correct — not yet in the product graph |
+| `POST_NOTIFICATIONS` | yes | FGS notification (carries Stop) | Correct |
+| `CHANGE_NETWORK_STATE` | no in `:app` | `connectedDevice` type prerequisite (R-20) | Correct — arrives with the background-sync feature |
+| `RECEIVE_BOOT_COMPLETED` | no in `:app` | experiment module only (P14, not in the `:app` graph) | Correct — documented in ADR-023 |
+| `WAKE_LOCK` | **no** | ADR-043 stands | Correct |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | **no** | — | Correct |
+| `RECORD_AUDIO` | **no in `:app`** | P12 experiment module only (owner-approved 2026-11-22) | Correct |
+| any BLUETOOTH_* | **no** | opt-in row unchanged | Correct |
+| SMS/contacts/call-log/storage/notification-listener | **no** | prohibited | Correct |
+
+macOS (production bundle):
+
+| Entitlement | Present | Verdict |
+|---|---:|---|
+| `app-sandbox`, `network.client`, `network.server`, `device.bluetooth` | yes | The audited four-key set; Bluetooth measured sufficient for the Classic HIDP role (2026-11-24) |
+| `get-task-allow` | yes (Debug) | Correct for a debug build; Release strips it (project.yml) |
+| `com.apple.security.cs.*` / temporary-exception.* | no | Correct |
+
+Permission diff vs Phase 5: **none**. No new permission or entitlement was added in Phase 6; the
+revocation and UX work reuses existing capabilities. The `RECEIVE_BOOT_COMPLETED` row is present in
+the table because the P14 background-session experiment is part of the debug build's graph; it is
+documented and owner-approved (ADR-023), and the product release split stays per ADR-023.
+
+Measured correction (same audit): `:feature:clipboard` declares only the permissions it needs for its
+foreground card (`FOREGROUND_SERVICE`-free LAN usage), and the `connectedDevice` FGS type plus
+`RECEIVE_BOOT_COMPLETED` exist only in the `:experiments:background-session` module, which is **not**
+in the `:app` graph. The measured `:app` APK permission set is exactly:
+
+`INTERNET`, `ACCESS_LOCAL_NETWORK`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PROJECTION`,
+`POST_NOTIFICATIONS` (+ the injected app-private
+`com.droidbridge.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`).
+
+So the rows for `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE` and
+`RECEIVE_BOOT_COMPLETED` above describe the *experiment* manifests, not the product APK; the product
+diff vs Phase 5 remains **none**.

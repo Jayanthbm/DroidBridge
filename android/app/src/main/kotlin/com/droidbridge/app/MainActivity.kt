@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                 peers = peers,
                 roundTrips = controller.roundTrips,
                 lastRttMs = controller.lastRttMs,
+                liveSessionCode = controller.liveSessionCode,
                 onStartDiscovery = { controller.startDiscovery() },
                 onConnect = { controller.connect(it) },
                 onConfirm = { controller.confirmPairing() },

@@ -1064,3 +1064,23 @@ settings.
   and the asymmetric re-pair gap (one-sided forget leaves the phone showing no code to compare).
 - **Phase 6 Android build deployed to the S24** (failure states, revocation button, a11y, ADR-051
   retry budget now on-device).
+
+**2026-11-24 Phase 6 exit-gate sweep (code work, no device).**
+
+- **ADR-053 — one pin namespace per physical peer.** The measured two-namespace incident traced to
+  three peer ids in play (`android-p08`, `com.droidbridge.app`, `android-p03`). Decision: `android-p08`
+  is canonical for the phone of record across every Mac surface; the P03 harness default was unified;
+  `--peer-id`/`--p08-peer-id` remain explicit test overrides.
+- **One-sided-forget display gap fixed.** `SessionController.liveSessionCode` now carries the session's
+  short authentication code; the connection card shows "your pairing code: XXX XXX — compare it if the
+  Mac asks you to confirm a re-pair" while CONNECTED. The code is derived from public keys (ADR-011),
+  so showing it is not a disclosure. Cleared wherever the session is dropped. Awaits device
+  verification of the display (planned on the S24).
+- **Permission audit against built artifacts (§6.6).** `aapt2 dump permissions` on the `:app` APK and
+  `codesign -d` on the Debug bundle: the audited four-key macOS set is intact; the product APK carries
+  exactly `INTERNET`, `ACCESS_LOCAL_NETWORK`, `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_MEDIA_PROJECTION`, `POST_NOTIFICATIONS`. **Product permission diff vs Phase 5:
+  none.** The `connectedDevice`/`RECEIVE_BOOT_COMPLETED` rows are experiment-module-only.
+- **Security/regression sweep: 104 Android unit tests PASSED, 0 FAILED** (routing contract, pairing
+  vectors, clipboard echo/dedupe, backoff, media framing); macOS tests and build green;
+  `verify-all.sh` "All verifications passed". Fresh `:app` debug APK built for the next device session.

@@ -71,6 +71,7 @@ fun DashboardScreen(
     peers: List<ServiceDiscovery.Peer>,
     roundTrips: Int,
     lastRttMs: Long,
+    liveSessionCode: String? = null,
     onStartDiscovery: () -> Unit,
     onConnect: (ServiceDiscovery.Peer) -> Unit,
     onConfirm: () -> Unit,
@@ -131,6 +132,16 @@ fun DashboardScreen(
                             "round trips: $roundTrips" + if (lastRttMs >= 0) " · last ${lastRttMs}ms" else "",
                             style = MaterialTheme.typography.bodySmall,
                         )
+                        // Shown while connected so a one-sided re-pair (the Mac forgot the pin,
+                        // the phone did not) still has a code to compare against the Mac's
+                        // confirmation dialog. The code is derived from public keys, not a secret.
+                        liveSessionCode?.let { code ->
+                            Text(
+                                "your pairing code: ${code.take(3)} ${code.drop(3)} — compare it " +
+                                    "if the Mac asks you to confirm a re-pair",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
             }

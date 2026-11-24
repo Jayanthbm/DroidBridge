@@ -680,3 +680,27 @@ and a phone-side Bluetooth cycle did not clear the stale session, but the kill p
 
 **Consequences.** The kill-path recovery is manual and documented; the shutdown code no longer races
 the teardown; the wrong conclusion "the hold fixes it" is withdrawn.
+
+## ADR-053 — One pin namespace per physical peer; `android-p08` is the canonical peer id
+
+**Status:** accepted 2026-11-24.
+
+**Context.** Measured the same day: the Mac's Mirror-tab listener (peer id `android-p08`) held a pin
+from an earlier identity era while the phone presented its current one, producing a genuine
+`PIN MISMATCH` that took a forget-and-repair cycle to clear. Investigation showed the pin store is
+keyed by peer id and three peer ids had been in play across sessions: `android-p08` (Mirror tab and
+`--p08-listen`), `com.droidbridge.app` (passed explicitly in an earlier session's harness flags), and
+`android-p03` (the legacy P03 harness default). The same phone therefore had up to three independent
+pin records, and which one applied depended on which Mac surface accepted the connection.
+
+**Decision.**
+- One peer id per physical peer, across every Mac surface: **`android-p08`** is the canonical peer id
+  for the phone of record. The P03 harness default is unified to the same value; `--peer-id` and
+  `--p08-peer-id` remain as explicit test overrides for runs that need a genuinely unpinned peer.
+- No surface may pass a different peer id in a product or measurement run without recording why.
+- The UI does not need to surface the peer id once the namespace is unified: with one id per peer,
+  "forget the pin" means the same thing everywhere.
+
+**Consequences.** Unifying the harness default means a harness run inherits the product pin —
+intended, since the harness now exercises the same trust path the product uses; runs that need a
+first pairing pass `--peer-id`/`--p08-reset-pin` explicitly (the flags were built for exactly that).

@@ -83,7 +83,7 @@ enum P03Harness {
             seconds = parsed
         }
 
-        let peerId = value(of: "--peer-id") ?? "android-p03"
+        let peerId = value(of: "--peer-id") ?? "android-p08"
         let store = PeerPinStore(service: value(of: "--pin-service") ?? "com.droidbridge.p03.peer-pins")
 
         let trustMode: SecureListener.TrustMode
