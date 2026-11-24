@@ -265,3 +265,36 @@ The 2026-11-23 endurance attempt ended at 22:00:27 with 6960 frames received, `d
 clean stream — at the moment the USB cable was pulled and the phone was picked up and locked. The last
 received frame coincides with the lock, which matches the recorded platform behaviour (a locked screen ends
 the projection, U10) rather than a transport fault: pulling the cable alone does not stop capture.
+
+## Matrix rows measured 2026-11-24 on the OnePlus Nord (AC2001, Android 12 / API 31)
+
+Run conditions: fresh listener on port 59695 with the pin reset (this phone kept its own stored pin for the
+Mac identity, so it authenticated with `code=none` on its side; the Mac showed `code=537 797`, which matches
+the value recorded for this device pair in Phase 2, and confirmation was accepted on that basis). USB
+connected, USB debugging on. ADB drove setup only: launching the app, choosing the peer, tapping
+`Share this screen` and `START NOW`; no ADB input entered the measured stream.
+
+| Row | Result |
+|---|---|
+| **Stop via the notification action** | **Pass** — `Stop` tapped in the shade at 09:17:44 → phone `state=stopped: user stop … frames=226 bytes=1979080 keyframes=4 fps=6.0 kbps=420 dropped=0 formats=2 keyframeRequests=0 reEncodes=0 largestFrame=87701 maxSendMs=9 durationMs=37707 stopReason=user stop`; Mac received `frame mirror.stop:236:user stop` → `MIRROR_STOP reason=user stop`, and the underlying session stayed authenticated afterwards (a heartbeat arrived the next second), so stopping capture does not tear down the pairing. This also proves the notification Stop affordance end to end — the row the S24 could not measure because expanding the shade wedges its window manager. |
+| **In-app `Stop sharing`** | **Not measured** — after the `START NOW` consent flow the OnePlus window manager also ends with `mCurrentFocus=null` and swallows taps (the S24 wedge reproduced on API 31), and a reboot cycle to retry it ran out of session time. The notification route above covers the same teardown. |
+| Reconnect re-announce (second device) | **Pass** — listener killed mid-stream; phone `RECONNECTING` 09:19:01.446 → `CONNECTED` 09:19:05.383 (3.9 s), `re-announced format 640x1280 on new session gen=3`, new listener `FRAMES received=60 → 120 dropped=0 status=rendering`, authenticated on the stored pin with no code. Confirms the 2026-11-23 S24 result is not device-specific. |
+
+Two defects found on this phone:
+
+- **A stale half-open session is never reaped.** After the phone's reboot mid-session the Mac kept the
+  abandoned session alive and rejected every reconnect with `one session per listener in this process`
+  — still rejecting three minutes later, well past the 120 s idle timeout that is supposed to close an
+  unused session. Only restarting the listener cleared it. Repro: connect, reboot the phone, watch the Mac
+  refuse the returning client. The idle-timeout path needs auditing for sessions whose peer went away
+  without a close frame.
+- **The window-manager wedge is not Samsung-specific.** `mCurrentFocus=null` with all taps swallowed,
+  `uiautomator` dumps still working, recovered only by reboot. It arrived after a SystemUI dialog
+  (`START NOW` consent flow) rather than the notification shade, so the earlier "expanding the shade wedges
+  it" theory is narrower than the reality: a system dialog over the app can wedge focus on this OnePlus
+  build too.
+
+OnePlus-specific note: `settings put system user_rotation` is denied to adb shell on this device
+(`WRITE_SETTINGS` SecurityException), so rotation had to be driven with
+`cmd window fixed-to-user-rotation -d 0 enabled` + `cmd window user-rotation -d 0 lock 0` and unlocked with
+`user-rotation -d 0 free` afterwards.

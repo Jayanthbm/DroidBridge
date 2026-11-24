@@ -947,3 +947,20 @@ ends the projection.
 
 Note: `verify-all.sh` now exports `JAVA_HOME` for JDK 17 when the caller has not set one — this machine's
 default `java` is 27, which the pinned Gradle 8.10.2 refuses to run, so a plain checkout failed to verify.
+
+**2026-11-24 Phase 4 stop-path row measured on the OnePlus Nord (AC2001, Android 12 / API 31).** USB
+connected, USB debugging on. ADB drove setup only (launch, peer choice, `Share this screen`, `START NOW`).
+
+- **Stop via the notification action: pass.** Tapping `Stop` in the shade ended capture on both sides — phone
+  `stopReason=user stop` after 37.7 s / 226 frames / 0 dropped, Mac `MIRROR_STOP reason=user stop` — and the
+  authenticated session survived, so stopping capture keeps the pairing. This is the row the S24 cannot
+  measure because expanding its shade wedges the window manager; the OnePlus shade behaves.
+- **In-app `Stop sharing`: not measured.** The same focus wedge (`mCurrentFocus=null`, all taps swallowed,
+  reboot to recover) hit the OnePlus after the `START NOW` consent dialog — the wedge is not
+  Samsung-specific and not shade-specific.
+- **Reconnect re-announce re-measured on a second device: pass.** 3.9 s to `CONNECTED`,
+  `re-announced format 640x1280 on new session gen=3`, frames resumed at 0 drops, pin-only.
+- **New defect: the Mac never reaps a stale half-open session.** After the phone rebooted mid-session the
+  listener rejected every returning connection with `one session per listener in this process` for over
+  three minutes, past its own 120 s idle timeout; only a listener restart cleared it. Recorded in
+  `P08-live-mirroring.md` with repro.
