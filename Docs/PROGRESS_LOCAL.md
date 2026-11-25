@@ -1160,6 +1160,9 @@ on) did the device work.
   (`state: idle`); the S24's screen timeout was raised to 30 min with `settings put system
   screen_off_timeout 1800000` for the session and put back to `30000` (the pre-session value was not
   recorded; 30 s is the device default).
+  One follow-up is recorded in ADR-055 rather than patched: a candidate session holds the listener for
+  up to the 120 s pairing timeout, so an unknown peer that keeps reconnecting can occupy it — the fix
+  (a cap like the existing 3-strike handshake cap) belongs in a build that can be measured on a device.
 
 **2026-11-25 Phase 7 audit — Bluetooth stays optional.**
 

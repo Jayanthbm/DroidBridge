@@ -760,6 +760,16 @@ and shown on both screens, the session is reported unconfirmed, no application d
 written to the keychain, and the existing 120 s confirmation timeout and the user's Reject still close
 it. `.refused` is now reachable only from the explicit-pin test mode.
 
+**Residual consideration (recorded, not patched).** Refusing an unknown pin used to be instant; a
+candidate session instead holds the single connection slot for up to `pairingTimeout` (120 s) unless the
+user confirms or rejects. A peer on the LAN that keeps presenting a fresh identity can therefore keep
+the listener busy for two minutes at a time, where before it was refused in milliseconds. The exposure
+is availability only (it already existed on a fresh install, where every connection is a first
+pairing), the user can stop and restart the listener, and the fix that mirrors the existing 3-strike
+cap — stop accepting after N consecutive unconfirmed sessions and say so on screen — is deliberately
+left for a build that can be measured on a device, because a blind change to the accept path is exactly
+where an unattended session should not guess.
+
 **Security analysis.** The control that admits a new peer is the code comparison, exactly as it was for
 the first pairing when the set was empty: an impostor completes a TLS handshake with its own key, the
 Mac derives a code from *that* key, the real phone shows a code derived from *its* key, the two do not
