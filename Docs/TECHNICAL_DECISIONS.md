@@ -738,3 +738,81 @@ phones' pins living in one set at the same time — is still untested: only one 
 `kSecMatchLimitAll` with `errSecParam` (-50); multi-item keychain reads must fetch attributes first
 and read data per item with `kSecMatchLimitOne`. The old `snapshot()` carried this broken query and
 would silently have returned an empty map on this OS — the new store does not use that shape.
+
+## ADR-055 — An unconfirmed pin is a pairing candidate on the Mac, never a dead handshake
+
+**Status:** accepted 2026-11-25. Unit-tested; the device row is blocked (see the verification note).
+
+**Context.** ADR-054 made trust set membership so both phones of record could be trusted at once. The
+listener's decision code did not follow: `SecureListener` still read the set as three-state — empty
+set meant "first pairing", non-empty set meant "member or refuse" — so with one phone confirmed, a
+second phone's unknown pin failed the TLS verify block. Measured 2026-11-25: the OnePlus Nord's first
+connection logged `verify: PIN MISMATCH pin 7eded50e… is not confirmed`, the handshake died with
+`NWError -9808 bad certificate format`, and the phone sat in `connecting`. The only way to add the
+second phone was "Forget phone pin", which throws away the first phone's trust — the exact problem
+ADR-054 exists to remove.
+
+**Decision.** One pure function, `PeerTrustPolicy.decide(pin:confirmedPins:explicitPin:)`, answers with
+`.trusted`, `.candidate` or `.refused`, and the verify block and the post-handshake guard both call it
+(they previously duplicated the three-state expression and could drift). A pin that is not in the
+confirmed set is `.candidate`: the handshake completes so the short authentication code can be derived
+and shown on both screens, the session is reported unconfirmed, no application data moves, nothing is
+written to the keychain, and the existing 120 s confirmation timeout and the user's Reject still close
+it. `.refused` is now reachable only from the explicit-pin test mode.
+
+**Security analysis.** The control that admits a new peer is the code comparison, exactly as it was for
+the first pairing when the set was empty: an impostor completes a TLS handshake with its own key, the
+Mac derives a code from *that* key, the real phone shows a code derived from *its* key, the two do not
+match, and the user rejects. Nothing about data access changed — `.candidate` sessions cannot send or
+receive frames, and the store is written only on an explicit confirm. The refusal path was never a
+security boundary against an unknown key; it was a policy gap that made the second phone unreachable.
+
+**Consequences.** Adding a second phone is now: connect, compare the code on both screens, confirm on
+each side that shows a prompt. The Mac may hold both phones' pins at once (ADR-054), and a phone whose
+identity changed is recoverable through the same prompt if the user is told the code. The phone side
+still refuses a Mac pin it does not know (its store is a single-Mac case and the revoke affordance is
+one tap), so a Mac that is reinstalled needs "Forget the Mac's pin" on the phone — recorded as a
+deliberate asymmetry, to be revisited if a second Mac ever enters the picture.
+
+**Verification note (honest).** Seven unit tests cover the policy (`PeerTrustPolicyTests`, 79 macOS
+tests pass, 0 failures). The on-device row was **not** run: after every ad-hoc-signed rebuild macOS
+demands the login-keychain password before the new binary may read the peer-pin item or sign with the
+TLS identity key, and an unattended session cannot supply it (recorded in ADR-056). The regression
+itself — the OnePlus refused with a non-empty set — was measured and is the reason for this change.
+
+## ADR-056 — The Keychain ACLs make every ad-hoc rebuild need the owner's password (proposed)
+
+**Status:** proposed 2026-11-25. Measurement incomplete; no code changed.
+
+**Context.** The app is ad-hoc signed (`CODE_SIGN_IDENTITY: "-"`, ADR-026 defers a real identity to
+Phase 9), and it keeps the Mac's TLS identity key and the confirmed peer-pin item in the login
+keychain. The file-based keychain authorizes access per *binary*: a rebuild changes the cdhash, so the
+new binary is a stranger to both items. Measured 2026-11-25: launching a freshly built app produced
+three SecurityAgent prompts, each asking for the login-keychain password — "wants to export key",
+"wants to use your confidential information stored in com.droidbridge.p08.peer-pins", and (during the
+handshake) "wants to sign using key". Nothing can dismiss them without that password: Deny makes the
+read and the signature fail, so the session stops at `NWError -9858 handshake failed`. Earlier sessions
+got through because the owner was at the Mac; tonight's unattended run could not, which is why
+ADR-055's device row is open.
+
+**Options.**
+
+1. *Document and live with it.* Cheap, honest, and unnecessary for users: a released build is signed
+   with a stable Developer ID, so its ACL grant survives updates and the prompt appears at most once.
+   It only taxes the development loop, where every rebuild needs one human click.
+2. *Stable development signing identity.* A self-signed code-signing certificate in the login keychain
+   gives every build the same designated requirement, so "Always Allow" is granted once. It needs a
+   certificate the project does not have and a keychain password to create it — a Phase 9 companion.
+3. *Move both items to the data protection keychain.* `kSecUseDataProtectionKeychain` plus a
+   `keychain-access-groups` entitlement scopes items to the app's group rather than to a binary hash,
+   which is also the shape Phase 9 needs (ADR-025). The open question is measurable: an ad-hoc signed
+   app with no provisioning profile may be refused with `errSecMissingEntitlement` (-34018), and the
+   migration cannot read the legacy items without the very prompt it is trying to remove, so it would
+   be a user-visible re-pair, not a silent copy.
+
+**Decision.** Do not migrate blind. Measure option 3 first in a throwaway build (does the group work
+under ad-hoc signing; does a rebuild keep access), and if it does, migrate with an explicit re-pair
+step and a recorded decision. Until then, option 1: the development workflow documents the prompt and
+the fact that Deny leaves the app unable to complete TLS.
+
+

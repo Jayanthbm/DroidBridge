@@ -248,28 +248,32 @@ public final class SecureListener {
 
                 let actualPin = MacIdentity.pin(ofSPKI: spki)
 
-                let trusted = harnessPin.map { actualPin == $0 } ?? (trustedPins.isEmpty ? nil : trustedPins.contains(actualPin))
-                guard let trusted else {
-                    // First pairing: accept so the code can be derived and shown. The session is
-                    // reported unconfirmed and no application data is sent until the user confirms.
+                switch PeerTrustPolicy.decide(pin: actualPin, confirmedPins: trustedPins, explicitPin: harnessPin) {
+                case .trusted:
                     self.verdict.record(spki: spki, pin: actualPin)
-                    self.emit("verify: first pairing, peer pin \(actualPin)")
+                    self.emit("verify: pin matched \(actualPin)")
                     complete(true)
-                    return
-                }
 
-                guard trusted else {
-                    // Fail the handshake itself, not a warning after it. A confirmed pin is never
-                    // replaced by whatever the peer just presented.
+                case .candidate:
+                    // Unconfirmed: accept so the code can be derived and shown on both sides, but the
+                    // session stays unconfirmed and no application data moves until the user confirms.
+                    // That covers a genuinely new Mac or phone and a second phone in the set's terms —
+                    // plus an impostor, whose code will not match what the real phone shows.
+                    self.verdict.record(spki: spki, pin: actualPin)
+                    if trustedPins.isEmpty {
+                        self.emit("verify: first pairing, peer pin \(actualPin)")
+                    } else {
+                        self.emit("verify: unknown peer pin \(actualPin) awaiting confirmation")
+                    }
+                    complete(true)
+
+                case .refused:
+                    // Only the explicit-pin test mode can get here. Fail the handshake itself, not a
+                    // warning after it: a confirmed pin is never replaced by whatever the peer presents.
                     self.noteAuthenticationFailure()
                     self.emit("verify: PIN MISMATCH pin \(actualPin) is not confirmed")
                     complete(false)
-                    return
                 }
-
-                self.verdict.record(spki: spki, pin: actualPin)
-                self.emit("verify: pin matched \(actualPin)")
-                complete(true)
             },
             queue
         )
@@ -544,12 +548,14 @@ public final class SecureListener {
         // Second layer, independent of the verify block: never grant data access to a key that is
         // not the pinned one. If a future change makes the handshake accept a different identity,
         // this still closes before a frame is accepted.
-        let trustedNow = locked { explicitPin.map { $0 == verdict.pin } ?? (confirmedPins.isEmpty ? nil : confirmedPins.contains(verdict.pin)) }
-        if trustedNow == false {
+        let decision = locked {
+            PeerTrustPolicy.decide(pin: verdict.pin, confirmedPins: confirmedPins, explicitPin: explicitPin)
+        }
+        if decision == .refused {
             close(connection, reason: "peer identity changed: pin mismatch")
             return
         }
-        let authenticated = trustedNow == true
+        let authenticated = decision == .trusted
         let code = ShortAuthenticationCode.derive(identity.sasIdentityBytes, verdict.spki)
 
         locked {
@@ -563,7 +569,6 @@ public final class SecureListener {
         emit("connection ready peer-pin=\(verdict.pin) authenticated=\(authenticated) code=\(ShortAuthenticationCode.formatForDisplay(code))")
         notify { self.onReady?(verdict.pin, code, authenticated) }
 
-        completedHandshake = true
         completedHandshake = true
         receiveLoop(on: connection)
     }

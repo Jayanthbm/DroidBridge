@@ -8,6 +8,10 @@
   phone displays the same code to compare instead of leaving the prompt one-sided.
 - **A dead connection says why.** The phone settles on "the connection kept dropping, so retrying stopped;
   tap Try again when the Mac is back", and the Try again control recovers the session.
+- **Adding a second phone no longer dead-ends.** A phone the Mac has not confirmed used to fail the
+  handshake outright whenever another phone was already trusted; it now reaches the same
+  code-comparison prompt as a first pairing, and data still moves only after you confirm (ADR-055).
+  Implemented and unit-tested; the on-device row waits on the Keychain re-authorization in ADR-056.
 - **Trust is a set of confirmed keys, not one key slot (ADR-054).** The two phones of record no longer
   overwrite each other's pin; the old per-label keychain items migrate on first read.
 ## Fixed — Mac-to-phone clipboard receive was silently dead (2026-11-24)

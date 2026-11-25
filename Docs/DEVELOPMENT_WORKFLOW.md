@@ -34,6 +34,17 @@ The local agent owns:
 
 Every relevant device test report records device/build, USB connected, USB debugging enabled and wireless debugging enabled. Final acceptance must work with USB disconnected and both debugging modes disabled.
 
+**macOS Keychain re-authorization after every ad-hoc rebuild (ADR-056).** Debug builds are ad-hoc
+signed, so each rebuild is a new binary to the Keychain and macOS asks for the login-keychain password
+before it may read `com.droidbridge.p08.peer-pins`, export the identity key, or sign with it. The
+prompts appear on first launch after a build (and again during the first handshake). Click **Always
+Allow** and enter the password once per rebuild; **Deny** leaves the app unable to read pins or sign,
+so the listener starts but every handshake fails with `NWError -9858`. An unattended run cannot supply
+that password — a rebuilt app therefore needs one human interaction before it can be exercised, and
+device verification of any change to the pin or identity code must be scheduled with the owner present
+until Phase 9's Developer ID signing (or the data protection keychain migration in ADR-056) removes the
+prompt.
+
 ## 3. Sequential handoff protocol
 1. Before starting, inspect status/branch/latest commit and sync `development`.
 2. Cloud completes one scoped research/documentation/review batch, commits and pushes it.

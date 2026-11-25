@@ -1124,3 +1124,56 @@ and those dialogs only. No screen capture, no clipboard read or write.
 - **Android 17's capture dialog defaults to "Share one app"**; whole-screen sharing sits behind the
   spinner. The consent was granted through automation at the owner's instruction, and the dialog shape is
   recorded because it is new system UI, not an app control.
+
+**2026-11-25 Phase 6 hardening: a second phone can now reach the pairing prompt (ADR-055); ad-hoc
+keychain ACLs blocked its device row.** S24 Ultra on Wi-Fi ADB (`192.168.31.197:5555`, USB
+disconnected, USB debugging on, wireless debugging on) — but its screen had stopped accepting touch
+(Samsung "accidental touch protection": the proximity sensor is covered, so every tap-driven row was
+unavailable and no S24 UI work was done in this block); OnePlus Nord on USB (`b6774a1d`, USB debugging
+on) did the device work.
+
+- **Regression found by measurement:** with the S24's pin confirmed, the OnePlus's first connection was
+  refused at the handshake — `verify: PIN MISMATCH pin 7eded50e… is not confirmed`, then
+  `NWError -9808 bad certificate format`, then the phone sat in `connecting`. The confirmed-pin set
+  could only ever hold the phone that paired first, which is precisely what ADR-054 set out to fix.
+- **ADR-055 implemented.** `PeerTrustPolicy.decide(pin:confirmedPins:explicitPin:)` is now the single
+  trust decision, and both the TLS verify block and the post-handshake guard call it (they had
+  duplicated the same three-state expression). A pin that is not in the set is a `.candidate`: the
+  handshake completes only so the short authentication code can be compared on both screens — the
+  session stays unconfirmed, no application data moves, nothing is written to the Keychain, the 120 s
+  timeout and Reject still apply. `.refused` is now reachable only from the explicit-pin test mode. A
+  duplicated `completedHandshake = true` was removed.
+- **Tests:** 79 macOS tests pass, 0 failures, including 7 new `PeerTrustPolicyTests` (confirmed pin
+  trusted; unknown pin is a candidate even with another phone confirmed; both phones trusted once both
+  are in the set; explicit-pin mode still refuses a different identity).
+  The full gate was re-run afterwards: `scripts/verify-all.sh` → `=== All verifications passed ===`
+  (79 macOS tests, 0 failures; Android modules unchanged).
+- **BLOCKED — the device row is not run.** Every ad-hoc-signed rebuild is a stranger to the Keychain
+  items, so macOS 27 asked for the login-keychain password three times (export the identity key, read
+  `com.droidbridge.p08.peer-pins`, sign with the identity key). Denying the signature fails the
+  handshake (`NWError -9858`), and an unattended session cannot supply the password. ADR-056 records the
+  three options and the measurement plan; ADR-055's device verification therefore stays open and this
+  entry does not claim it.
+- **Housekeeping:** the Mac app was stopped and quit (no modal prompt left on screen, listener stopped);
+  the OnePlus app was uninstalled and reinstalled during diagnosis, so its identity and pins are reset
+  and its next connection will be a genuine first pairing; the OnePlus reconnect loop was stopped
+  (`state: idle`); the S24's screen timeout was raised to 30 min with `settings put system
+  screen_off_timeout 1800000` for the session and put back to `30000` (the pre-session value was not
+  recorded; 30 s is the device default).
+
+**2026-11-25 Phase 7 audit — Bluetooth stays optional.**
+
+- **Permissions, measured on the artifacts:** the product Android manifest still declares no
+  `BLUETOOTH*` permission (`AndroidManifest.xml` names the deliberate absence at line 17); the phone is
+  only an HID host, which needs none. On macOS the audited set is unchanged and the only Bluetooth key
+  is `com.apple.security.device.bluetooth` (ADR-050).
+- **Nothing touches Bluetooth unless the user asks.** The HID view warms IOBluetooth up in its `.task`
+  and publishes only on the Publish button; the P08 product process logged **zero** Bluetooth lines in
+  90 minutes (`log show --predicate 'processID == 50245'`), against 24 lines in the earlier
+  `--p17-hid` harness instance.
+- **Wi-Fi is independent of it:** the entire session this evening (pairing, revocation, re-pair,
+  mirroring, clipboard) ran over Wi-Fi with the HID peripheral never initialised.
+- **Device evidence:** HID delivery was measured on both phones in Phase 5 and is untouched by these
+  changes; no new HID run was performed tonight, and none is claimed. Phase 7's exit ("the feature
+  remains optional and tested") therefore rests on that Phase 5 evidence plus tonight's perm/behaviour
+  audit.
