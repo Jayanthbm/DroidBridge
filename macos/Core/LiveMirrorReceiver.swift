@@ -134,7 +134,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             let store = PeerPinStore(service: "com.droidbridge.p08.peer-pins")
             pinStore = store
             pinnedPeerId = peerId
-            if resetPin { store.forget(peerId) }
+            if resetPin { store.forgetAll() }
             let secure = SecureListener(
                 identity: identity,
                 pinStore: store,
@@ -231,7 +231,7 @@ public final class LiveMirrorReceiver: ObservableObject {
             emit("FORGET skipped: no listener has stored a pin in this run")
             return
         }
-        pinStore.forget(pinnedPeerId)
+        pinStore.forgetAll()
         emit("FORGET done peer-id=\(pinnedPeerId)")
     }
 

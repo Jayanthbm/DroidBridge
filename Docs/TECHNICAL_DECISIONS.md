@@ -704,3 +704,31 @@ pin records, and which one applied depended on which Mac surface accepted the co
 **Consequences.** Unifying the harness default means a harness run inherits the product pin —
 intended, since the harness now exercises the same trust path the product uses; runs that need a
 first pairing pass `--peer-id`/`--p08-reset-pin` explicitly (the flags were built for exactly that).
+
+## ADR-054 — Confirmed pins are a set, not label-keyed slots (supersedes ADR-053's keying)
+
+**Status:** accepted 2026-11-25.
+
+**Context.** ADR-053 unified the peer id across surfaces, which surfaced a structural problem: the
+pin store is keyed by a caller-chosen label, and the project has *two* phones of record (S24 Ultra
+and OnePlus Nord). One canonical label means one pin slot, so the two phones would alternately PIN
+MISMATCH each other and force a forget-and-repair on every switch. The label was never a security
+boundary: a pin is the SHA-256 digest of the peer's SPKI (ADR-011), so the pin *is* the peer's
+identity commitment.
+
+**Decision.** Trust is set membership: `PeerPinStore` keeps a set of confirmed pins
+(`confirm`, `isConfirmed`, `forgetAll`); a handshake is authenticated exactly when the presented pin
+is in the set. The peer-id label is retained only for log lines and diagnostics, and existing
+per-label keychain items migrate into the set on first read (malformed values are dropped, never
+trusted). "Forget phone pin" clears the whole set — matching the product's single forget affordance;
+per-pin forgetting is future UI work if more than a handful of peers accumulates.
+
+**Security analysis.** Membership in a set of confirmed SPKI digests is equivalent trust to the
+previous single-label comparison: the attacker's goal (a session accepted on a key the user never
+confirmed) is unchanged and equally refused. The TLS verify block and the post-handshake second
+layer both test membership.
+
+**Research note recorded on the way.** macOS 27 rejects `kSecReturnData` combined with
+`kSecMatchLimitAll` with `errSecParam` (-50); multi-item keychain reads must fetch attributes first
+and read data per item with `kSecMatchLimitOne`. The old `snapshot()` carried this broken query and
+would silently have returned an empty map on this OS — the new store does not use that shape.

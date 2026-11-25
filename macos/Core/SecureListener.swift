@@ -100,7 +100,11 @@ public final class SecureListener {
     private var portValue: UInt16 = 0
     private var peerPinValue: String?
     private var pairingCodeValue: String?
-    private var expectedPin: String?
+
+    /// Pins the user has confirmed (ADR-024, ADR-054). Trust is membership: the presented pin must
+    /// be in this set (or equal the harness's explicit pin) for the session to be authenticated.
+    private var confirmedPins: Set<String> = []
+    private var explicitPin: String?
 
     private var decoder = FrameDecoder()
     private var replayWindow = ReplayWindow()
@@ -186,11 +190,10 @@ public final class SecureListener {
         let resolvedPin: String?
         switch trustMode {
         case .storedPin:
-            resolvedPin = pinStore.pin(for: peerId)
+            locked { confirmedPins = pinStore.confirmedPins() }
         case .explicitPin(let pin):
-            resolvedPin = pin
+            locked { explicitPin = pin }
         }
-        locked { expectedPin = resolvedPin }
 
         let tls = NWProtocolTLS.Options()
 
@@ -222,7 +225,7 @@ public final class SecureListener {
                 // "first pairings" for the rest of its life: the first connection after the pairing
                 // would otherwise be treated as unknown and then granted data access, because the
                 // pin now exists. The S24 Ultra run reproduced exactly that gap.
-                let expectedPin = self.locked { self.expectedPin }
+                let (trustedPins, harnessPin) = self.locked { (self.confirmedPins, self.explicitPin) }
 
                 // sec_trust_copy_ref returns a non-optional SecTrustRef.
                 let trust = sec_trust_copy_ref(secTrust).takeUnretainedValue()
@@ -245,7 +248,8 @@ public final class SecureListener {
 
                 let actualPin = MacIdentity.pin(ofSPKI: spki)
 
-                guard let expectedPin else {
+                let trusted = harnessPin.map { actualPin == $0 } ?? (trustedPins.isEmpty ? nil : trustedPins.contains(actualPin))
+                guard let trusted else {
                     // First pairing: accept so the code can be derived and shown. The session is
                     // reported unconfirmed and no application data is sent until the user confirms.
                     self.verdict.record(spki: spki, pin: actualPin)
@@ -254,11 +258,11 @@ public final class SecureListener {
                     return
                 }
 
-                guard actualPin == expectedPin else {
-                    // Fail the handshake itself, not a warning after it. A stored pin is never
+                guard trusted else {
+                    // Fail the handshake itself, not a warning after it. A confirmed pin is never
                     // replaced by whatever the peer just presented.
                     self.noteAuthenticationFailure()
-                    self.emit("verify: PIN MISMATCH expected \(expectedPin) got \(actualPin)")
+                    self.emit("verify: PIN MISMATCH pin \(actualPin) is not confirmed")
                     complete(false)
                     return
                 }
@@ -329,12 +333,12 @@ public final class SecureListener {
             }
 
             do {
-                try pinStore.store(pin: pin, for: peerId)
+                try pinStore.confirm(pin)
             } catch {
                 throw SecureListenerError.pinStorageFailed(String(describing: error))
             }
 
-            locked { expectedPin = pin }
+            locked { confirmedPins.insert(pin) }
             setState(.authenticated)
             lastActivity = Date()
             confirmedPin = pin
@@ -357,8 +361,8 @@ public final class SecureListener {
 
     /// Removes the stored pin, so the next connection is a first pairing again.
     public func forgetPeer() {
-        pinStore.forget(peerId)
-        locked { expectedPin = nil }
+        pinStore.forgetAll()
+        locked { confirmedPins = [] }
         emit("forgot stored pin for \(peerId)")
     }
 
@@ -540,12 +544,12 @@ public final class SecureListener {
         // Second layer, independent of the verify block: never grant data access to a key that is
         // not the pinned one. If a future change makes the handshake accept a different identity,
         // this still closes before a frame is accepted.
-        let storedPin = locked { expectedPin }
-        if let storedPin, storedPin != verdict.pin {
+        let trustedNow = locked { explicitPin.map { $0 == verdict.pin } ?? (confirmedPins.isEmpty ? nil : confirmedPins.contains(verdict.pin)) }
+        if trustedNow == false {
             close(connection, reason: "peer identity changed: pin mismatch")
             return
         }
-        let authenticated = storedPin != nil
+        let authenticated = trustedNow == true
         let code = ShortAuthenticationCode.derive(identity.sasIdentityBytes, verdict.spki)
 
         locked {

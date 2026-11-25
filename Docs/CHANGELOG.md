@@ -423,3 +423,10 @@ All notable project changes are recorded here.
   connection. The P03 harness default was unified to the same value.
 - Diagnostics cheatsheet added to the P03 doc; permission matrix audited against the built APK and
   bundle (product permission diff vs Phase 5: none).
+
+## Phase 6 hardening batch 3 (2026-11-25, internal)
+
+- Pin store reworked (ADR-054): confirmed pins are a set keyed by nothing but the pins themselves, so
+  two phones can be confirmed at once without fighting over one slot (measured problem: switching
+  phones forced a forget-and-repair every time). Old per-peer-id keychain items migrate on first
+  read. "Forget phone pin" clears the whole set.

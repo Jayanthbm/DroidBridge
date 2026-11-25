@@ -91,8 +91,8 @@ enum P03Harness {
             trustMode = .explicitPin(value(of: "--expect-pin"))
         } else {
             if arguments.contains("--reset-pin") {
-                store.forget(peerId)
-                emit("reset stored pin for \(peerId)")
+                store.forgetAll()
+                emit("reset stored pins")
             }
             trustMode = .storedPin
         }

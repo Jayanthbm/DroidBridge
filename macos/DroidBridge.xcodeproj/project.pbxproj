@@ -27,6 +27,7 @@
 		55216DE811A2B0543CCC6085 /* P16HIDPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16042E378A1EDC962453097F /* P16HIDPeripheral.swift */; };
 		5D27F31FAF1BADE14D1705F6 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */; };
 		60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */; };
+		6362000D0E0CCA91A0C12D27 /* PeerPinStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */; };
 		636545E7E113923C4C27146F /* P16BLEHIDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C6E23730C8C3ED47483118 /* P16BLEHIDView.swift */; };
 		6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */; };
 		6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */; };
@@ -82,6 +83,7 @@
 		16042E378A1EDC962453097F /* P16HIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16HIDPeripheral.swift; sourceTree = "<group>"; };
 		165370B1B1346061B359A63A /* HIDRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDRemoteView.swift; sourceTree = "<group>"; };
 		21EB428B90101FA4647FD000 /* P16BLEHID.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = P16BLEHID.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerPinStoreTests.swift; sourceTree = "<group>"; };
 		2B54220954E3D7F0A1E1BEBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorReceiver.swift; sourceTree = "<group>"; };
 		2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
@@ -315,6 +317,7 @@
 				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
 				7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */,
 				6654147B222D56D1F88548FF /* MirrorStreamValidatorTests.swift */,
+				23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */,
 				425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */,
 				BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */,
 				026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */,
@@ -526,6 +529,7 @@
 				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
 				60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */,
 				F7EA45131CEE40F44DCD4C37 /* MirrorStreamValidatorTests.swift in Sources */,
+				6362000D0E0CCA91A0C12D27 /* PeerPinStoreTests.swift in Sources */,
 				C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */,
 				F896011245BD43A2697DAD7F /* SessionCodecTests.swift in Sources */,
 				8CEEABBEEF2B1770ABA595D8 /* ShortAuthenticationCodeTests.swift in Sources */,
