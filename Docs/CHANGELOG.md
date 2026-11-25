@@ -1,3 +1,15 @@
+## Phase 6 verified on a phone — forgetting, codes and honest failures (2026-11-25)
+
+- **Forgetting a phone now really forgets it.** "Forget phone pin" on the Mac and "Forget the Mac's pin"
+  on Android both clear every stored pin and drop the session, and the next connection is a fresh first
+  pairing. Measured on the S24 Ultra: revoke → `pairing revoked for 1 peer(s)` → code `903 717` on both
+  sides → `PAIRING_CONFIRMED`; the reconnect after that authenticated by pin with no prompt.
+- **A live session shows its pairing code on the phone.** When the Mac asks you to confirm a re-pair, the
+  phone displays the same code to compare instead of leaving the prompt one-sided.
+- **A dead connection says why.** The phone settles on "the connection kept dropping, so retrying stopped;
+  tap Try again when the Mac is back", and the Try again control recovers the session.
+- **Trust is a set of confirmed keys, not one key slot (ADR-054).** The two phones of record no longer
+  overwrite each other's pin; the old per-label keychain items migrate on first read.
 ## Fixed — Mac-to-phone clipboard receive was silently dead (2026-11-24)
 
 - **Found by running the Phase 3 rows again.** Since the Phase 4 hook work, the session dispatcher routed

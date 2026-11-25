@@ -1084,3 +1084,43 @@ settings.
 - **Security/regression sweep: 104 Android unit tests PASSED, 0 FAILED** (routing contract, pairing
   vectors, clipboard echo/dedupe, backoff, media framing); macOS tests and build green;
   `verify-all.sh` "All verifications passed". Fresh `:app` debug APK built for the next device session.
+**2026-11-25 Phase 6 device exit gate on the S24 Ultra (Wi-Fi ADB, no cable).** USB disconnected, USB
+debugging on, wireless debugging on; the S24 is `192.168.31.197:5555` and the OnePlus Nord (`b6774a1d`)
+stayed on USB as the fallback. ADB installed the current `:app` debug APK (22:23:43), launched
+`MainActivity`, tapped the app's own controls plus two system dialogs (the API-37 NSD picker and the
+MediaProjection consent, both at the owner's instruction), and read UI hierarchies of the app under test
+and those dialogs only. No screen capture, no clipboard read or write.
+
+- **Full gate first:** `scripts/verify-all.sh` → `=== All verifications passed ===` (shared protocol
+  tests, every Android module assemble/unit/lint, 72 macOS tests with 0 failures).
+- **ADR-054 set store verified end to end on the phone of record.** With the stale legacy pin the Mac
+  refused honestly — `verify: PIN MISMATCH pin f68f9062… is not confirmed`. "Forget phone pin" →
+  `FORGET done peer-id=android-p08`, and the next connection was a genuine first pairing: code `903 717`
+  on the Mac's P08 card and `903 717` on the phone; confirm → `AUTHENTICATED`. The reconnect then logged
+  `verify: pin matched … authenticated=true` with no code step. Membership, not the label, is what
+  authenticates, and forget really empties the set.
+- **One-sided-forget display row (ADR-053's open item) measured on the S24.** While the Mac waited
+  (`awaitingConfirmation`, `pairing code: 903 717`) the phone showed
+  `your pairing code: 903 717 — compare it if the Mac asks you to confirm a re-pair`. The codes matched.
+- **Android-side revocation measured.** "Forget the Mac's pin" → `session closed: stopped by app`,
+  `pairing revoked for 1 peer(s)`; reconnecting put the phone in CONFIRMING with `903717` and
+  "Compare this code with the one on the Mac. Only confirm if they match exactly." →
+  `PAIRING_CONFIRMED code=903717`. Both forget affordances now have device evidence.
+- **Failure-state UX captured live:** with the listener down the phone settled on `state: stopped` and
+  `reason: the connection kept dropping, so retrying stopped; tap Try again when the Mac is back`, and the
+  "Try again" control actually recovered the session.
+- **Mirroring regression after the re-pair, over Wi-Fi:** `mirror_format` sent, `media frames accepted=52`,
+  heartbeat RTT 118–261 ms.
+- **Accessibility of the app's own UI (macOS):** AX audit of the running app — all seven product buttons
+  expose an AXDescription (`Listen`, `Confirm pairing`, `Reject pairing`, `Request keyframe`, `Stop`,
+  `Forget phone pin`, `Send Mac clipboard`); the only unlabeled buttons are window chrome and scroll
+  arrows.
+- **Recorded, not fixed:** after the phone's ADB transport moved from cable to Wi-Fi the app's reconnect
+  attempts timed out until a fresh picker selection, although the Mac's listener, its firewall entry and
+  the port were all healthy and the same build connects immediately once the picker grants again. The cause
+  was not established; the app reported honest `reconnecting` states throughout, so Phase 6 does not depend
+  on it, but it is the first thing to instrument if a user reports "cannot reconnect after changing
+  networks".
+- **Android 17's capture dialog defaults to "Share one app"**; whole-screen sharing sits behind the
+  spinner. The consent was granted through automation at the owner's instruction, and the dialog shape is
+  recorded because it is new system UI, not an app control.

@@ -728,6 +728,12 @@ previous single-label comparison: the attacker's goal (a session accepted on a k
 confirmed) is unchanged and equally refused. The TLS verify block and the post-handshake second
 layer both test membership.
 
+**Verified on device 2026-11-25 (S24 Ultra, Wi-Fi ADB).** With a stale legacy pin the Mac refused as
+`PIN MISMATCH … is not confirmed`; "Forget phone pin" logged `FORGET done peer-id=android-p08`; the next
+connection was a first pairing with code `903 717` on both sides, and the reconnect after confirmation
+logged `verify: pin matched … authenticated=true` with no code step. Cross-phone coexistence — both
+phones' pins living in one set at the same time — is still untested: only one phone was paired at a time.
+
 **Research note recorded on the way.** macOS 27 rejects `kSecReturnData` combined with
 `kSecMatchLimitAll` with `errSecParam` (-50); multi-item keychain reads must fetch attributes first
 and read data per item with `kSecMatchLimitOne`. The old `snapshot()` carried this broken query and
