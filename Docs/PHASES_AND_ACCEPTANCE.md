@@ -35,7 +35,7 @@ signed build, and TCC logs contain no pasteboard service. The deny/ask UX must b
 macOS version that implements it. **P07 is completed** — parser, conversion
 tests, live viewer, flush/recovery, startup latency, resolution changes and `preventsCapture`
 (video area black in a screen capture) pass; backpressure false state and glass-to-glass latency are
-plan-only measurements. **P15 personal-use identity persistence is implemented and verified locally** — separate Release identity-harness processes retain one login-Keychain pin and macOS persistence/fail-closed tests pass. Peer reconnect without re-pairing and Keychain ACL behavior after signing changes remain open. Developer ID/notarisation are explicitly deferred while personal-use only. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
+plan-only measurements. **P15 personal-use identity persistence is implemented and verified locally** — separate Release identity-harness processes retain one login-Keychain pin and macOS persistence/fail-closed tests pass. Peer reconnect without re-pairing is now measured in both directions (2026-11-26: a Mac restart reconnected the phone on the stored pin at 16:40:58 with no code prompt, and a phone app restart reconnects the same way); Keychain ACL behavior after a signing-identity change remains open. Developer ID/notarisation are explicitly deferred while personal-use only. **P13 is completed** — TLS 1.3/mutual auth/pinning/pin-mismatch
 and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P09's 2026-11-10 NO-GO is historical and scoped to its tested mechanisms.** New source review (R-32/ADR-036) reopens Mac-as-Bluetooth-HID feasibility; P16/P17 are required before a final control decision. No Accessibility/ADB control is allowed, and mirroring remains view-only until target-device evidence passes. **P02 is validated and accepted (2026-11-09)**: picker approval, approved-only rediscovery, 60 s
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
 sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
@@ -58,10 +58,10 @@ Exit: every required prototype has an evidence-based report; blocked/untested it
 
 ## Phase 2 — Shared protocol, discovery and pairing
 
-**Status (2026-11-22): implemented and verified end-to-end on the OnePlus Nord (AC2001, Android 12)
-against the macOS product app. The "USB disconnected and Bluetooth off" confirmation of the exit
-criterion is the one remaining step and needs the owner present, because turning debugging off severs
-the only control channel.** What was measured: discovery found the Mac at
+**Status (2026-11-26): closed.** The path was verified end-to-end on the OnePlus Nord (AC2001,
+Android 12) on 2026-11-22, and the last exit criterion - the same flow with USB physically
+disconnected and both debugging modes off - was measured on the S24 Ultra (Android 17) on 2026-11-26
+(see "Phase 2 exit" below). What was measured: discovery found the Mac at
 `192.168.31.109:59649` with `pv=1` from the TXT record; a first pairing displayed the same code
 (`537797`) on both screens and bound `PAIRING_CONFIRMED`/`AUTHENTICATED` only after it matched; the
 authenticated session carried `~37` PING/PONG round trips with RTT 32–340 ms; a forced drop
@@ -92,8 +92,17 @@ request only as a user-initiated fallback. Finally, the session survived **Bluet
 (`bluetooth_on=0`) with heartbeats continuing (n=5…7, RTT 80–294 ms), which is the "Bluetooth off" half
 of the exit criterion.
 
-Remaining for the Phase 2 exit: the same flow with USB physically disconnected and both debugging
-modes off, which severs the only control channel and so must be the last action of a session.
+**Phase 2 exit measured (2026-11-26).** S24 Ultra (`RZCY81TKBSV`, SM-S928B, Android 17) against the
+Debug Mac app with **USB disconnected, USB debugging off, wireless debugging off and Bluetooth off** -
+stated at each row, verified with `adb devices` (only the OnePlus was listed) and with Developer
+options switched off on the phone. A first pairing derived `836 347` on both screens and bound only
+after it matched; `authenticated=true` followed with heartbeats every 15 s. The Mac app was then killed
+mid-session: the phone showed `reconnecting (attempt 1..7)` on its own and reconnected on the stored
+pins once the Mac was relaunched and listening - `authenticated=true` at 16:40:58, no code prompt, no
+user action on the phone. A first pairing with the phone confirming before the Mac also completed once
+the receiver stopped refusing pre-confirmation frames (ADR-060: `replaying 1 frame(s) held before
+confirmation` -> `AUTHENTICATED`). Evidence: the 2026-11-26 sweep entry in
+`Docs/PROGRESS_LOCAL.md`.
 
 - Android NSD picker/direct LAN strategy.
 - macOS Bonjour discovery.

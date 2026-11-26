@@ -38,7 +38,7 @@ Artifact: `macos/build/Build/Products/Release/DroidBridge.app`.
 | Quarantined-download launch | **Not run**; this local build output had no quarantine attribute |
 | Persistent login-Keychain identity | **Pass** — two separate Release `--identity` processes exited 0 and reported pin `2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb` |
 | Automated persistence/failure tests | **Pass** — isolated disposable-Keychain tests; full macOS suite 67/67 |
-| Peer reconnect without re-pairing | **Not run** — Android reconnect against the persisted Mac identity remains outstanding |
+| Peer reconnect without re-pairing | **Pass (2026-11-26)** — a Mac app restart reconnected the phone on the stored pin with no code prompt (`authenticated=true` at 16:40:58, phone `reconnecting (attempt 1..7)` while the Mac was down), and a phone app restart reconnects the same way; USB disconnected, both debuggings off |
 | Developer ID signing, notarisation, stapling | **Not run; deferred by owner** |
 
 The successful local launches and Gatekeeper's rejection are both recorded: the former demonstrates this build ran from the local build output and canonical `~/Applications/DroidBridge.app` on this Mac, while the latter means it is not an acceptable notarized distribution artifact. No Gatekeeper setting or security control was changed to run it.
