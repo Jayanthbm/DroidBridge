@@ -1,3 +1,30 @@
+**2026-11-26 (regression run after tonight's changes: one session, share, audio, stop from the Mac):**
+A single run through the whole v1 path, after `device.info`, picker auto-connect and Mac-initiated stop
+all landed, to make sure the pieces still work together and not only one at a time.
+
+- *Setup.* S24 Ultra on Wi-Fi (USB disconnected, wireless debugging on), Mac app listening on 64422, session
+  already connected on the stored pins (`state: connected and authenticated`).
+- *Share.* `Share this screen` -> system consent -> `Share entire screen` -> `Share screen` at 14:41:36;
+  phone `mirroring started content=1080x2340`, scale 590x1280, `audioState=capturing 44100Hz stereo`.
+  After 65 s: `frames=473 bytes=5103483 keyframes=8 fps=7.3 kbps=627 dropped=0 maxSendMs=2`.
+- *Mac.* `MIRROR_FORMAT 590x1280 rotation=0`, `FRAMES received=330 enqueued=330 dropped=0 status=rendering`,
+  `AUDIO_FORMAT aac-lc 44100 stereo`, sidebar dot + `sharing`, Screen pane `Streaming / 590x1280 / 330 frames,
+  0 dropped` (`Docs/design/shell-screen-live.png`).
+- *Stop from the Mac.* `Screen` -> `Stop sharing` at 14:42:41 -> phone `stop requested by the Mac reason=mac
+  request` -> `MIRROR state=stopped: mac stop ... durationMs=65127 stopReason=mac stop` -> `teardown complete
+  reason=mac stop` -> phone's own `mirror.stop` back -> Mac `MIRROR_STOP reason=mac stop audioFrames=2782`.
+  The session stayed up: `HEARTBEAT n=10 rttMs=117` fired 30 ms later, and the viewer returned to its empty
+  state (`Docs/design/shell-viewer-empty.png`) instead of holding the last frame.
+- *Caveat, unchanged.* The viewer's own pixels capture as black because the display layer runs with
+  `preventsCapture = true` unless `--p08-allow-capture` is passed; the frame counters above are the evidence
+  of what was decoded and enqueued.
+- *Not re-run.* Clipboard round trip (untouched by tonight's changes, and it would have overwritten whatever
+  the owner left in the clipboard), and the audio path beyond confirming AAC capture and `AUDIO_FORMAT`
+  arrival (the last measured A/V sync baseline, +276.5 ms mean, still stands).
+- *ADB actions (operator-at-owner's-instruction, setup only):* `am start`, one swipe to scroll the dashboard,
+  taps on `Share this screen`, the mode row, `Share entire screen` and `Share screen`, `uiautomator dump` to
+  locate them, `logcat`. Consent was accepted through automation at the owner's instruction. No capture, no
+  clipboard access, no settings changed; sharing is stopped again and `screen_off_timeout` is still 30000.
 **2026-11-26 (a Mac app restart reconnects by itself; the phone's device line logs once):**
 
 - *Measured.* With the phone connected over wireless, the Mac app was killed at 14:36:06. The phone logged

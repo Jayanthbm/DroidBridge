@@ -64,6 +64,12 @@ Created by `Share this screen` (or by opening the phone's screen from the main w
   and on the right `Pause`, `Full screen`, `Stop sharing`.
 - Keyboard: `Space` pause, `Esc` leave full screen, `Cmd-W` stop sharing and close.
 - The window never takes key focus on its own; it is a viewer first.
+- As built (2026-11-26): the HUD is the dot plus `590x1280 · 7 fps` (live counters), `Pause`/`Resume`,
+  `Full screen` and a stop glyph; the empty state is a monitor glyph with `Waiting for the phone to share`
+  (`Docs/design/shell-viewer-empty.png`), and the Screen pane it was opened from reads
+  `Streaming / 590x1280 / 330 frames, 0 dropped` with `Open viewer`, `Request keyframe`, `Stop sharing`,
+  `Stop listening` (`Docs/design/shell-screen-live.png`). The viewer's own pixels capture as black because
+  the display layer sets `preventsCapture`; that is a capture artefact, not what the user sees.
 
 ### Menu-bar extra
 
