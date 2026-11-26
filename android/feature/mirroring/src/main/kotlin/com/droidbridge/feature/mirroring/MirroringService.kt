@@ -94,8 +94,15 @@ class MirroringService : Service() {
             onKeyframeRequested?.invoke()
         }
 
-        /** True while capture is running; the UI renders from this rather than from a second flag. */
-        fun isCapturing(): Boolean = stats.state.get().startsWith("streaming")
+        /**
+         * True while capture is running; the UI renders from this rather than from a second flag.
+         *
+         * The prefix must match the state string written by the pipeline (`"mirroring …"`). It used
+         * to check for `"streaming"`, which the pipeline never writes, so the dashboard believed it
+         * was idle during a live share: "Stop sharing" stayed disabled and "Share this screen"
+         * stayed enabled, which is how a second projection could be started on top of a working one.
+         */
+        fun isCapturing(): Boolean = stats.state.get().startsWith("mirroring")
 
         @Volatile
         var isRunning: Boolean = false

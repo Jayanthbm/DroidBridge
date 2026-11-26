@@ -52,6 +52,30 @@ and the dry runs, not an acceptance sweep.
   that window while the DroidBridge UI was on screen, so two taps and one long-press on the button were
   swallowed and no `mirror.stop` reached the receiver. Not a product finding — input never reached the
   app. `KEYCODE_HOME` restored focus.
+- *P08 in-app `Stop sharing`: measured and fixed (supersedes the retry above).* The "swallowed taps"
+  were a disabled control: the dashboard derived `capturing` from `MirroringService.isCapturing()`, which
+  tested for a `"streaming"` state the pipeline never writes (it publishes `"mirroring WxH"`), so
+  `Stop sharing` stayed `enabled=false` and `Share this screen` stayed enabled during a live share -
+  which is also how a second projection could land on top of a working one (the earlier 95 fps / two
+  pipeline phase). Two fixes: `isCapturing()` now matches `"mirroring"`, and the dashboard's 1 s tick
+  no longer stops when capture stops (the `stopped:` state and the button enablement previously never
+  re-rendered). Re-measured twice (12:05-12:08, 12:16-12:17): tap -> phone `sent mirror_stop:1046:user
+  stop` + `teardown complete reason=user stop`, Mac `frame mirror.stop:1046:user stop`, session survived
+  (`HEARTBEAT` after), dashboard `stopped: user stop` with `Share` enabled and `Stop` disabled.
+- *P08 notification `Stop`: still not measured.* With the shade open `uiautomator dump` fails
+  (`ERROR: could not get idle state.`) with the app foreground, behind HOME, and with capture running;
+  screencap is prohibited, so the action's bounds cannot be located without blind taps. Both the
+  notification action and the in-app button deliver `ACTION_STOP` to `MirroringService`, so the handler
+  is exercised; the widget is not.
+- *Receiver media-rate policy changed (ADR-058).* The strict build closed the mirror when the shade
+  opened (`CLOSED ... peer exceeded 120 media frames per second`, 12:12:33, single capture pipeline).
+  Over-budget media frames are now dropped up to 600 in a row (~5 s) before the session closes; the
+  120/s sustained budget and the control-frame limit are unchanged. Verified on the fixed build: the
+  same HOME -> shade sequence and five rapid shade toggles kept the session (`received=4680`), and the
+  drop path fired once (12:02:59, `dropped=120 accepted=1721`) with the session alive.
+- *Open defect: the phone keeps encoding after the receiver closes.* After the 12:12:33 close the
+  encoder ran at 66-80 fps, `frames=3200`, `keyframes` climbing ~2/s, notification still up until the app
+  was force-stopped. A closed transport should tear the pipeline down; not fixed tonight.
 - *Harness build caveat (unchanged from P10 precedent).* The receiver used for the recording was the
   Debug build copied to `/tmp/DroidBridgeHarness.app` and re-signed ad-hoc **without**
   `com.apple.security.app-sandbox`, because the sandboxed build cannot create

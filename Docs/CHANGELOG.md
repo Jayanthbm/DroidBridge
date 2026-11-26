@@ -1,3 +1,20 @@
+## The stop control works, and an open notification shade no longer drops the mirror (2026-11-26)
+
+- **`Stop sharing` is enabled during a share again.** The dashboard decided whether it was capturing by
+  checking for a `"streaming"` state the pipeline never writes (it publishes `"mirroring WxH"`), so the
+  button was disabled - and `Share this screen` stayed enabled, which is how a second projection could be
+  started on top of a working one. The check now matches the published state, and the dashboard's
+  once-a-second refresh keeps running after a share ends so the buttons and the `stopped: …` line update.
+  Measured on the S24 Ultra: tap -> `mirror.stop` on both sides, session survives, card returns to idle.
+- **Opening the notification shade no longer ends the mirror.** On a 120 Hz phone the shade's animation
+  delivered more than one second of frames inside a second, and the receiver closed the session for
+  exceeding its 120 media frames/s bound. Over-budget media frames are now dropped (up to 600 in a row,
+  ~5 s) and only a sustained flood still closes; the sustained 120/s budget and the control-frame limit
+  are unchanged (ADR-058).
+- **Known and unmeasured:** the notification's own `Stop` action still has no measured row (the shade
+  cannot be inspected with `uiautomator` while it is open, and screen capture is prohibited), and the
+  phone keeps encoding for a while after the receiver closes (recorded as an open defect in the P08 doc).
+
 ## Pre-release cleanup — the audit trail now matches the build (2026-11-26)
 
 - **Documentation matches what ships.** The app manifest, README, architecture, requirements, permissions

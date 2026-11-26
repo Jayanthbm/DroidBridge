@@ -121,7 +121,18 @@ public final class SecureListener {
     private var mediaRateLimiter: FrameRateLimiter
     private var authenticationFailures = 0
     private var acceptedMediaFrames: UInt64 = 0
+    private var droppedMediaFrames: UInt64 = 0
+    private var consecutiveMediaDrops = 0
     private var lastMediaSummaryAt = ProcessInfo.processInfo.systemUptime
+
+    /// Media frames the bucket may drop back-to-back before the peer is treated as flooding.
+    ///
+    /// A display-rate burst is normal traffic: opening the notification shade on a 120 Hz phone
+    /// makes the capture pipeline emit well past one second of video at once, and ending a healthy
+    /// mirror for that is wrong. Those frames are dropped as they arrive, so the receiver's work
+    /// stays bounded without a queue. A peer that keeps overrunning the budget for five seconds is a
+    /// flood, and that still closes.
+    private static let maxConsecutiveMediaDrops = 600
 
     private let verdict = PeerVerdict()
 
@@ -481,6 +492,8 @@ public final class SecureListener {
         controlRateLimiter.reset()
         mediaRateLimiter.reset()
         acceptedMediaFrames = 0
+        droppedMediaFrames = 0
+        consecutiveMediaDrops = 0
         lastMediaSummaryAt = ProcessInfo.processInfo.systemUptime
         lastActivity = Date()
         locked { peerPinValue = nil; pairingCodeValue = nil }
@@ -653,8 +666,16 @@ public final class SecureListener {
             throw SecureListenerError.replayedSequence(String(describing: error))
         }
 
-        try enforceRateLimit(isMedia: message.type.isMedia)
+        let admitted = try enforceRateLimit(isMedia: message.type.isMedia)
         lastActivity = Date()
+
+        guard admitted else {
+            droppedMediaFrames &+= 1
+            if droppedMediaFrames % 120 == 0 {
+                emit("media frames dropped=\(droppedMediaFrames) accepted=\(acceptedMediaFrames)")
+            }
+            return
+        }
 
         if message.type.isMedia {
             acceptedMediaFrames &+= 1
@@ -676,18 +697,28 @@ public final class SecureListener {
         notify { self.onFrame?(message) }
     }
 
-    private func enforceRateLimit(isMedia: Bool) throws {
-        // Use monotonic uptime instead of wall-clock Date. The limiter permits only a bounded burst
-        // and refills at the configured sustained rate, so TCP scheduling/coalescing cannot turn a
-        // healthy buffered batch into an immediate one-second-window violation.
+    /// Returns false when a media frame is over budget and should be dropped.
+    ///
+    /// Use monotonic uptime instead of wall-clock Date. The limiter permits only a bounded burst
+    /// and refills at the configured sustained rate, so TCP scheduling/coalescing cannot turn a
+    /// healthy buffered batch into an immediate one-second-window violation. Control frames still
+    /// close the session on the first violation; media frames are dropped up to
+    /// `maxConsecutiveMediaDrops`, because a display-rate burst is normal traffic rather than an
+    /// attack, and a sustained flood still trips the ceiling.
+    private func enforceRateLimit(isMedia: Bool) throws -> Bool {
         let now = ProcessInfo.processInfo.systemUptime
         if isMedia {
-            guard mediaRateLimiter.admit(at: now) else {
+            if mediaRateLimiter.admit(at: now) {
+                consecutiveMediaDrops = 0
+                return true
+            }
+            consecutiveMediaDrops += 1
+            guard consecutiveMediaDrops <= Self.maxConsecutiveMediaDrops else {
                 throw SecureListenerError.rateLimited(
                     maxPerSecond: maxVideoFramesPerSecond, kind: "media"
                 )
             }
-            return
+            return false
         }
 
         guard controlRateLimiter.admit(at: now) else {
@@ -695,6 +726,7 @@ public final class SecureListener {
                 maxPerSecond: maxFramesPerSecond, kind: "control"
             )
         }
+        return true
     }
 
     /// Closes the authenticated connection on a protocol/stream validation failure.

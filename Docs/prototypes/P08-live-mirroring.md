@@ -335,6 +335,11 @@ keep working. The notification route is the only stop that works (measured on th
 across four attempts today. The in-app stop and chip-stop rows on this device remain unmeasured for that
 reason; the wedge is a device/window-manager defect, not an app defect.
 
+**Correction (2026-11-26):** at least the in-app half of this was the app. `Stop sharing` was rendered
+`enabled=false` during a live share because `MirroringService.isCapturing()` tested a state string the
+pipeline never writes; the control now enables during a share and ends it on the first tap on this device
+(details in the 2026-11-26 section below).
+
 ### Defect: a returning phone could not take back its session (fixed in two commits)
 
 Three independent reproductions today (reboot mid-session, reconnect after give-up, Wi-Fi toggle):
@@ -354,3 +359,73 @@ Three independent reproductions today (reboot mid-session, reconnect after give-
 Final measurement: `svc wifi disable/enable` mid-session → `parking an additional connection` →
 `superseding the live session: the same phone reconnected` → phone `CONNECTED` on the first attempt →
 heartbeats n=6 with normal RTTs on the adopted session.
+
+## 2026-11-26 overnight session (S24 Ultra over Wi-Fi ADB; USB disconnected)
+
+Run conditions: USB disconnected, USB debugging on (no cable, so unused), wireless debugging on;
+`adb -s 192.168.31.197:5555` drove setup only. The Mac receiver was the Debug build copied to
+`/tmp/DroidBridgeHarness.app` and re-signed with the Apple Development identity **without**
+`com.apple.security.app-sandbox` (the sandboxed build cannot write the recording dirs). Identity pin
+`2178541711…`, phone pin `73e96f52…`, no re-pairing.
+
+### In-app `Stop sharing`: measured, after two dashboard-state defects
+
+The 2026-11-24 conclusion that the S24 swallows every tap after consent was wrong for this control
+(see the correction note above). The button was rendered `enabled=false` because the dashboard derived
+`capturing` from `MirroringService.isCapturing()`, which tested `stats.state.startsWith("streaming")`
+while the pipeline publishes `"mirroring WxH"`. The dashboard therefore believed it was idle during a
+live share: **`Stop sharing` was disabled and `Share this screen` stayed enabled**, which is also how a
+second projection could be started on top of a working one (observed earlier as two capture pipelines
+and 95 fps).
+
+- Fixed `MirroringService.isCapturing()` to match the published state prefix (`mirroring`).
+- Fixed the dashboard tick: it only incremented while `MirroringService.isRunning`, so after a stop the
+  final `stopped: …` state never rendered and the buttons kept their capturing enablement. The tick now
+  runs once a second unconditionally.
+
+Measured on the S24, twice (12:05–12:08 and 12:16–12:17):
+
+| Step | Evidence |
+|---|---|
+| Capturing state renders correctly | `Share this screen` parent `enabled=false`, `Stop sharing` parent `enabled=true`, card text `mirroring 590x1280` |
+| Tap `Stop sharing` | phone `sent mirror_stop:1046:user stop` then `P08Mirroring: teardown complete reason=user stop`; Mac `EVENT frame mirror.stop:1046:user stop` |
+| Session survives the stop | phone `sent ping` / `HEARTBEAT` after the teardown; no `CLOSED` on the Mac |
+| Dashboard returns to idle | card text `stopped: user stop`; `Share this screen` `enabled=true`, `Stop sharing` `enabled=false` |
+
+The notification `Stop` action is still **unmeasured**: with the shade open `uiautomator dump` fails with
+`ERROR: could not get idle state.` (reproduced with the app foreground, with the app behind HOME, and with
+capture running), and `screencap` is prohibited, so the action's bounds cannot be located without blind
+taps. The notification action and the in-app button both deliver `ACTION_STOP` to `MirroringService`
+(`PendingIntent.getService` at `MirroringService.kt` vs `MirroringService.stop`), and the measured in-app
+path exercises that handler; the widget itself is what remains untested.
+
+### Receiver: a display-rate burst no longer ends the session (policy changed)
+
+On the strict build, opening the notification shade ended the mirror:
+`CLOSED framing/protocol violation: peer exceeded 120 media frames per second` at 12:12:33, with a single
+capture pipeline (the encoder had been at 15–80 fps; the shade's 120 Hz animation delivered more than one
+second of frames inside a second). Closing on the first over-budget media frame turns ordinary device
+animation into a dead session.
+
+`SecureListener.enforceRateLimit` now **drops** over-budget media frames, up to 600 consecutive drops
+(~5 s at the 120/s budget), and closes only past that ceiling. The 120 media frames/s budget and every
+control-frame limit are unchanged (ADR-058).
+
+Verified on the fixed build: the same HOME → shade sequence and five rapid shade toggles kept the session
+alive (`received=4680 enqueued=4680`, no `CLOSED`). The drop path itself fired once, in the run before
+that: `media frames dropped=120 accepted=1721` at 12:02:59 while the shade was open, session still live.
+`FrameRateLimiterTests`: 5 tests, 0 failures.
+
+### Defect (open): the phone keeps encoding after the receiver closes
+
+After the 12:12:33 close the phone kept capturing: `fps=66.3 → 79.7` over ten seconds, `frames=3200`,
+`keyframes` climbing ~2/s, `largestFrame=207237`, `stopReason=active`, notification still up until the app
+was force-stopped. A closed transport should tear the pipeline down (or at least stop requesting
+keyframes). Not fixed tonight; the numbers are recorded here.
+
+### Follow-up worth doing
+
+The encoder can emit 66–80 fps whenever the shade animates (its configured 30 fps is not enforced for
+surface input). That inflates bandwidth and is what the receiver's budget absorbs. A sender-side cap
+(`KEY_MAX_FPS_TO_ENCODER` or an explicit frame gate) is the better fix than tuning the receiver.
+

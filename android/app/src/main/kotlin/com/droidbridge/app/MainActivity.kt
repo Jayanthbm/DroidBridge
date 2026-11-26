@@ -86,7 +86,11 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             kotlinx.coroutines.delay(2_000)
             while (true) {
-                if (MirroringService.isRunning) mirroringTick.value += 1
+                // Tick unconditionally: gating this on `isRunning` meant the final "stopped" state
+                // never rendered, so after a share ended the dashboard kept showing "mirroring …"
+                // with "Stop sharing" still enabled. One recomposition a second of a small card is
+                // cheaper than a dashboard that disagrees with the service.
+                mirroringTick.value += 1
                 kotlinx.coroutines.delay(1_000)
             }
         }
