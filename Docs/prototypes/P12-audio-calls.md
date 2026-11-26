@@ -164,8 +164,8 @@ on (ADB over Wi-Fi drove setup).**
 Receiver: the Debug build copied to `/tmp/DroidBridgeHarness.app` and re-signed ad-hoc **without**
 `com.apple.security.app-sandbox`, so `P08_RECORD_DIR` and `P08_AUDIO_TIMELINE_DIR` could write under
 `/tmp` (the sandboxed build cannot create those directories outside its container). Sources and
-entitlements are otherwise unchanged; securityd logged the new cdhash's Keychain access as `user
-approved 'always allow'`.
+entitlements are otherwise unchanged. The repeat run used the Apple Development identity for the same
+copy after a freshly re-signed ad-hoc binary hit a Keychain ACL prompt on the peer-pin item.
 
 Stimulus: the new `experiments/av-sync-stimulus` app (`com.droidbridge.experiment.avsync`) fires a
 150 ms 1 kHz stereo burst from an `AudioTrack` and turns the whole window white for 180 ms from the same
@@ -194,6 +194,19 @@ audio later than video.** Captured 3205 video frames and 5832 audio access units
 RMS was 7735 of 32768 (-12.5 dBFS), i.e. real signal rather than the silent-capture failure this
 prototype warns about.
 
+**Repeatability and drift.** A second session repeated the same ten-cycle block five minutes apart on a
+449 s capture: block 1 mean **+254 ms** (sd 67), block 2 mean **+268 ms** (sd 56), a +13 ms
+difference that is inside the run-to-run spread. The 19 340 access units cover 449 s exactly
+(19 340 x 1024 / 44 100), so nothing was dropped while the screen sat idle between the blocks. On
+this path the offset is stable over the tested window; it is a constant, not a leak.
+
+**Where the delay plausibly comes from.** Audio does not arrive smoothly: `AudioRecord.read` fills a
+16 KiB buffer (4096 frames, 93 ms), the encoder emits four access units per read, and the Mac
+schedules each burst on arrival (median burst 4 AUs, 64-91 ms apart). A sound therefore waits for
+the read window that contains it - up to ~93 ms, ~46 ms on average - before it is even encoded.
+That is a floor the current pipeline can lower by shrinking the read, and it is the first thing to
+try before adding a deliberate video delay.
+
 Limits, which is why this is a baseline and not a verdict:
 
 - The audio number is when the decoded buffer was **scheduled** on the Mac, not when it left the
@@ -201,14 +214,16 @@ Limits, which is why this is a baseline and not a verdict:
   The video number is when the encoded frame **reached the receiver**, not when it was displayed; the
   screen capture emits on change, so it includes capture, encode and network time.
 - Quantisation: audio access units are 23.2 ms; the flash step is resolved to the captured frame
-  interval (0.13-0.25 s on this mostly static screen), which is the source of the 134 ms spread.
+  interval (0.13-0.30 s on this mostly static screen), which is the source of the per-cycle spread.
 - One path only: whole-display `MediaProjection`, AAC-LC 44.1 kHz stereo 128 kbit/s, no Bluetooth and
-  no resampling, one ~150 s run.
+  no resampling, two runs (135 s and 449 s) on one device and one Mac.
 
 Consequence: on the current path the Mac plays mirrored audio roughly a quarter second after the
 matching video frame arrives — noticeable for speech. Nothing re-times it today: the phone sends no
 presentation offset and the Mac does not delay video. P12's remaining decision is whether to re-time
-(delay video, or start audio earlier) and then re-measure against the chosen policy.
+(delay video, or start audio earlier) and then re-measure against the chosen policy. The cheapest
+first experiment is the capture read size: the 16 KiB read is 93 ms of sound, and cutting it to a few
+AAC frames costs only a higher packet rate.
 
 ## Not measured / open
 

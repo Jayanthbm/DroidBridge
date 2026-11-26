@@ -27,6 +27,22 @@ and the dry runs, not an acceptance sweep.
   frames, 5832 audio access units, beep peak RMS 7735/32768 (-12.5 dBFS). Method, per-cycle table and
   limits are in `Docs/prototypes/P12-audio-calls.md`; the headline is a receiver-side baseline, not a
   perceptual verdict. Nothing re-times audio today.
+- *A/V drift re-run (449 s, two blocks five minutes apart).* Block 1 **+254.4 ms** (sd 66.7) and
+  block 2 **+267.5 ms** (sd 55.5): a +13 ms difference, inside the per-block spread, so no measurable
+  drift on this path. 19 340 audio access units cover 449 s exactly (nothing dropped while the screen
+  sat idle) and 2 763 video frames span 449 s. The arrival pattern explains part of the offset: the
+  phone's 16 KiB capture read is 4 096 frames (93 ms), so four AAC access units arrive together every
+  ~90 ms; a sound waits for its read window (~46 ms on average) before it is encoded. Evidence
+  `/tmp/avsync6`.
+- *Harness Keychain caveat.* A freshly re-signed harness copy hit a macOS login-keychain password
+  prompt for `com.droidbridge.p08.peer-pins`, which would have blocked the unattended run. The copy is
+  now signed with the Apple Development identity (still without `com.apple.security.app-sandbox`), and
+  the login keychain's item partition lists were set to `apple-tool:,apple:` with
+  `security set-key-partition-list ... -k <login password>`. **That is a change to the operator Mac's
+  login keychain, not to the app, its entitlements or the repository**; it is recorded here so it can
+  be reviewed or reverted. Also: `--p08-listen` starts from the window's `onAppear`, so launching the
+  binary from a background shell is not enough - activating the bundle (`open -a`) is required, or no
+  listener starts.
 - *P10 product-path re-check (dry run).* With the whole display shared by the shipping app and the P10
   experiment's `FLAG_SECURE` activity in front, the recorded stream kept advancing (~5 fps) while mean
   luma fell from 219.8 to **1.0** for the last 15 decoded frames. Same result as the 2026-11-21
@@ -45,18 +61,22 @@ and the dry runs, not an acceptance sweep.
 ADB actions this session (operator mode, owner-directed): installed the two experiment APKs
 (`avsync`, `mediaprojection`), force-stopped and launched the app and experiment activities, drove the
 NSD picker, `Connect`, `Share this screen`, the Android 17 consent ("Share one app" → "Share entire
-screen" → "Share screen"), the audio switch, and `uiautomator`/`dumpsys`/`logcat` reads. No screenshots,
-no `screencap`/`screenrecord`, no clipboard read or write, and no ADB input inside any measured stream.
+screen" → "Share screen"), the audio switch, and `uiautomator`/`dumpsys`/`logcat` reads. For the drift
+run it also set `svc power stayon true` and `settings put system screen_off_timeout 1800000` so the
+screen would not sleep between the two blocks; both are temporary and will be reverted when the S1 runs
+end. No screenshots, no `screencap`/`screenrecord`, no clipboard read or write, and no ADB input inside
+any measured stream (the stimulus is a local experiment app driven by its own activity start).
 
 Device/debug state for every run above: **USB connected: no** (adb listed only
 `192.168.31.197:5555` and `192.168.31.64:5555`, both TCP); **USB debugging: no cable attached, so it
 had no effect; not asserted off from this host**; **wireless debugging: on** (ADB over Wi-Fi drove the
-setup). Final acceptance still needs USB out and both debuggings off.
+setup). The drift run kept the screen awake through the two blocks (see the ADB note above). Final
+acceptance still needs USB out and both debuggings off.
 
 Housekeeping: the 2026-11-26 cleanup had uninstalled all experiment APKs at the owner's request;
 `avsync` and `mediaprojection` are installed on the S24 again because S1 needs them. They will be
-uninstalled when the staging runs no longer need them. Evidence lives under `/tmp/avsync2` and
-`/tmp/avsync3` and is not committed.
+uninstalled when the staging runs no longer need them. Evidence lives under `/tmp/avsync2`,
+`/tmp/avsync3`, `/tmp/avsync4` (aborted drift attempt) and `/tmp/avsync6` and is not committed.
 **2026-11-26 (pre-Phase 9 cleanup: documentation truth, Release surface, experiment separation, device
 fixtures):** The owner asked for a cleanup on both platforms before Phase 9. Four commits, no behaviour
 change to a shipped feature:
