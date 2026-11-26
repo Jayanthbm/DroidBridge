@@ -1,3 +1,14 @@
+## A Mac app restart reconnects by itself (2026-11-26)
+
+- **Killing the Mac app no longer costs a re-pair.** The phone noticed the peer was gone, scheduled its
+  reconnect, retried while nothing was listening, and connected on the stored pins once the Mac was back -
+  no code comparison, no taps. Measured: Mac killed 14:36:06, phone `session closed: peer lost` ->
+  `reconnect scheduled attempt=1` -> two `ConnectException` attempts -> `CONNECTED` at 14:36:18, about 12 s.
+- The Mac's identity now survives a relaunch (login keychain), so this is a real silent reconnect rather
+  than a fresh pairing that happened to succeed; ADR-025's interim note is corrected to say so.
+- **The phone's environment line is logged once per launch, not once per counter tick.** It was read from
+  the composition, so a connected dashboard logged `device samsung SM-S928B ...` every second and buried
+  the session lines in a capture; measured after the fix: one line, 12 s of session, still connected.
 ## Picking the Mac in the system picker connects (2026-11-26)
 
 - **The picker's answer is the connect.** Choosing the Mac row in Android's system picker used to resolve

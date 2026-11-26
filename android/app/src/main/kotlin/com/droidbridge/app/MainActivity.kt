@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val identity = DeviceIdentity.loadOrCreate()
+        logDeviceOnce()
         // Discovery starts immediately on every platform. API 37 uses the system picker, which is
         // the scoped consent path and needs no broad permission (ADR-010) — measured on the S24 with
         // ACCESS_LOCAL_NETWORK explicitly denied: the picker still resolved the Mac and the session
@@ -146,7 +147,7 @@ class MainActivity : ComponentActivity() {
             val needsPermission = discoveryStatus is ServiceDiscovery.Status.NeedsPermission
             DashboardScreen(
                 // The dashboard shows a one-line environment baseline; the full record is logged.
-                buildInfo = describeDevice(),
+                buildInfo = deviceDescription,
                 state = state,
                 peers = peers,
                 roundTrips = controller.roundTrips,
@@ -252,12 +253,26 @@ class MainActivity : ComponentActivity() {
     /** Set while a capture consent is waiting behind the microphone prompt. */
     private var pendingRecordAudioRequest = false
 
-    private fun describeDevice(): String {
+    /**
+     * The dashboard's one-line environment baseline.
+     *
+     * Read once per process, not per recomposition: this used to be called from the composition, so
+     * the same `device ...` line was logged again for every counter tick (measured: once a second for
+     * the length of a session), which buries the lines that matter in a logcat capture. The single
+     * record is logged by [logDeviceOnce] when the activity is created.
+     */
+    private val deviceDescription: String by lazy { describeDevice() }
+
+    private fun logDeviceOnce() {
         val info = BuildInfo.describe()
         android.util.Log.i(
             "P03Shell",
             "device ${info.manufacturer} ${info.model} android=${info.androidRelease} sdk=${info.sdkInt} build=${info.buildId}",
         )
+    }
+
+    private fun describeDevice(): String {
+        val info = BuildInfo.describe()
         return "${info.manufacturer} ${info.model} · Android ${info.androidRelease} (API ${info.sdkInt})"
     }
 

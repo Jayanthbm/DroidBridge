@@ -117,9 +117,14 @@ keeps `Stop`.
 4. **Brand** - **still open.** The shell ships the system look (system font, accent, no icon work).
 5. **Clipboard placement** - **answered:** both. The menu-bar popover carries the clipboard line and the
    send action; the main window has the full `Clipboard` pane.
-6. **Phone navigation** - **still open.** The Android app keeps its single scrolling page for now; the
-   connect flow is the first thing to fix there (the picker grant is not the session - the user still has
-   to press `Connect` in the app's `Nearby` card, and nothing prompts them to).
+6. **Phone navigation** - **still open**, one part answered. The Android app keeps its single scrolling
+   page for now. The connect flow is fixed (2026-11-26): the picker's answer *is* the connect, so there is
+   no second tap and the `Nearby` card is no longer the only way to start a session. What remains is the
+   page itself: the `Connection` card still carries lab controls on the product surface (`Drop the
+   connection (proves reconnect)`, `round trips: n - last 40ms`, and the always-visible pairing code), and
+   the card order is still Connection, Clipboard, Screen, Audio, Nearby rather than the order proposed in
+   §6. Both need the owner's design call (or a Diagnostics surface to move them behind); nothing was
+   reordered unilaterally.
 
 Answers to 1, 2 and 5 decide most of the layout work; 3 and 4 are cosmetic and can wait.
 

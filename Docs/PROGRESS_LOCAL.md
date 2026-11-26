@@ -1,3 +1,24 @@
+**2026-11-26 (a Mac app restart reconnects by itself; the phone's device line logs once):**
+
+- *Measured.* With the phone connected over wireless, the Mac app was killed at 14:36:06. The phone logged
+  `session closed: peer lost`, `reconnect scheduled attempt=1` (its ping failed), then two
+  `connect attempt failed: TCP connect to 192.168.31.109:64422 ... ConnectException` while nothing was
+  listening, and `state=CONNECTED attempt=0` at 14:36:18 once the app was back - the stored pins matched,
+  there was no code comparison and no user action. Roughly 12 s end to end, which is the backoff doing its
+  job rather than a fixed delay.
+- *Why it works.* The Mac identity is persisted (login keychain), so a relaunch presents the certificate the
+  phone already pinned. That contradicts ADR-025's 2026-11-12 interim note ("one identity per app run", a
+  relaunch needs a new pairing); the note now carries a dated correction. The profile-backed
+  data-protection keychain of the ADR is still the release target.
+- *Log hygiene.* `describeDevice()` was called from the composition, so the dashboard logged the same
+  `device samsung SM-S928B android=17 sdk=37 build=...` line on every recomposition - once a second for the
+  length of a session, which buries the lines a capture is taken for. The baseline is now read once
+  (`deviceDescription` by lazy) and logged once (`logDeviceOnce()` in `onCreate`). Measured after the fix:
+  one line in 12 s of a connected session.
+- *ADB actions (operator-at-owner's-instruction, setup only):* installed the debug APK, force-stopped and
+  relaunched `MainActivity`, `uiautomator dump` to locate the picker row, one tap on it, `logcat`, and
+  `pkill` of the Mac app from the shell. No capture, no clipboard access, no settings changed. Device state
+  unchanged: sharing stopped, `screen_off_timeout` 30000.
 **2026-11-26 (the picker's answer is the connect):**
 The dashboard made the user approve the Mac twice: once in Android's system picker and again on a
 `Connect` button further down the page, after the picker had already resolved the peer. A first-time user
