@@ -73,6 +73,15 @@ Defaults:
   `RECORD_AUDIO` request and no capture. A denial is honoured for the run.
 - The Mac never requests a microphone TCC grant, because it only plays decoded samples.
 
+### 5B. Development switches are inert in Release
+
+The macOS app reads its prototype switches through `HarnessFlags`, which compiles the reads to constants
+in a Release build. A shipped DroidBridge cannot be launched with `--p08-allow-capture` to turn off
+`preventsCapture`, with `--p08-fault-after` to inject a corrupt sample, with `P08_RECORD_DIR`/`P08_DUMP_DIR`
+to write video to disk, or with `P17_AUTO_ACCEPT_PAIRING` to answer a pairing code silently. Debug builds
+keep the hooks the P03–P17 evidence runs need, so the privacy guard and the evidence apparatus do not
+conflict.
+
 ## 6. Banking and DRM
 
 The app must not:

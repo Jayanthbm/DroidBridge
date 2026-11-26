@@ -7,6 +7,40 @@ are met.
 
 **Last updated:** 2026-11-26
 
+**2026-11-26 (pre-Phase 9 cleanup: documentation truth, Release surface, experiment separation, device
+fixtures):** The owner asked for a cleanup on both platforms before Phase 9. Four commits, no behaviour
+change to a shipped feature:
+
+- *Documentation truth.* The app manifest still claimed `RECORD_AUDIO` was experiment-scoped (ADR-045)
+  while `:feature:mirroring` ships it under ADR-057; README called audio a research track;
+  `SYSTEM_ARCHITECTURE` kept audio out of the mirroring session; `PRODUCT_REQUIREMENTS`,
+  `PERMISSIONS_MATRIX` and `RESEARCH_AND_FEASIBILITY` carried pre-approval wording. Each now states what
+  shipped, and the dated research decisions keep their original text with a superseded pointer rather
+  than being rewritten.
+- *Release surface.* `HarnessFlags` centralises every P03–P17 switch; in Release it compiles to
+  false/nil, so a shipped build cannot disable `preventsCapture` (`--p08-allow-capture`), inject a
+  corrupt sample (`--p08-fault-after`), write raw video to disk (`P08_RECORD_DIR`, `P08_DUMP_DIR`) or
+  auto-accept a pairing (`P17_AUTO_ACCEPT_PAIRING`). Measured both ways: the Debug build launched with
+  `--p08-allow-capture --p08-listen` logs `CAPTURE_ALLOWED preventsCapture=false` and `LISTENING port=0`;
+  the Release build launched with the same arguments logs neither while still loading its P07 tab. 87
+  macOS tests pass; the Release build succeeds.
+- *Experiment separation.* `android/experiments/README.md` maps each of the nine modules to its
+  prototype and evidence document, states that none is depended on by `:app`, and records the verified
+  check (`:app:dependencies | grep experiments` prints nothing). The modules are kept: the prototype
+  documents cite their paths, so deleting one would break an evidence row.
+- *Device fixtures (owner: "I don't need debug apks on phone").* Uninstalled every
+  `com.droidbridge.experiment.*` package from both phones — S24: tone-player, bluetoothhid; OnePlus:
+  backgroundsession, clipboard, clipboardreceive, mediaprojection, bluetoothhid. Both phones now list
+  only `com.droidbridge.app`, whose pins and data were left untouched. Screen timeout restored on the
+  S24 from 1800000 ms to 60000 ms; the OnePlus was already at 15000 ms and `settings put` is refused for
+  `com.android.shell` on Android 12 (`WRITE_SETTINGS`), so it was left as found. Mac build products were
+  kept: the app is launched from DerivedData, and there are no APKs on the Mac to remove.
+
+Device state for this cleanup: both phones reached over **wireless ADB** (`adb devices` listed only
+`192.168.31.197:5555` and `192.168.31.64:5555`; no USB transport appeared, so USB debugging state could
+not be observed from the host and is recorded as unverified). No screenshots, no screen capture, no
+clipboard read/write; the uninstalls and the one settings write are the only device mutations.
+
 **2026-11-26 (media playback audio ships end to end, measured on the S24 Ultra):** The owner asked to
 ship media audio and approved `RECORD_AUDIO` in `:app` (ADR-057 supersedes ADR-018 for media audio only).
 Implemented: protocol types `AUDIO` (0x21) / `AUDIO_FORMAT` (0x22) with a Kotlin `AudioFormat` +

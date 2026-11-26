@@ -1,3 +1,17 @@
+## Pre-release cleanup — the audit trail now matches the build (2026-11-26)
+
+- **Documentation matches what ships.** The app manifest, README, architecture, requirements, permissions
+  matrix and research notes now describe the shipped playback audio instead of the pre-approval state;
+  the dated research decisions keep their original text with a superseding pointer.
+- **Release builds ignore every development switch.** `--p08-allow-capture` (which disables the
+  `preventsCapture` privacy guard), `--p08-fault-after`, `P08_RECORD_DIR`/`P08_DUMP_DIR` and
+  `P17_AUTO_ACCEPT_PAIRING` are inert outside Debug builds. Verified with the same arguments on both
+  configurations: Debug logs `CAPTURE_ALLOWED preventsCapture=false` and `LISTENING port=0`, Release logs
+  neither.
+- **Experiment apps are documented and off the phones.** `android/experiments/README.md` explains why each
+  prototype app still exists and how to rebuild it; every `com.droidbridge.experiment.*` package was
+  uninstalled from both test phones, leaving only the product app with its pairing data intact.
+
 ## Media audio ships — the phone's playback now comes out of the Mac (2026-11-26)
 
 - **Playback audio mirrors with the screen.** A "Send playback audio" switch in the Screen card (on by
