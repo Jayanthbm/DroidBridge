@@ -33,8 +33,11 @@ change to a shipped feature:
   backgroundsession, clipboard, clipboardreceive, mediaprojection, bluetoothhid. Both phones now list
   only `com.droidbridge.app`, whose pins and data were left untouched. Screen timeout restored on the
   S24 from 1800000 ms to 60000 ms; the OnePlus was already at 15000 ms and `settings put` is refused for
-  `com.android.shell` on Android 12 (`WRITE_SETTINGS`), so it was left as found. Mac build products were
-  kept: the app is launched from DerivedData, and there are no APKs on the Mac to remove.
+  `com.android.shell` on Android 12 (`WRITE_SETTINGS`), so it was left as found.
+- *Mac build products, removed on request.* The single DroidBridge DerivedData folder (430 MB: Debug and
+  Release app bundles, module cache, index) was deleted, then both configurations were rebuilt from
+  scratch and the Debug build relaunched. There were no experiment app bundles to remove — the
+  `P16BLEHID` and `P11LocalNetwork` targets exist in the project but had never been built here.
 
 Device state for this cleanup: both phones reached over **wireless ADB** (`adb devices` listed only
 `192.168.31.197:5555` and `192.168.31.64:5555`; no USB transport appeared, so USB debugging state could
