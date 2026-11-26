@@ -12,9 +12,16 @@ real cause. Decision recorded as ADR-061.
 - *Built and tested.* `./gradlew :app:assembleDebug :core:network:testDebugUnitTest
   :feature:dashboard:testDebugUnitTest` - exit 0. The gate's default is null so every existing caller and
   test keeps the unconditional-attempt behaviour.
-- *Not yet measured.* The screen-off/idle recovery row on the S24 (session idle, display off ~3 min, then
-  wake: should stay `RECONNECTING` and reconnect by itself). The change is verified by build and module
-  tests only, so ADR-061 stays "device verification pending" until that run is recorded.
+- *Device verification passed, 2026-11-26 (S24 Ultra `RZCY81TKBSV`, cable out, screen off, no touch until
+  one power press).* The gate held the budget across the long off window: `holding the retry budget` at
+  18:55:25.807 → `device usable again; retrying with the budget intact` at 19:04:22.137 (**8 m 56 s** with
+  **zero** attempts charged). It then reconnected by itself on wake — `state=CONNECTING attempt=7` at
+  19:05:03.927, `handshake complete … authenticated=true` at 19:05:04.282, `state=CONNECTED` at 19:05:04.283,
+  heartbeats `n=1/2/3` (rtt 109/68/192 ms). Attempt peaked at **7**, never the 10-attempt cap, and there was
+  **no `GAVE_UP`** — the old build would have spent all ten in ~150 s and died into a state needing a tap.
+  Mac side agrees: `verify: pin matched` → `connection ready … authenticated=true code=836 347` → `READY`
+  at 19:05:04, no code prompt, no re-pairing. Phone evidence `/tmp/v1-acceptance/run5-phone-session.log`,
+  Mac evidence `/tmp/v1-acceptance/run5-acceptance.log`. ADR-061 is now device-verified.
 
 **2026-11-26 (idle-drop investigation: the resets were the phone's screen going off):**
 

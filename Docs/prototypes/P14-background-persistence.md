@@ -285,4 +285,6 @@ Reading: this does not contradict row C, it delimits it. Screen-off survival is 
 session cannot survive the display going off on this device, and the give-up copy misattributes the cause —
 "when the Mac is back" while the Mac never left and the phone's own radio was asleep. Two follow-ups, both
 product decisions rather than measurements, were taken the same day: the retry budget is now held until the
-device can reach the network and the copy names the real cause (ADR-061, device verification pending).
+device can reach the network and the copy names the real cause (ADR-061). That fix was then measured on-device
+2026-11-26: with the cable out and the display off, the gate held the budget 8 m 56 s with zero attempts charged
+and the phone reconnected by itself on wake (attempt 7 of 10, no `GAVE_UP`, no code prompt). See ADR-061.
