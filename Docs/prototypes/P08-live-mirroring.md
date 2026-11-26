@@ -442,14 +442,26 @@ The encoder now carries `KEY_MAX_FPS_TO_ENCODER = 60` (its configured rate stays
 platform encoder accepted the key - the start line reports `cap=60` and no fallback warning - so the
 worst-case burst the receiver's 120/s budget sees is halved. Measured under the same stimulus that
 produced 79.7 fps before the cap (2026-11-26, 12:35:37-12:36:02): six shade expand/collapse cycles took
-the 5 s average to **55.9 fps** peak, the receiver accepted 2 709 frames with **no drops**, and the
+the 5 s average to **55.9 fps** peak, the receiver accepted 2 709 media frames (video and audio share that counter) with **no drops**, and the
 session never closed. If an encoder rejects the key, the codec is
 reconfigured without it once and the mirror still starts; the receiver budget remains the enforcement
 point.
 
-### Follow-up worth doing
+(The earlier draft of this note listed a sender-side cap as "follow-up worth doing" because the
+encoder's configured 30 fps is not enforced for surface input; that cap is the section above and it is
+now measured.)
 
-The encoder can emit 66–80 fps whenever the shade animates (its configured 30 fps is not enforced for
-surface input). That inflates bandwidth and is what the receiver's budget absorbs. A sender-side cap
-(`KEY_MAX_FPS_TO_ENCODER` or an explicit frame gate) is the better fix than tuning the receiver.
+### Endurance re-check with the cap and the grace window
+
+Same session, 2026-11-26 12:39:23-13:09:08 (28 min 26 s, Wi-Fi, USB disconnected): 44 936 video frames,
+~26 fps average because the launcher's wallpaper animated for most of the run (the dashboard went to the
+background mid-run and the mirror kept going, which is the P14 behaviour), `largestFrame=410323`,
+`maxSendMs=8`, `dropped=0` on the phone and `dropped=0` on the receiver, which accepted 114 036 media
+frames. The notification shade was toggled every third minute (nine cycles) and the session never
+closed, so the drop policy and the 60 fps cap hold under a sustained animated load, not only a burst.
+
+The in-app stop was re-checked on the same build: tap -> `state=stopped: user stop`, `sent
+mirror_stop:121929:user stop`, `teardown complete reason=user stop`; the Mac logged `MIRROR_STOP
+reason=user stop`, the notification and the foreground service disappeared, and the TLS session stayed
+up (the next heartbeat went through).
 

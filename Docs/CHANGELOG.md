@@ -18,7 +18,7 @@
   notification gone, no encoder activity.
 - **Frames delivered to the encoder are capped at 60 fps** (`KEY_MAX_FPS_TO_ENCODER`; the nominal rate
   stays 30). A shade animation on the 120 Hz panel was doubling the rate; with the cap, six shade
-  toggles peaked at 55.9 fps (previously 79.7) and the receiver took 2 709 frames with zero drops. An
+  toggles peaked at 55.9 fps (previously 79.7) and the receiver took 2 709 media frames with zero drops. An
   encoder that rejects the cap still starts without it.
 - **Known and unmeasured:** the notification's own `Stop` action still has no measured row (the shade
   cannot be inspected with `uiautomator` while it is open, and screen capture is prohibited), and the

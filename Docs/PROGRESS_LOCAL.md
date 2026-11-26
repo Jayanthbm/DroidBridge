@@ -87,8 +87,12 @@ and the dry runs, not an acceptance sweep.
 - *Sender-side frame cap added.* `KEY_MAX_FPS_TO_ENCODER = 60` on the encoder (nominal rate stays 30).
   The S24's platform encoder accepted it (`P08Encoder: started 590x1280@30 cap=60
   name=c2.qti.avc.encoder`); six shade toggles then peaked at **55.9 fps** for a 5 s window (the same
-  stimulus previously reached 79.7), the receiver accepted 2 709 frames with **dropped=0** and the
+  stimulus previously reached 79.7), the receiver accepted 2 709 media frames (video + audio) with **dropped=0** and the
   session stayed up. An encoder that rejects the key is reconfigured without it and still starts.
+- *Endurance re-check (28 min 26 s).* 44 936 video frames, ~26 fps average (the launcher wallpaper animated
+  for most of it), `maxSendMs=8`, zero drops on both sides, nine shade toggles, session never closed.
+  In-app stop re-checked on the same build: `stopped: user stop` -> `mirror_stop` -> `teardown complete
+  reason=user stop`, Mac logged `MIRROR_STOP`, notification and service gone, TLS session stayed up.
 - *Staging note (cost about 25 minutes).* The Android 17 system picker
   (`com.google.android.connectivity.resources`) can sit frozen: the "Choose a device to connect" dialog
   appears, taps on the Mac row dismiss it, and nothing happens - no `P03Discovery: picker discovery
