@@ -7,6 +7,11 @@ are met.
 
 **Last updated:** 2026-11-26
 
+**2026-11-26 PoC snapshot (housekeeping):** the PoC state is preserved as branch `experiments/pocs` and
+annotated tag `poc-final`, so the experiment apps and their evidence can leave `development` later without
+losing the proof-of-concept code. Open defects at the snapshot are listed in the P08 doc (notification
+`Stop` widget unmeasured; the phone keeps encoding after a receiver close; sender fps cap still to do).
+
 **2026-11-26 (S1 staging session: A/V offset baseline measured, P10 product-path re-check, P08 stop row retried):**
 The owner asked for an unattended run of the staging-session work (S1) with ADB available, starting
 while they sleep; no owner input was requested or needed. This entry records the first A/V measurement
