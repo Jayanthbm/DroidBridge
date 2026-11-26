@@ -440,7 +440,10 @@ encoder log lines. The 15 s window is deliberate: a reconnect inside it still re
 
 The encoder now carries `KEY_MAX_FPS_TO_ENCODER = 60` (its configured rate stays 30). On the S24 the
 platform encoder accepted the key - the start line reports `cap=60` and no fallback warning - so the
-worst-case burst the receiver's 120/s budget sees is halved. If an encoder rejects the key, the codec is
+worst-case burst the receiver's 120/s budget sees is halved. Measured under the same stimulus that
+produced 79.7 fps before the cap (2026-11-26, 12:35:37-12:36:02): six shade expand/collapse cycles took
+the 5 s average to **55.9 fps** peak, the receiver accepted 2 709 frames with **no drops**, and the
+session never closed. If an encoder rejects the key, the codec is
 reconfigured without it once and the mirror still starts; the receiver budget remains the enforcement
 point.
 
