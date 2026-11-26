@@ -101,7 +101,8 @@ struct LiveMirrorView: View {
     }
 }
 
-private struct LiveVideoLayerView: NSViewRepresentable {
+/// Hosts the receiver's display layer. Shared by the prototype tab and the product viewer window.
+struct LiveVideoLayerView: NSViewRepresentable {
     let layer: AVSampleBufferDisplayLayer
 
     func makeNSView(context: Context) -> LiveVideoContainerView {
@@ -113,7 +114,7 @@ private struct LiveVideoLayerView: NSViewRepresentable {
     }
 }
 
-private final class LiveVideoContainerView: NSView {
+final class LiveVideoContainerView: NSView {
     var videoLayer: AVSampleBufferDisplayLayer {
         didSet {
             oldValue.removeFromSuperlayer()

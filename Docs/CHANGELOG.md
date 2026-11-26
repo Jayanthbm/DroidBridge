@@ -1,3 +1,27 @@
+## The app opens as a real two-window shell (2026-11-26)
+
+- **The main window is a sidebar app, not a tab strip.** `Overview`, `Clipboard`, `Screen`, `Audio`,
+  `Settings` and `Diagnostics` in a `NavigationSplitView`; the device card at the top of the sidebar
+  carries the status dot and one line of state, and `Overview` shows the two primary actions plus a
+  status list. Everything live-measured in the same session: the overview read
+  `Sharing - 590x1280 - 35 fps`, `Clipboard: phone accepted the offer`, `Audio: playing`,
+  `Pairing: stored, silent reconnects` while the phone was sharing (screenshot:
+  `Docs/design/shell-main-live.png`).
+- **The viewer is its own window.** `Open viewer` (overview and the menu bar) or `--open-viewer` opens a
+  380x780 black window that renders the live H.264 stream with a HUD that fades in on mouse movement:
+  status dot, `590x1280 - 5 fps`, a full-screen glyph and a stop glyph
+  (screenshot: `Docs/design/shell-viewer-live.png`, captured with `--p08-allow-capture` because the
+  video layer refuses screen capture by default).
+- **A menu-bar extra** shows the phone glyph while idle and a radiating phone while sharing, with a
+  popover that opens the viewer and mirrors the clipboard line.
+- **Only one SwiftUI window scene survives.** Two window scenes made the system launch the viewer scene
+  alone: `MainWindowView` was never constructed, the bootstrap never ran, no listener started and the
+  phone could not find the Mac. The viewer is now an AppKit `NSWindow` hosted by `ViewerWindow`
+  (ADR-059), and the main window opens on every launch.
+- **Known and unmeasured:** launch is still window-first (menu-bar-only launch needs an app-level
+  bootstrap), the viewer does not capture input yet (click-to-control is P17 work), and the viewer's stop
+  glyph closes the session locally because the Mac still has no `mirror.stop` sender.
+
 ## The stop control works, and an open notification shade no longer drops the mirror (2026-11-26)
 
 - **`Stop sharing` is enabled during a share again.** The dashboard decided whether it was capturing by

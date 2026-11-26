@@ -1,9 +1,13 @@
 # UI design direction
 
-Status: **proposal for discussion**, written 2026-11-27 while the owner slept; nothing in this document is
-implemented, and no layout below should be treated as approved. The goal is to make the first design
-conversation concrete instead of starting from a blank page. Sketches: `Docs/design/mock-windows.html`
-(open in a browser; it needs no network).
+Status: **approved by the owner on 2026-11-26 and implemented the same night** as a first shell (not a
+design-polished one). The decisions: launch opens the main window for v1 (menu-bar-only is deferred); the
+main window and the viewer are two equal citizens with no hero tab; the clipboard lives in the menu-bar
+popover *and* in the main window; the HUD stays minimal (dot + `WxH · fps`, counters move to Diagnostics);
+the viewer captures input only when focused, by click-to-control (not implemented yet). Live evidence:
+`Docs/design/shell-main-live.png` and `Docs/design/shell-viewer-live.png`. Sketches:
+`Docs/design/mock-windows.html` (open in a browser; it needs no network). Sections 7 and 8 are kept as
+written, with the answers marked; anything still open is listed there.
 
 ## 1. Where the UI is today
 
@@ -99,15 +103,18 @@ keeps `Stop`.
 
 ## 7. Open questions for the owner
 
-1. **Which window opens on launch** - the main window, or nothing but the menu-bar extra?
-2. **Centre of gravity** - is the phone screen the app's centrepiece (viewer-first), or is the device
-   dashboard?
-3. **Technical counters** - in a HUD over the video, in a diagnostics pane, or both?
-4. **Brand** - name, icon and accent colour now, or ship the system look and brand later?
-5. **Clipboard placement** - a pane in the main window, or a popover from the menu bar (it is used in
-   seconds, from wherever the user is)?
-6. **Phone navigation** - keep the single page, or move to three bottom tabs (Connection, Screen,
-   Clipboard)?
+1. **Which window opens on launch** - **answered:** the main window, for v1. Menu-bar-only launch is a
+   later change and needs an app-level bootstrap (the listener must start without a window).
+2. **Centre of gravity** - **answered:** neither; the main window and the viewer are equal citizens, and
+   there is no hero tab. The viewer is opened from the overview, the screen pane and the menu bar.
+3. **Technical counters** - **answered:** a minimal HUD over the video (dot + `WxH · fps`); every counter
+   lives in Diagnostics.
+4. **Brand** - **still open.** The shell ships the system look (system font, accent, no icon work).
+5. **Clipboard placement** - **answered:** both. The menu-bar popover carries the clipboard line and the
+   send action; the main window has the full `Clipboard` pane.
+6. **Phone navigation** - **still open.** The Android app keeps its single scrolling page for now; the
+   connect flow is the first thing to fix there (the picker grant is not the session - the user still has
+   to press `Connect` in the app's `Nearby` card, and nothing prompts them to).
 
 Answers to 1, 2 and 5 decide most of the layout work; 3 and 4 are cosmetic and can wait.
 
@@ -115,10 +122,11 @@ Answers to 1, 2 and 5 decide most of the layout work; 3 and 4 are cosmetic and c
 
 Small and mechanical, because the features already exist as separate views:
 
-- macOS: replace the `TabView` with two scenes - a `NavigationSplitView` main window and a viewer
-  `WindowGroup(id: "viewer")`; move `DashboardView`, `PasteboardView`, `LiveMirrorView` into detail
-  panes, and `AdvertisementView` / `VideoView` / `HIDRemoteView` behind the Diagnostics item. No
-  protocol or transport change.
+- macOS: **done.** The `TabView` is a `NavigationSplitView` main window; `DashboardView`,
+  `PasteboardView` and `LiveMirrorView` are detail panes, and `AdvertisementView` /`VideoView` /
+  `HIDRemoteView` sit behind the Diagnostics item. The viewer is **not** a second window scene - that
+  made macOS launch the viewer alone and skip the main window - it is an AppKit `NSWindow` hosted by
+  `ViewerWindow` (ADR-059). No protocol or transport change.
 - Android: reorder the three cards and promote `Share this screen` to a filled button. No protocol
   change.
 

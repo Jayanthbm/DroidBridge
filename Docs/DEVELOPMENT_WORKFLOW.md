@@ -34,8 +34,8 @@ The local agent owns:
 
 Every relevant device test report records device/build, USB connected, USB debugging enabled and wireless debugging enabled. Final acceptance must work with USB disconnected and both debugging modes disabled.
 
-**macOS Keychain re-authorization after every ad-hoc rebuild (ADR-056).** Debug builds are ad-hoc
-signed, so each rebuild is a new binary to the Keychain and macOS asks for the login-keychain password
+**macOS Keychain re-authorization after every ad-hoc rebuild (ADR-056).** Xcode's Debug build is
+ad-hoc signed unless step 3 below re-signs it, and each such rebuild is a new binary to the Keychain and macOS asks for the login-keychain password
 before it may read `com.droidbridge.p08.peer-pins`, export the identity key, or sign with it. The
 prompts appear on first launch after a build (and again during the first handshake). Click **Always
 Allow** and enter the password once per rebuild; **Deny** leaves the app unable to read pins or sign,
@@ -44,6 +44,33 @@ that password — a rebuilt app therefore needs one human interaction before it 
 device verification of any change to the pin or identity code must be scheduled with the owner present
 until Phase 9's Developer ID signing (or the data protection keychain migration in ADR-056) removes the
 prompt.
+
+**macOS build, sign and launch (as measured on 2026-11-26).** A rebuild needs four steps, in this order:
+
+1. `cd macos && xcodegen generate` whenever a Swift file was added or removed. Without it the new type is
+   not in the project and the build fails with `cannot find type 'X' in scope`.
+2. `xcodebuild -project DroidBridge.xcodeproj -scheme DroidBridge -configuration Debug -derivedDataPath build build`.
+   Build into `macos/build`: the firewall has an "Allow incoming connections" entry for that path, so the
+   phone can reach the listener port. A build in a new directory is blocked until someone answers the
+   prompt, which an unattended run cannot do.
+3. Re-sign with the Apple Development identity, because Xcode's ad-hoc signature breaks the Keychain ACLs
+   that guard the identity key and the stored pins: `codesign --force --deep --sign "Apple Development:
+   jayanthbharadwajm@gmail.com (25D4Z5M9X5)" --entitlements App/DroidBridge.entitlements
+   build/Build/Products/Debug/DroidBridge.app`. With this signature the first handshake after a rebuild
+   read the pins and signed without a password prompt (measured 2026-11-26, three rebuilds). Without it,
+   expect the ADR-056 prompt.
+4. Launch by **absolute path** (`open -a relative/path` fails with "Unable to find application named"):
+   `open -a "$PWD/macos/build/Build/Products/Debug/DroidBridge.app" --stdout /tmp/out.log --stderr
+   /tmp/err.log --args --p08-listen`. Harness `emit` lines go to the **stderr** file, and the first one
+   is `EVENT listening on port NNNNN`. Arguments that are test affordances are compiled out of Release.
+
+**Inspecting the app's windows without Accessibility permission.** System Events reports no windows for
+this app. Use `CGWindowListCopyWindowInfo` (a small Swift tool: window id, name, bounds, on-screen flag)
+and `screencapture -x -o -l<windowID> <file>.png` to capture one window. Two further details cost time
+tonight: a window hosting the video layer is **black in screenshots** unless the run passes
+`--p08-allow-capture` (`preventsCapture` is on by default, ADR-044's P10 affordance), and SwiftUI's
+`onContinuousHover` (the viewer HUD) needs real mouse-move events - `CGWarpMouseCursorPosition` alone
+does not show it; post `.mouseMoved` `CGEvent`s.
 
 ## 3. Sequential handoff protocol
 1. Before starting, inspect status/branch/latest commit and sync `development`.

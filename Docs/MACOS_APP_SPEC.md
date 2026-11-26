@@ -9,7 +9,29 @@
 - Native menu-bar presence and a normal main window.
 - No cloud account or relay.
 
-## 2. Features
+## 2. Window structure (implemented 2026-11-26)
+
+- **One SwiftUI window scene** (`WindowGroup("DroidBridge", id: "main")`) plus a `MenuBarExtra`
+  (`.menuBarExtraStyle(.window)`). A second window scene makes the system launch that scene alone and
+  skip the main window, the bootstrap and the listener - see ADR-059.
+- **Main window** (820x580 default): `NavigationSplitView` with a 220 pt sidebar - device card (name,
+  platform, status dot, one line of state, the pairing code when it is showing), then `Overview`,
+  `Clipboard`, `Screen`, `Audio`, `Settings`, `Diagnostics` - and a detail pane per item. `Overview`
+  carries the two primary actions (`Send clipboard now`, `Share this screen`) and a status list
+  (clipboard, screen with size and fps, audio, pairing).
+- **Viewer window** (`ViewerWindow`, AppKit-hosted, 380x780, 260x420 minimum): the live frame aspect-fit
+  on black, hidden title bar, a HUD that fades in on hover (status dot, `WxH - fps`, full-screen glyph,
+  stop glyph), reused rather than recreated, `isReleasedWhenClosed = false`. No SwiftUI scene lifecycle,
+  so no state restoration and no `openWindow(id:)`.
+- **Menu-bar extra**: `iphone.gen3` when idle, `iphone.gen3.radiowaves.left.and.right` while sharing; its
+  popover opens the viewer and mirrors the clipboard line.
+- Not yet: menu-bar-only launch (needs an app-level bootstrap that starts the listener with no window),
+  click-to-control input in the viewer (P17), and a Mac-initiated `mirror.stop` (the viewer's stop glyph
+  currently closes the session locally).
+- The device card says "Android device" because no device-info message exists on the wire; the phone's
+  name, model and OS version need a protocol message before the card can show them.
+
+## 3. Features
 
 - Dashboard with paired Android device.
 - Local network discovery and pairing.
@@ -19,7 +41,7 @@
 - Settings for auto-sync, exclusions, quality and optional Bluetooth experiments.
 - Diagnostics with redacted logs.
 
-## 3. Clipboard
+## 4. Clipboard
 
 - Use `NSPasteboard.general`.
 - Observe `changeCount` with a modest polling interval; do not busy-loop.
@@ -30,7 +52,7 @@
 - Never log clipboard content.
 - Provide pause and manual send.
 
-## 4. Networking
+## 5. Networking
 
 - Use Network.framework (`NWBrowser`, `NWListener`, `NWConnection`).
 - **The Mac is the advertiser and listener** (`NWListener` + Bonjour); the Android app discovers it through the system NSD picker and dials out (ADR-010).
@@ -43,7 +65,7 @@
 - Handle local network permission denied/revoked.
 - Bind only to the intended interfaces where possible; avoid exposing an unauthenticated server on all networks.
 
-## 5. Mirroring
+## 6. Mirroring
 
 - Receive the Android video stream.
 - Decode and display with `AVSampleBufferDisplayLayer` (ADR-028) — it decodes compressed H.264 itself, so no `VTDecompressionSession` and no pixel handling are needed for view-only mirroring.
@@ -60,13 +82,13 @@
 - Display a persistent session indicator.
 - Do not save screenshots or recordings by default.
 
-## 6. Remote input
+## 7. Remote input
 
 - Mouse/keyboard capture in the Mac viewer is straightforward on the Mac side, but delivering events to Android is a separate feasibility issue.
 - Do not label a cursor click as successful unless Android confirms the corresponding input mechanism is active.
 - Keep Bluetooth HID and other input adapters isolated and experimental.
 
-## 7. macOS permissions
+## 8. macOS permissions
 
 - Local Network privacy prompt via Info.plist.
 - No Screen Recording permission is needed merely to view Android's stream. Only request macOS Screen Recording if a separately approved Mac screen-capture feature is introduced.
@@ -75,7 +97,7 @@
 - Use Keychain for device credentials (see §8).
 - The Local Network prompt is triggered by **advertising** (Bonjour), not by accepting the Android connection: TN3179 exempts listening/accepting inbound TCP but requires access for every Bonjour operation. Re-check the privilege before re-advertising instead of assuming it still holds.
 
-## 8. Distribution and sandbox
+## 9. Distribution and sandbox
 
 - **App Sandbox on from the first build**, with `com.apple.security.app-sandbox`, `com.apple.security.network.client`, `com.apple.security.network.server` (ADR-026) and, from Phase 5, `com.apple.security.device.bluetooth` (ADR-050). Both network entitlements are needed: the server one for accepting the Android TCP connection, the client one because Bonjour advertising is UDP and the client entitlement gates sending. The Bluetooth key gates the Classic HIDP device role (publishing the HID SDP record and opening outbound L2CAP to the phone), measured working under the sandbox on 2026-11-24.
 - Do not add `com.apple.security.cs.*` hardened-runtime exceptions. Nothing in the app needs JIT, unsigned libraries or disabled library validation, and each exception weakens a protection.

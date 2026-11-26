@@ -100,6 +100,11 @@ public final class LiveMirrorReceiver: ObservableObject {
     private var totalFramesDropped = 0
     private var lastPublishedFrameCount = 0
     @Published public private(set) var formatChanges: Int = 0
+    /// Current stream size, for the viewer's HUD. Nil until the phone announces a format.
+    @Published public private(set) var streamSize: CGSize?
+    /// Frames per second over the last publish window (the counters publish every 30 frames).
+    /// Derived, not transmitted: the phone's own fps counter is in its log, not on the wire.
+    @Published public private(set) var measuredFPS: Double = 0
     /// Phase 3 clipboard: shares this session, its own rules live in ClipboardBridgeMac.
     public let clipboard = ClipboardBridgeMac()
 
@@ -329,6 +334,7 @@ public final class LiveMirrorReceiver: ObservableObject {
                     nalLengthSize: fmt.nalLengthSize
                 )
                 formatChanges += 1
+                streamSize = CGSize(width: Int(fmt.width), height: Int(fmt.height))
                 recordParameterSets(sps: [UInt8](fmt.sps), pps: [UInt8](fmt.pps))
                 Self.recordNALLengthSize = Int(fmt.nalLengthSize)
                 renderer.flush()
@@ -821,9 +827,17 @@ public final class LiveMirrorReceiver: ObservableObject {
         layer.controlTimebase = tb
     }
 
+    private var lastPublishAt: Date?
+
     private func publishFrameCounters(force: Bool = false) {
         let receivedDelta = totalFramesReceived - lastPublishedFrameCount
         guard force || receivedDelta >= 30 else { return }
+        let now = Date()
+        if let last = lastPublishAt {
+            let elapsed = now.timeIntervalSince(last)
+            if elapsed > 0.2 { measuredFPS = Double(receivedDelta) / elapsed }
+        }
+        lastPublishAt = now
         framesReceived = totalFramesReceived
         framesEnqueued = totalFramesEnqueued
         framesDropped = totalFramesDropped

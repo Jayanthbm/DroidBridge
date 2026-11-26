@@ -177,5 +177,6 @@ list on the HID Keyboard tab (same lines as the log).
   the Mac's Bluetooth (ADR-052).
 - `0xE00002D6` — I/O timeout: either the phone's HID host holds a half-open session (same recovery)
   or the connection attempt dialled the wrong peer — check `opening ACL to <address>` first.
+- The system picker grant is not a connection (2026-11-26): after choosing the Mac the app resolves the service and the permission is granted, but the session only starts when the user presses `Connect` in the dashboard's `Nearby` card; the flow gives no prompt for that second step (see ANDROID_APP_SPEC section 3).
 - `one session per listener in this process` — a second simultaneous connection arrived; supersede
   (ADR-049) handles the same-pin case, a different pin is refused.

@@ -12,6 +12,39 @@ annotated tag `poc-final`, so the experiment apps and their evidence can leave `
 losing the proof-of-concept code. Open defects at the snapshot are listed in the P08 doc (notification
 `Stop` widget unmeasured; the phone keeps encoding after a receiver close; sender fps cap still to do).
 
+**2026-11-26 (two-window shell, live-validated; not an acceptance run):**
+The owner approved three directions and asked to start with the design direction, then slept; this entry
+is the shell implementation those approvals unblocked. USB disconnected; wireless debugging **on**
+(`adb -s 192.168.31.197:5555`, S24 Ultra on Android 17); the OnePlus fallback was not used. ADB acted for
+the operator at the owner's instruction: it opened the app, woke the phone, dismissed the keyguard,
+collapsed the shade, scrolled, tapped `Share this screen`, selected **Share entire screen** in the
+system consent spinner (the dialog defaults to *Share one app*, which opens the app selector instead) and
+confirmed `Share screen`; it also stopped the share with `Stop sharing`. It set
+`screen_off_timeout` to 1800000 for the session and restored it to 30000 afterwards. No ADB input
+reached any control being measured. The 13:53 session was a shell check, not a P08 acceptance run.
+
+- *Main window.* `NavigationSplitView` with a device card, `Overview`, `Clipboard`, `Screen`, `Audio`,
+  `Settings`, `Diagnostics`. Live during a real session: `Sharing - 590x1280 - 35 fps`,
+  `Clipboard: phone accepted the offer`, `Audio: playing`, `Pairing: stored, silent reconnects`
+  (`Docs/design/shell-main-live.png`).
+- *Viewer window.* AppKit-hosted (`ViewerWindow`), 380x780, renders the live stream; HUD measured over the
+  live picture (`590x1280 - 5 fps` while the phone was static, `Docs/design/shell-viewer-live.png`).
+  The first captures were black only because the video layer refuses screen capture; `--p08-allow-capture`
+  is the documented evidence flag (P10), not a defect.
+- *Launch defect found and fixed.* Two SwiftUI window scenes made the system launch the viewer scene
+  alone: `MainWindowView` was never constructed, `AppBoot` never ran, no `EVENT listening` line, no
+  session. `.defaultLaunchBehavior`, `.restorationBehavior`, a `Window` scene and scene reordering all
+  failed; one scene with the viewer hosted in AppKit works. Recorded as ADR-059.
+- *Session evidence for the shell check.* `READY peer-pin=73e96f52… authenticated=true code=051 647`
+  -> phone `state=CONNECTED` -> `mirroring started content=1080x2340` ->
+  `mirror.format 590x1280` -> `MIRROR state=mirroring … frames=445 fps=5.2 dropped=1` ->
+  `MIRROR state=stopped: user stop` + `MIRROR_STOP reason=user stop audioFrames=3680`; reconnects after a
+  Mac relaunch were silent (stored pin) with no user confirmation.
+- *Not verified / deferred:* menu-bar-only launch, the menu-bar popover as a screenshot, click-to-control
+  in the viewer (P17), Mac-initiated `mirror.stop`, and any visual polish against a real design review.
+  Rebuilds need the explicit `codesign` step and the app must be launched from `macos/build` for the
+  firewall allowance (now written into `Docs/DEVELOPMENT_WORKFLOW.md`).
+
 **2026-11-26 (S1 staging session: A/V offset baseline measured, P10 product-path re-check, P08 stop row retried):**
 The owner asked for an unattended run of the staging-session work (S1) with ADB available, starting
 while they sleep; no owner input was requested or needed. This entry records the first A/V measurement

@@ -32,6 +32,15 @@
 6. Settings: Bluetooth optional toggle, clipboard policy, trusted devices, clear pairing, privacy.
 7. Diagnostics: redacted logs and export without clipboard/screen payloads.
 
+**The connect flow has two steps, and the second one is invisible (measured 2026-11-26).** `Find the Mac`
+opens the Android system picker ("Choose a device to connect"), and choosing the Mac row resolves the
+service and grants the local-network discovery permission, but it does **not** connect: the dashboard's
+`Nearby` card then shows the Mac and the user still has to scroll down and press its `Connect` button
+before the session starts (`state=CONNECTED`). A first-time user sees "nothing happened" and stops after
+the picker. The fix is a product change, not a permission one: after a picker grant the dashboard should
+either auto-connect to the resolved peer or surface the `Nearby` card (with the code prompt) at the top of
+the page. Until then, the picker's result is not a connection.
+
 ## 4. Clipboard behaviour
 
 - Foreground/manual send is the initial guaranteed workflow.
