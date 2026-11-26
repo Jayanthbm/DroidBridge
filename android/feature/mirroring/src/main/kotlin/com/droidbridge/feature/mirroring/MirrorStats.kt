@@ -43,6 +43,18 @@ class MirrorStats {
     val reEncodes = AtomicInteger(0)
     val lastResize = AtomicReference("none")
 
+    /**
+     * Audio, mirrored from [AudioCapture] once a second.
+     *
+     * `audioFrames == 0` means no audio is flowing. `audioRms` is the measured amplitude of the
+     * captured PCM, which is the only thing that separates "the phone is playing something" from
+     * "the platform is handing us silence" (ADR-045 §4).
+     */
+    val audioFrames = AtomicLong(0)
+    val audioBytes = AtomicLong(0)
+    val audioState = AtomicReference("off")
+    val audioRms = AtomicLong(0)
+
     /** Wall-clock duration of the session so far. */
     val startedAtMs = AtomicLong(0)
     val lastStopReason = AtomicReference("none")
@@ -59,6 +71,10 @@ class MirrorStats {
         maxSendMs.set(0)
         reEncodes.set(0)
         lastResize.set("none")
+        audioFrames.set(0)
+        audioBytes.set(0)
+        audioState.set("off")
+        audioRms.set(0)
         startedAtMs.set(android.os.SystemClock.elapsedRealtime())
         lastStopReason.set("active")
     }
@@ -84,6 +100,8 @@ class MirrorStats {
                 "formats=${formatMessages.get()} keyframeRequests=${keyframeRequests.get()} " +
                 "reEncodes=${reEncodes.get()} lastResize=${lastResize.get()} " +
                 "largestFrame=${largestFrameBytes.get()} maxSendMs=${maxSendMs.get()} " +
+                "audioState=${audioState.get()} audioFrames=${audioFrames.get()} " +
+                "audioBytes=${audioBytes.get()} audioRms=${audioRms.get()} " +
                 "durationMs=$duration stopReason=${lastStopReason.get()}"
             ).format(fps, kbps)
     }

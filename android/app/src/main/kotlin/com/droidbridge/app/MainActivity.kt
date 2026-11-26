@@ -94,7 +94,12 @@ class MainActivity : ComponentActivity() {
         projectionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data
             if (result.resultCode == android.app.Activity.RESULT_OK && data != null) {
-                MirroringService.start(this, result.resultCode, data)
+                MirroringService.start(
+                    this,
+                    result.resultCode,
+                    data,
+                    withAudio = audioEnabledState.value,
+                )
             }
         }
 
@@ -107,7 +112,9 @@ class MainActivity : ComponentActivity() {
             // Mirroring counters are atomics in the feature; this recomposes them once a second while
             // capture runs, which is cheaper than exposing four flows for a debug line.
             val mirroringRevision by mirroringTick.collectAsState()
-            val mirroringState = remember(mirroringRevision, state.phase) {
+            // The audio switch is a composition-level state, so it must be a remember key: read
+            // inside the block it would only be sampled once and the switch would look stuck.
+            val mirroringState = remember(mirroringRevision, state.phase, audioEnabledState.value) {
                 val stats = MirroringService.stats
                 MirroringUiState(
                     state = stats.state.get(),
@@ -117,6 +124,10 @@ class MainActivity : ComponentActivity() {
                     keyframeRequests = stats.keyframeRequests.get(),
                     maxSendMs = stats.maxSendMs.get(),
                     connected = state.phase == com.droidbridge.core.pairing.Pairing.Phase.CONNECTED,
+                    audioEnabled = audioEnabledState.value,
+                    audioState = stats.audioState.get(),
+                    audioFrames = stats.audioFrames.get(),
+                    audioRms = stats.audioRms.get(),
                 )
             }
             val clipboardState = remember(clipboardRevision, state.phase) {
@@ -175,6 +186,7 @@ class MainActivity : ComponentActivity() {
                     MirroringService.stop(this)
                     clipboardTick.value += 1
                 },
+                onAudioEnabledChange = { audioEnabledState.value = it },
             )
         }
     }
@@ -201,12 +213,40 @@ class MainActivity : ComponentActivity() {
         // and the capture consent is the one that must never be lost.
         if (pendingMirroringRequest) {
             pendingMirroringRequest = false
-            launchProjectionConsent()
+            continueMirroringRequest()
+        }
+    }
+
+    /**
+     * Microphone consent for playback capture, asked once per share and never at launch.
+     *
+     * A denial is not an error state: the switch turns itself off and the share continues with the
+     * screen only, because a user who said no to audio still asked for a mirror.
+     */
+    private val audioPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        android.util.Log.i("P03Shell", "RECORD_AUDIO granted=$granted")
+        if (!granted) audioEnabledState.value = false
+        if (pendingRecordAudioRequest) {
+            pendingRecordAudioRequest = false
+            continueMirroringRequest()
         }
     }
 
     /** Set while a capture consent is waiting behind the notification prompt. */
     private var pendingMirroringRequest = false
+
+    /**
+     * The user's audio choice, read when the share starts.
+     *
+     * It lives on the activity rather than in the composition because the consent result arrives
+     * outside recomposition; the switch writes to it, and the service call reads it.
+     */
+    private val audioEnabledState = androidx.compose.runtime.mutableStateOf(true)
+
+    /** Set while a capture consent is waiting behind the microphone prompt. */
+    private var pendingRecordAudioRequest = false
 
     private fun describeDevice(): String {
         val info = BuildInfo.describe()
@@ -225,13 +265,34 @@ class MainActivity : ComponentActivity() {
      */
     @android.annotation.SuppressLint("InlinedApi")
     private fun requestMirroring() {
+        continueMirroringRequest()
+    }
+
+    /**
+     * The permission chain, resumed by each launcher's callback.
+     *
+     * Sequential rather than concurrent: two system dialogs launched in one frame make Android drop
+     * one of them, and the capture consent is the one that must never be lost. The order is
+     * notifications (affordance only), microphone (audio track only), then capture consent.
+     */
+    @android.annotation.SuppressLint("InlinedApi")
+    private fun continueMirroringRequest() {
         if (needsNotificationPermission()) {
             pendingMirroringRequest = true
             notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             return
         }
+        if (audioEnabledState.value && needsRecordAudioPermission()) {
+            pendingRecordAudioRequest = true
+            audioPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+            return
+        }
         launchProjectionConsent()
     }
+
+    private fun needsRecordAudioPermission(): Boolean =
+        checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
 
     /**
      * Asked exactly when capture is about to start, never at launch.

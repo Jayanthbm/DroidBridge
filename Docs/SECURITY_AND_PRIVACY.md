@@ -60,6 +60,19 @@ Defaults:
 - Do not save/record frames by default.
 - No hidden background capture.
 
+### 5A. Audio privacy (ADR-057)
+
+- Playback audio is captured only through `AudioPlaybackCaptureConfiguration` bound to the same
+  MediaProjection consent, and only for `USAGE_MEDIA`, `USAGE_GAME` and `USAGE_UNKNOWN`. Calls, voice
+  communication, notifications and alarms are outside the usage set and cannot appear in the stream.
+- The microphone is never recorded: no `AudioRecord` source is used, only playback capture.
+- Audio is transient: it is decoded on the paired Mac and played; it is never written to disk, never
+  logged as samples, never sent to a server and never retained after the session. Diagnostics log
+  amplitude and frame counts only.
+- The switch defaults on but is visible before the share starts; turning it off means no
+  `RECORD_AUDIO` request and no capture. A denial is honoured for the run.
+- The Mac never requests a microphone TCC grant, because it only plays decoded samples.
+
 ## 6. Banking and DRM
 
 The app must not:
@@ -105,6 +118,7 @@ Forbidden:
 ## 9. User controls
 
 - Pause clipboard sync.
+- Turn playback audio off before sharing, or mute it on the Mac.
 - Stop screen sharing.
 - Disconnect.
 - Forget paired device.

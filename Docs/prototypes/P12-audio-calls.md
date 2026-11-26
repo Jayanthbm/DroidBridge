@@ -105,8 +105,9 @@ reproduced to one decimal in every allowed row. Playback capture is not a lossy 
 - **Media audio: GO, conditional.** Public APIs only, `RECORD_AUDIO` + MediaProjection consent, no
   root, no Accessibility, no hidden API. Conditional on the product treating silence as a first-class
   state (rows 5–8 are normal, not errors) and on `RECORD_AUDIO` being an approved, contextual,
-  user-visible permission. It is **not** in the MVP; it stays an experiment until the product decides
-  to ship an audio track.
+  user-visible permission. **Shipped on 2026-11-26** in `:app` after the owner approved media audio and
+  the permission (ADR-057); the shipping path re-measured the same numbers (phone `rms=5791.3`, Mac
+  `AUDIO rms=5781`, silence at `rms=0` while frames advanced).
 - **Call audio: NO-GO, closed.** Measured, plus `R-15`. No further test can reopen it: the exclusion
   is in the platform's capture policy, not in an app's choice.
 - **Call notifications/control: deferred to P2.** `READ_PHONE_STATE` and notification-listener access
@@ -115,9 +116,10 @@ reproduced to one decimal in every allowed row. Playback capture is not a lossy 
 
 ## Permissions and isolation
 
-`RECORD_AUDIO` was approved by the owner on 2026-11-22 for this experiment only. It appears in the
-manifest of `:experiments:audio-capture` and in no other module; `:app`'s manifest is unchanged and
-`Docs/PERMISSIONS_MATRIX.md` records the scope. The tone player requests **no permission at all** —
+`RECORD_AUDIO` was approved by the owner on 2026-11-22 for this experiment, and on 2026-11-26 for the
+shipping app (ADR-057), so it now appears in `:app`'s manifest as well as this experiment's. The usage
+set remains USAGE_MEDIA / USAGE_GAME / USAGE_UNKNOWN only, and `Docs/PERMISSIONS_MATRIX.md` records the
+scope. The tone player requests **no permission at all** —
 no microphone, no network, no storage — so a P12 measurement can attribute everything it observes to
 the capture side.
 

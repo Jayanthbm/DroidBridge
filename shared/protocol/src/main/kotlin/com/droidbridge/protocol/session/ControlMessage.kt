@@ -70,6 +70,16 @@ object ControlMessage {
         /** One access unit. Payload: `[8-byte big-endian ptsUs][AVCC access unit]`. */
         VIDEO(0x20),
 
+        /** One AAC-LC access unit. Payload: `[8-byte big-endian ptsUs][AAC payload]`. */
+        AUDIO(0x21),
+
+        /**
+         * The audio stream's configuration: sample rate, channels, bitrate, AudioSpecificConfig.
+         * Payload: `AudioFormat` JSON. Sent before the first AUDIO frame, and again after a
+         * reconnect or an encoder restart, for the same reason `MIRROR_FORMAT` is.
+         */
+        AUDIO_FORMAT(0x22),
+
         /**
          * Clipboard (Phase 3, NETWORK_PROTOCOL §6).
          *
@@ -101,7 +111,7 @@ object ControlMessage {
         ;
 
         /** True for media, which is paced and limited separately from control traffic. */
-        val isMedia: Boolean get() = this == VIDEO
+        val isMedia: Boolean get() = this == VIDEO || this == AUDIO
 
         companion object {
             fun fromCode(code: Int): Type =

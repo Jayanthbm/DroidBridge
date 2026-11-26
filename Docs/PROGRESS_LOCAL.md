@@ -5,7 +5,65 @@ device; P03 implemented and verified on loopback plus three physical S24 Ultra r
 drop and reconnect, and the final USB-disconnected acceptance run). All six P03 acceptance criteria
 are met.
 
-**Last updated:** 2026-11-20
+**Last updated:** 2026-11-26
+
+**2026-11-26 (media playback audio ships end to end, measured on the S24 Ultra):** The owner asked to
+ship media audio and approved `RECORD_AUDIO` in `:app` (ADR-057 supersedes ADR-018 for media audio only).
+Implemented: protocol types `AUDIO` (0x21) / `AUDIO_FORMAT` (0x22) with a Kotlin `AudioFormat` +
+`AudioPayload` and matching Swift parsers; `AudioCapture` in `:feature:mirroring` using
+`AudioPlaybackCaptureConfiguration` (USAGE_MEDIA, USAGE_GAME, USAGE_UNKNOWN only) → AAC-LC 44.1 kHz
+stereo 128 kbit/s via `MediaCodec`; `LiveAudioPlayer` on the Mac decoding with `AVAudioConverter` (the
+AudioSpecificConfig is the format description's magic cookie) into an `AVAudioEngine` player; a
+"Send playback audio" switch on the dashboard (default on) and a Mute toggle plus `audio=` state line in
+the Mac mirror window.
+
+Device evidence (S24 Ultra `SM-S928B`, Android 17/API 37, serial `RZCY81TKBSV`; USB connected: yes, USB
+debugging: yes, wireless debugging: yes — **not** an acceptance run). 2026-11-26 08:40, screen share with
+audio, 440 Hz tone player (`USAGE_MEDIA`, `ALLOW_CAPTURE_BY_ALL`):
+
+- Mac: `AUDIO_FORMAT aac-lc 44100Hz 2ch 128kbps asc=2B`, `AUDIO_FIRST_FRAME ptsUs=0 frames=1024`,
+  then `AUDIO rms=5781 signal frames=1024 total=95` … `total=408` (one line per second, 1024 frames each).
+- Phone: `P08Audio: audio rms=5791.3 signal frames=340 bytes=126316` → `frames=388 bytes=144149`.
+- Tone stopped: phone `audio rms=0.0 silence frames=1532`, Mac `AUDIO rms=0 silence frames=1024 total=1540`
+  — **frames kept advancing while the measurement fell to zero**, which is the ADR-045 honesty rule in the
+  shipping path.
+- Tone with `ALLOW_CAPTURE_BY_NONE` (`--es policy none`): phone `audio rms=0.0 silence frames=2276`, Mac
+  `AUDIO rms=0 silence frames=1024 total=2336`. An opted-out app is digital silence, not an error.
+
+Re-verified at 08:52 on the final build (after the capture path was tightened to announce the format
+before the first access unit): phone `audio rms=5791.5 signal`, Mac `AUDIO rms=5782 signal`,
+`AUDIO_FORMAT aac-lc 44100Hz 2ch 128kbps asc=2B`, `AUDIO_FIRST_FRAME ptsUs=0 frames=1024`, and the
+service's own stats line `audioState=capturing 44100Hz stereo audioFrames=854 audioBytes=317277
+audioRms=5791`.
+
+- Switch off (08:58): no `AUDIO_FORMAT`/`AUDIO` reached the Mac at all and the phone logged
+  `MIRROR … audioState=off audioFrames=0 audioBytes=0 audioRms=0` while video mirrored normally —
+  turning the switch off means the microphone permission is never requested for that share.
+- Permission denied (09:00): with `RECORD_AUDIO` revoked, Share raised the system microphone prompt
+  first; "Don't allow" logged `P03Shell: RECORD_AUDIO granted=false`, the switch turned itself off, and
+  the projection consent still appeared — the share completed with `audioState=off`, zero audio frames
+  and no audio on the Mac. The denial left the permission `USER_FIXED`, so the grant was restored
+  through ADB afterwards for the owner's own use.
+
+The decoder needed two measured corrections before it was honest: a fresh `AVAudioPCMBuffer` has
+`frameLength = 0`, so `mDataByteSize` alone made every fill fail with `-50`; and the raw `AudioConverter`
+API cannot be fed one access unit per call — each call signalled end-of-input and returned
+`status=0 frames=0` after the first, which the logs showed as `AUDIO_FIRST_FRAME` then repeated
+`AUDIO_DECODE_FAILED status=0 frames=0`. The `AVAudioConverter` + `AVAudioCompressedBuffer` path keeps the
+priming state across calls and is what shipped; the failure modes are recorded in `LiveAudioPlayer`.
+
+ADB actions this session (operator mode, owner-directed): woke/unlocked the phone, `svc power stayon usb`,
+`settings put system screen_off_timeout 1800000` (previous value not recorded — noted as a gap),
+install/force-stop/start of the app and the tone experiment, taps for discovery-picker selection, Connect,
+"Share this screen", the Android 17 projection consent ("Share entire screen" → "Share screen"), and the
+one-time **RECORD_AUDIO runtime prompt granted through ADB at the owner's instruction**, plus the later
+denial test (revoke → Share → "Don't allow" → `pm grant` restore) and the off-switch share. Clipboard
+offer cards were dismissed without reading their contents. No screenshots, no `screencap`/`screenrecord`, no
+clipboard read/write.
+
+Still open and not claimed: the A/V offset is **unmeasured** (audio and video are not re-timed; a flash+beep
+probe is needed), the Mac's audible output was verified by measurement not by a human listening, and the
+OnePlus path is untested (its app data was reset, so the next connection is a genuine first pairing).
 
 **2026-11-21 (toolchain upgrade: AGP 9.5.2, Compose 2026.11.01, compileSdk 37.1):** Took the scheduled upgrade instead of suppressing it. AGP `9.5.1 → 9.5.2`, Compose BOM `2026.09.00 → 2026.11.01`, and `compileSdk` moved from 37.0 to **37.1** via the new `compileSdkMinor` property (API 37 ships minor versions; Compose 2026.11 requires the 37.1 AAR metadata, which was the `checkDebugAarMetadata` failure blocking the bump earlier). `targetSdk` stays 37 (ADR-021) and `minSdk` stays 31. `platforms;android-37.1` is published, so CI installs it alongside 37.0.
 

@@ -1,3 +1,30 @@
+## Media audio ships — the phone's playback now comes out of the Mac (2026-11-26)
+
+- **Playback audio mirrors with the screen.** A "Send playback audio" switch in the Screen card (on by
+  default) captures media playback with MediaProjection's `AudioPlaybackCaptureConfiguration` (USAGE_MEDIA,
+  USAGE_GAME, USAGE_UNKNOWN only), encodes AAC-LC 44.1 kHz stereo 128 kbit/s, streams it over the existing
+  authenticated session (`AUDIO` 0x21 framed by `AUDIO_FORMAT` 0x22) and decodes it on the Mac with
+  `AVAudioConverter` into an `AVAudioEngine` player. Calls, notifications and alarms are deliberately not in
+  the usage set, so they are never captured (ADR-057 supersedes ADR-018 for media audio only).
+- **Measured on the S24 Ultra, 2026-11-26:** phone PCM `audio rms=5791.3 signal` and Mac decoded `AUDIO
+  rms=5781 signal frames=1024` from the same 440 Hz tone, ~100 frames/2 s on both sides; stopping the tone gave
+  `rms=0 silence` on both ends *while frames kept advancing*; a tone that opts out (`ALLOW_CAPTURE_BY_NONE`)
+  measured `rms=0.0 silence` on the phone and `rms=0 silence` on the Mac with the stream still flowing. That
+  last pair is the honest limit: an opted-out app is silent, not broken.
+- **The permission is real and visible.** `:app` now declares `RECORD_AUDIO` and the `microphone` foreground
+  service type; the share flow asks for the microphone after the notification request and before the
+  projection consent, and a denial continues with screen-only mirroring. Measured prompt: "Allow DroidBridge
+  to record audio?" granted with "While using the app" (through ADB at the owner's instruction).
+- **The switch is a real control, measured both ways.** Off: no `RECORD_AUDIO` request, no audio
+  messages, video unaffected. Denied: `RECORD_AUDIO granted=false`, the switch turns itself off and the
+  screen-only share continues. (The switch's own state was also fixed while measuring it: it was read
+  inside a `remember` block, so it looked stuck after a tap even though the choice had changed.)
+- **Audio never breaks video.** A capture or decode failure logs and drops frames; the screen mirror keeps
+  running. Audio and video are not re-timed: the offset is currently unmeasured and documented as such rather
+  than "fixed" with a guessed delay.
+- New protocol types and payloads are unit-tested (11 Kotlin, 8 Swift), the Mac suite is 87/87 and the Android
+  unit tests pass; the A/V offset, the Mac's UI amplitude readout under real speakers and the OnePlus path are
+  still open.
 ## Phase 6 verified on a phone — forgetting, codes and honest failures (2026-11-25)
 
 - **Forgetting a phone now really forgets it.** "Forget phone pin" on the Mac and "Forget the Mac's pin"

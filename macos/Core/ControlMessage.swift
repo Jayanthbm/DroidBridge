@@ -18,6 +18,11 @@ public enum ControlMessageType: UInt8, Equatable {
 
     case video = 0x20
 
+    // Audio (ADR-057). `audio` is one AAC-LC access unit; `audio.format` is the configuration
+    // that must precede it on every new session, exactly like `mirror.format` precedes video.
+    case audio = 0x21
+    case audioFormat = 0x22
+
     // Clipboard (Phase 3, NETWORK_PROTOCOL §6). Codes must match
     // `shared/protocol/.../session/ControlMessage.kt`.
     case clipboardOffer = 0x30
@@ -37,6 +42,8 @@ public enum ControlMessageType: UInt8, Equatable {
         case .mirrorStop: return "mirror.stop"
         case .mirrorKeyframeRequest: return "mirror.keyframe_request"
         case .video: return "video"
+        case .audio: return "audio"
+        case .audioFormat: return "audio.format"
         case .clipboardOffer: return "clipboard.offer"
         case .clipboardAccept: return "clipboard.accept"
         case .clipboardText: return "clipboard.text"
@@ -47,7 +54,7 @@ public enum ControlMessageType: UInt8, Equatable {
     }
 
     /// True for media, which is paced and limited separately from control traffic.
-    public var isMedia: Bool { self == .video }
+    public var isMedia: Bool { self == .video || self == .audio }
 }
 
 /// One decoded control message: `[version][type][4-byte sequence][payload]`.

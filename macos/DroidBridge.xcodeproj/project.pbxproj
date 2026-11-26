@@ -13,6 +13,7 @@
 		14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */; };
 		1E1A8644ED3EF85A7DB01788 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */; };
 		1F937102D0F6B3F040834F61 /* AdvertisementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */; };
+		1F944A45739E4AA0D7C29451 /* AudioPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065D48B378A42C1AF9A285B4 /* AudioPayload.swift */; };
 		22A2541015D47D6A6828E978 /* FrameRateLimiter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */; };
 		2EA838E7F8E807B48F061EDD /* ServiceAdvertisement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8542DF0BAC00829457325A0B /* ServiceAdvertisement.swift */; };
 		308F874E19E960CACEBAF4B3 /* LiveMirrorReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */; };
@@ -25,9 +26,11 @@
 		433FEE5C6C42F0306790EDA3 /* MirrorFormatPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDC18A7AF563DBDE04E0E28 /* MirrorFormatPayload.swift */; };
 		4630552D56097E8EB4AE5B0C /* VideoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */; };
 		50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */; };
+		5250D7254D6470E364EC699B /* AudioPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D11644E30E2E27916D38A35 /* AudioPayloadTests.swift */; };
 		55216DE811A2B0543CCC6085 /* P16HIDPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16042E378A1EDC962453097F /* P16HIDPeripheral.swift */; };
 		5D27F31FAF1BADE14D1705F6 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */; };
 		60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */; };
+		634E72A063213BD30D5984F4 /* AudioFormatPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BAE360773D186A23AA5DBD /* AudioFormatPayload.swift */; };
 		6362000D0E0CCA91A0C12D27 /* PeerPinStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */; };
 		636545E7E113923C4C27146F /* P16BLEHIDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84C6E23730C8C3ED47483118 /* P16BLEHIDView.swift */; };
 		6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A0782A00DC38A5188C8037 /* DroidBridgeApp.swift */; };
@@ -56,6 +59,7 @@
 		D309F285A5532D08A012761B /* HIDRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165370B1B1346061B359A63A /* HIDRemoteView.swift */; };
 		D50365C98344B775E93BA740 /* HIDDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348B71677DB4A3AC5799C789 /* HIDDescriptor.swift */; };
 		DD225B47560B6EF67E83BC0A /* MirrorStreamValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF1E0BF142E78BFF416562EA /* MirrorStreamValidator.swift */; };
+		DF432C48F59C37E806F82576 /* LiveAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8C25B08644A45C0D4D68939 /* LiveAudioPlayer.swift */; };
 		E0EA345EA1AC9E33E915F09B /* P11LocalNetworkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36005D2B33B6451306D10486 /* P11LocalNetworkView.swift */; };
 		E3D6F3557BEF93868C34108C /* LiveMirrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C40DF0E1F740D09943CE2064 /* LiveMirrorView.swift */; };
 		EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */ = {isa = PBXBuildFile; fileRef = D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */; };
@@ -81,6 +85,7 @@
 		026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCodeTests.swift; sourceTree = "<group>"; };
 		045D97DC485774CFC0878C91 /* VideoReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReceiver.swift; sourceTree = "<group>"; };
 		062980F55EED673BE05F608F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		065D48B378A42C1AF9A285B4 /* AudioPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPayload.swift; sourceTree = "<group>"; };
 		0F667686705541706B7C6CAA /* H264AnnexBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexBTests.swift; sourceTree = "<group>"; };
 		16042E378A1EDC962453097F /* P16HIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16HIDPeripheral.swift; sourceTree = "<group>"; };
 		165370B1B1346061B359A63A /* HIDRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDRemoteView.swift; sourceTree = "<group>"; };
@@ -89,6 +94,7 @@
 		23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerPinStoreTests.swift; sourceTree = "<group>"; };
 		2B54220954E3D7F0A1E1BEBD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorReceiver.swift; sourceTree = "<group>"; };
+		2D11644E30E2E27916D38A35 /* AudioPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPayloadTests.swift; sourceTree = "<group>"; };
 		2E61DF7DE85FD1910DB1F7CE /* VideoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoView.swift; sourceTree = "<group>"; };
 		2EE30D7192532CDBFC5F6985 /* SecureListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureListener.swift; sourceTree = "<group>"; };
 		311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRateLimiter.swift; sourceTree = "<group>"; };
@@ -132,9 +138,11 @@
 		BB3749161931C168AC4DDC03 /* p07-480x640.h264 */ = {isa = PBXFileReference; path = "p07-480x640.h264"; sourceTree = "<group>"; };
 		BC2DA42E52FA49E359683D1E /* SessionCodecTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCodecTests.swift; sourceTree = "<group>"; };
 		C1BCC5937B70DE2A8AC1D55D /* Network.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Network.framework; path = System/Library/Frameworks/Network.framework; sourceTree = SDKROOT; };
+		C2BAE360773D186A23AA5DBD /* AudioFormatPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioFormatPayload.swift; sourceTree = "<group>"; };
 		C40DF0E1F740D09943CE2064 /* LiveMirrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveMirrorView.swift; sourceTree = "<group>"; };
 		C4ED6018AD3551CD238C2F9F /* LocalNetworkProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNetworkProbe.swift; sourceTree = "<group>"; };
 		C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvertisementView.swift; sourceTree = "<group>"; };
+		C8C25B08644A45C0D4D68939 /* LiveAudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAudioPlayer.swift; sourceTree = "<group>"; };
 		D25743DAABD330041FCEA833 /* p07-test.h264 */ = {isa = PBXFileReference; path = "p07-test.h264"; sourceTree = "<group>"; };
 		D707E18DD99C8296E2D9B141 /* VideoPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPayload.swift; sourceTree = "<group>"; };
 		D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexB.swift; sourceTree = "<group>"; };
@@ -262,6 +270,8 @@
 		C23F2A8F1565FAC66C83902D /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				C2BAE360773D186A23AA5DBD /* AudioFormatPayload.swift */,
+				065D48B378A42C1AF9A285B4 /* AudioPayload.swift */,
 				3F1DA0C4B34F12E16875C27F /* ClassicHIDPeripheral.swift */,
 				FE3A8DE7D075AE642BC76066 /* ClipboardBridgeMac.swift */,
 				3F6F3421D00129EB9F67855F /* ControlMessage.swift */,
@@ -269,6 +279,7 @@
 				311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */,
 				D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */,
 				348B71677DB4A3AC5799C789 /* HIDDescriptor.swift */,
+				C8C25B08644A45C0D4D68939 /* LiveAudioPlayer.swift */,
 				2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */,
 				83380E99630102BDBDA54D64 /* MacIdentity.swift */,
 				6EDC18A7AF563DBDE04E0E28 /* MirrorFormatPayload.swift */,
@@ -317,6 +328,7 @@
 		E3FC39B01A3141DF69D5817B /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				2D11644E30E2E27916D38A35 /* AudioPayloadTests.swift */,
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
 				A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */,
 				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
@@ -530,6 +542,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5250D7254D6470E364EC699B /* AudioPayloadTests.swift in Sources */,
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
 				AD65DC0095CE6EA22585D619 /* FrameRateLimiterTests.swift in Sources */,
 				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
@@ -549,6 +562,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F937102D0F6B3F040834F61 /* AdvertisementView.swift in Sources */,
+				634E72A063213BD30D5984F4 /* AudioFormatPayload.swift in Sources */,
+				1F944A45739E4AA0D7C29451 /* AudioPayload.swift in Sources */,
 				7614A72C1365EDDD01AB9BC3 /* ClassicHIDPeripheral.swift in Sources */,
 				95BEC56E046B47F08C4C066E /* ClipboardBridgeMac.swift in Sources */,
 				6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */,
@@ -559,6 +574,7 @@
 				EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */,
 				D50365C98344B775E93BA740 /* HIDDescriptor.swift in Sources */,
 				D309F285A5532D08A012761B /* HIDRemoteView.swift in Sources */,
+				DF432C48F59C37E806F82576 /* LiveAudioPlayer.swift in Sources */,
 				308F874E19E960CACEBAF4B3 /* LiveMirrorReceiver.swift in Sources */,
 				E3D6F3557BEF93868C34108C /* LiveMirrorView.swift in Sources */,
 				318651D5A6C2A8021330769A /* MacIdentity.swift in Sources */,

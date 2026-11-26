@@ -24,7 +24,8 @@ This file is the source of truth for permission minimization. The agent must com
 | `ACCESS_WIFI_STATE` / `CHANGE_WIFI_MULTICAST_STATE` | Wi-Fi state / multicast lock | Evaluate | Current `NsdManager` documentation states the multicast lock is not needed for foreground discovery/advertising on recent SDK extension levels (R-02 source page). | Do not add pre-emptively (it is a normal permission today but is a dead permission that will age badly); add only if a measured test shows discovery failing without it. |
 | `WAKE_LOCK` | Keep CPU awake during streaming | Evaluate | Doze ignores wake locks, so a wake lock cannot defeat network suspension (R-20). | Add only after a measured need in P08, and never as a Doze workaround. |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | Exempt the app from Doze | **No** | Would keep the socket alive through Doze but is not justifiable for a consumer clipboard/mirroring app and invites Play policy scrutiny (R-20). | Do not add. Accept best-effort liveness plus reconnect (ADR-023). |
-| `RECORD_AUDIO` | Audio playback capture | No (MVP) — **approved for `:experiments:audio-capture` only, owner decision 2026-11-22** | Playback capture also requires MediaProjection consent, same user profile, and subject-app opt-in; call audio can never be captured (R-15, now measured in P12) and Android 17 adds background-audio hardening (R-16). | Not in `:app`. The permission exists in the P12 experiment manifest alone; the measurement is local and nothing is transmitted. Any product audio track needs a separate approval. |
+| `RECORD_AUDIO` | Audio playback capture | **Yes — declared in `:app` since 2026-11-26** (owner-approved that day, ADR-057) | Playback capture also requires MediaProjection consent, same user profile, and subject-app opt-in; call audio can never be captured (R-15, measured in P12) and Android 17 adds background-audio hardening (R-16). | The product ships media playback audio only: usage set is `USAGE_MEDIA`/`USAGE_GAME`/`USAGE_UNKNOWN`, so calls and notifications are never captured. The permission is requested in the share flow and a denial continues with screen-only mirroring. A Play Console microphone declaration is required. |
+| `FOREGROUND_SERVICE_MICROPHONE` | `microphone` foreground-service type prerequisite | **Yes — declared in `:app` since 2026-11-26** (ADR-057) | Required since Android 14 for a service that captures audio while backgrounded (R-04). | Needed only because the mirroring service captures playback audio; if audio is off the service never uses the type's capability but still declares it, so the type is declared on the Play Console page. |
 
 ## 1A. Google Play declarations that accompany these permissions
 
@@ -33,6 +34,7 @@ These are not manifest permissions, but a submission without them is a policy fa
 | Declaration | When it is required | What Play requires |
 |---|---|---|
 | Foreground service type `connectedDevice` | Whenever the background-sync service ships | Description of the functionality; user impact if deferred/interrupted; use case "Continuous Data Transfer to an External Device"; **a demo video showing the user pairing and connecting to the device inside the app**, not in system settings. |
+| Microphone declaration (`RECORD_AUDIO` + `microphone` FGS type) | Whenever media audio ships | The Play Console "Microphone" declaration: what is recorded (audio from other apps' media playback), when (only while the owner is sharing a screen with audio enabled), that it is played live on the owner's own Mac, and that nothing is stored or sent to a server. The data-safety form stays "no collection" because the audio is transient and peer-to-peer. |
 | Foreground service type `mediaProjection` | Whenever mirroring ships | Same four items; use case "Media or Content Projection and streaming or recording with MediaProjection API"; video showing the user starting the projection to an external display. |
 | `ACCESS_LOCAL_NETWORK` | Only if the runtime-permission fallback is taken (from 2027-08-25, for API 37+ targets) | A declaration that the permission is needed for core functionality because device pickers are insufficient, plus a matching statement in the store description. The picker-first design avoids this entirely. |
 | Data safety form | Every release | Declared data collection and sharing. DroidBridge has no cloud endpoint and no telemetry, so the honest answer is "none collected" — which must stay true in code (ADR-003). |
@@ -73,7 +75,7 @@ These are not manifest permissions, but a submission without them is a policy fa
 | Screen Recording | TCC permission | Capture the Mac display | No | Not needed to view Android's stream; only for a separately approved Mac-capture feature. |
 | Accessibility | TCC permission | System-wide UI control / upstream direct-input capture | No | Never request for DroidBridge. The reference repo's optional direct-input/event-tap feature is excluded; POCs send only events initiated inside DroidBridge UI. |
 | Input Monitoring | TCC permission | Global keyboard/mouse observation | No | Not needed for MVP (view-only mirroring). |
-| Microphone | TCC permission | Audio | No | MVP has no audio (ADR-018). |
+| Microphone | TCC permission | Audio | No | The Mac plays audio decoded from the session (`AVAudioEngine`); it never records from a Mac microphone, so no TCC microphone grant is requested (ADR-057). |
 | `com.apple.security.temporary-exception.files.absolute-path.read-write` | Signing entitlement (measurement only) | Let the P10 luma harness write its recording where the measurement can read it | **No in any shipped or acceptance build** | Declared only in `macos/App/DroidBridge.measurement.entitlements`, used only for instrumented harness runs; the path is a single `/private/tmp/p10-rec/` directory. The production target keeps the audited three-key set (`DroidBridge.entitlements`, ADR-026) and must not be signed with this file. Recorded here because an entitlement that exists in the repository must be visible in the permission matrix even when it never ships.
 | `com.apple.security.device.bluetooth` | macOS App Sandbox entitlement | BLE/Classic HID POC | Present only in isolated P16 target | Added to `P16BLEHID.entitlements` with app sandbox; the P16 target also declares `NSBluetoothAlwaysUsageDescription`. It is absent from the production DroidBridge target. The system authorization flow and actual HID pairing remain untested; Bluetooth activity must follow explicit opt-in.
 
@@ -192,7 +194,8 @@ Android (`:app` merges `:feature:*` transitively):
 | `RECEIVE_BOOT_COMPLETED` | no in `:app` | experiment module only (P14, not in the `:app` graph) | Correct — documented in ADR-023 |
 | `WAKE_LOCK` | **no** | ADR-043 stands | Correct |
 | `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | **no** | — | Correct |
-| `RECORD_AUDIO` | **no in `:app`** | P12 experiment module only (owner-approved 2026-11-22) | Correct |
+| `RECORD_AUDIO` | **yes** | media playback audio in the mirroring service (owner-approved 2026-11-26, ADR-057) | Correct — usage set excludes calls and notifications |
+| `FOREGROUND_SERVICE_MICROPHONE` | **yes** | `microphone` type prerequisite for the same service | Correct — declared with the audio feature |
 | any BLUETOOTH_* | **no** | opt-in row unchanged | Correct |
 | SMS/contacts/call-log/storage/notification-listener | **no** | prohibited | Correct |
 
@@ -204,7 +207,9 @@ macOS (production bundle):
 | `get-task-allow` | yes (Debug) | Correct for a debug build; Release strips it (project.yml) |
 | `com.apple.security.cs.*` / temporary-exception.* | no | Correct |
 
-Permission diff vs Phase 5: **none**. No new permission or entitlement was added in Phase 6; the
+Permission diff vs Phase 5: **one approved addition** — `RECORD_AUDIO` plus the `microphone` FGS
+type, owner-approved on 2026-11-26 to ship media playback audio (ADR-057). No other new permission
+or entitlement was added in Phase 6; the
 revocation and UX work reuses existing capabilities. The `RECEIVE_BOOT_COMPLETED` row is present in
 the table because the P14 background-session experiment is part of the debug build's graph; it is
 documented and owner-approved (ADR-023), and the product release split stays per ADR-023.
@@ -215,9 +220,10 @@ foreground card (`FOREGROUND_SERVICE`-free LAN usage), and the `connectedDevice`
 in the `:app` graph. The measured `:app` APK permission set is exactly:
 
 `INTERNET`, `ACCESS_LOCAL_NETWORK`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PROJECTION`,
-`POST_NOTIFICATIONS` (+ the injected app-private
+`FOREGROUND_SERVICE_MICROPHONE`, `POST_NOTIFICATIONS`, `RECORD_AUDIO` (owner-approved 2026-11-26,
+ADR-057; + the injected app-private
 `com.droidbridge.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`).
 
 So the rows for `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE` and
 `RECEIVE_BOOT_COMPLETED` above describe the *experiment* manifests, not the product APK; the product
-diff vs Phase 5 remains **none**.
+diff vs Phase 5 is the single owner-approved audio addition recorded in ADR-057.

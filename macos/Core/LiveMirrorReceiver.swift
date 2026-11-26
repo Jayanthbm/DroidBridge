@@ -106,6 +106,11 @@ public final class LiveMirrorReceiver: ObservableObject {
     /// Mirrors `clipboard.status` so SwiftUI updates when the bridge reports a change.
     @Published public private(set) var clipboardStatus = "idle"
 
+    /// Playback audio from the phone (ADR-057). Owned here because the session owns the socket;
+    /// the view observes it directly, and `audioStatus` mirrors its one-line state for the log.
+    public let audio = LiveAudioPlayer()
+    @Published public private(set) var audioStatus = "audio off"
+
     @Published public private(set) var pairingCode: String?
     @Published public private(set) var peerPin: String?
 
@@ -216,6 +221,8 @@ public final class LiveMirrorReceiver: ObservableObject {
 
     public func stop() {
         clipboard.stopPolling()
+        audio.stop()
+        audioStatus = audio.statusText
         listener?.stop()
         listener = nil
         publishFrameCounters(force: true)
@@ -281,6 +288,8 @@ public final class LiveMirrorReceiver: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 self.state = .stopped
+                self.audio.stop()
+                self.audioStatus = self.audio.statusText
                 self.emit("CLOSED \(reason)")
             }
         }
@@ -333,9 +342,29 @@ public final class LiveMirrorReceiver: ObservableObject {
         case .mirrorStop:
             let reason = String(data: message.payload, encoding: .utf8) ?? "unknown"
             state = .connected
-            emit("MIRROR_STOP reason=\(reason)")
+            audio.stop()
+            audioStatus = audio.statusText
+            emit("MIRROR_STOP reason=\(reason) audioFrames=\(audio.frames)")
         case .video:
             handleVideo(message.payload)
+        case .audioFormat:
+            do {
+                let fmt = try AudioFormatPayload.parse(message.payload)
+                audio.configure(fmt)
+                audioStatus = audio.statusText
+                emit("AUDIO_FORMAT \(fmt.descriptionText)")
+            } catch {
+                audioStatus = "audio format refused: \(error)"
+                emit("AUDIO_FORMAT_FAILED \(error)")
+            }
+        case .audio:
+            do {
+                let frame = try AudioFramePayload.parse(message.payload)
+                audio.enqueue(ptsUs: frame.ptsUs, accessUnit: frame.accessUnit)
+                audioStatus = audio.statusText
+            } catch {
+                emit("AUDIO_FRAME_FAILED \(error)")
+            }
         case .ping:
             do {
                 try listener?.sendControl(type: .pong, payload: message.payload)

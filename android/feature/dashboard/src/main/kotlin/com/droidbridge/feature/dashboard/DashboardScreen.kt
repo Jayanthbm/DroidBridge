@@ -13,8 +13,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +47,13 @@ data class MirroringUiState(
     val keyframeRequests: Long = 0,
     val maxSendMs: Long = 0,
     val connected: Boolean = false,
+    /** The user's audio choice for the next share; audio and screen start together. */
+    val audioEnabled: Boolean = true,
+    /** Measured audio state: "off", "capturing 44100Hz stereo", or why it is off. */
+    val audioState: String = "off",
+    val audioFrames: Long = 0,
+    /** RMS of the captured PCM, so silence can be shown as silence rather than as "working". */
+    val audioRms: Long = 0,
 )
 
 /** Clipboard state the screen renders; no clipboard content is ever held here. */
@@ -85,6 +94,7 @@ fun DashboardScreen(
     mirroring: MirroringUiState = MirroringUiState(),
     onStartMirroring: () -> Unit = {},
     onStopMirroring: () -> Unit = {},
+    onAudioEnabledChange: (Boolean) -> Unit = {},
     onSendClipboard: () -> Unit = {},
     onApplyClipboard: () -> Unit = {},
     onDismissClipboard: () -> Unit = {},
@@ -185,6 +195,7 @@ fun DashboardScreen(
                 state = mirroring,
                 onStart = onStartMirroring,
                 onStop = onStopMirroring,
+                onAudioEnabledChange = onAudioEnabledChange,
             )
 
             Text("Nearby", style = MaterialTheme.typography.titleMedium)
@@ -266,6 +277,7 @@ private fun MirroringCard(
     state: MirroringUiState,
     onStart: () -> Unit,
     onStop: () -> Unit,
+    onAudioEnabledChange: (Boolean) -> Unit,
 ) {
     Card {
         Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -281,6 +293,36 @@ private fun MirroringCard(
                 Text(
                     "Starting a share asks Android to post a notification. That notification " +
                         "carries the Stop control, so the share can be ended from anywhere.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            // Audio is a separate, explicit choice, and its copy states the boundary the platform
+            // enforces: media from apps that allow capture, never call audio (ADR-045, measured).
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Switch(
+                    checked = state.audioEnabled,
+                    onCheckedChange = onAudioEnabledChange,
+                    enabled = !state.capturing,
+                )
+                Column(Modifier.weight(1f)) {
+                    Text("Send playback audio", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Hear the phone's music and video on the Mac. Calls and notifications are " +
+                            "never captured.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            if (state.capturing) {
+                Text(
+                    "audio: ${state.audioState} · ${state.audioFrames} frames · rms ${state.audioRms}" +
+                        if (state.audioFrames > 0 && state.audioRms < 32) " (silence)" else "",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

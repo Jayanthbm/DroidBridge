@@ -265,9 +265,9 @@ satisfy.
 - Alternatives: Notification listener for call alerts (explicitly prohibited by `AGENTS.md`); default-dialer role (changes the user's phone).
 - Consequences: Removing call work also removes the strongest pressure to add broad permissions.
 
-## ADR-018 — No audio capture in the MVP
+## ADR-018 — No audio capture in the MVP (superseded by ADR-057 for media audio)
 - Date: 2026-11-08
-- Status: Rejected for MVP; research track open
+- Status: Superseded on 2026-11-26 by ADR-057 for media playback audio; call and notification audio remain out of scope
 - Context: Media playback capture needs `RECORD_AUDIO` plus MediaProjection consent and subject-app opt-in, and is further constrained in Android 17 background-audio hardening (`R-15`, `R-16`). Call audio is impossible.
 - Decision: MVP streams video only. Audio is a separately approved research track (`P12`) that must not add `RECORD_AUDIO` to the shipping manifest before that approval.
 - Alternatives: Add `RECORD_AUDIO` now for a future feature (rejected: speculative permission).
@@ -835,3 +835,16 @@ step and a recorded decision. Until then, option 1: the development workflow doc
 the fact that Deny leaves the app unable to complete TLS.
 
 
+
+## ADR-057 — Media playback audio ships in the app, with `RECORD_AUDIO`
+- Date: 2026-11-26
+- Status: Accepted (owner-approved 2026-11-26: "ship media audio" and the `RECORD_AUDIO` permission)
+- Context: ADR-018 kept audio out of the MVP because the permission was speculative. P12 has since measured the API: media playback capture is bit-exact for an app that allows capture, and silence (frames still advancing) for `ALLOW_CAPTURE_BY_NONE`, notification usage and voice-communication usage (ADR-045). The owner asked for the media half to ship. Call audio stays impossible: cellular voice is not capturable, and `USAGE_VOICE_COMMUNICATION` measures as digital silence anyway.
+- Decision: Ship media playback audio in `:app`.
+  - Capture with `AudioPlaybackCaptureConfiguration` for `USAGE_MEDIA`, `USAGE_GAME` and `USAGE_UNKNOWN` only. `USAGE_VOICE_COMMUNICATION`, `USAGE_NOTIFICATION`, `USAGE_ALARM` and `USAGE_SYSTEM` are deliberately absent, so calls, notifications and alarms are never captured.
+  - Encode AAC-LC 44 100 Hz stereo 128 kbit/s with the platform encoder, one access unit per `AUDIO` (0x21) message; `AUDIO_FORMAT` (0x22) announces codec, rate, channels, bitrate and the base64 AudioSpecificConfig before the first access unit.
+  - Decode on the Mac with `AVAudioConverter` and play through `AVAudioEngine`; never invent a container. The AudioSpecificConfig is the decoder cookie, not a guess.
+  - Measure amplitude on both ends (phone PCM, Mac decoded PCM, 16-bit units) and treat frames without signal as silence, never as success (ADR-045 §4).
+  - The toggle defaults on, asks for `RECORD_AUDIO` before the projection consent, and a denial continues with screen-only mirroring. An audio failure never stops the video pipeline.
+- Alternatives: PCM over the wire (rejected: ~1.4 Mbit/s for the same content); Opus (rejected: the universal decoder is present, but the Android encoder set is less predictable across OEMs than `c2.android.aac.encoder`); microphone capture (rejected: records the room and everything the user says rather than the app's playback, and is a far larger privacy claim); capturing calls or notifications (rejected: impossible for calls, and ADR-045 measures notifications as silence).
+- Consequences: `RECORD_AUDIO` and the `microphone` foreground-service type are now shipping permissions, so Play's microphone declaration and data-safety form must say "audio from other apps' media playback, for live listening on the user's own Mac, never stored or transmitted to a server"; the runtime prompt is part of the share flow; apps that opt out of capture are heard as silence and the UI must not claim otherwise; audio and video are not re-timed, so the offset must be measured rather than assumed (currently unmeasured — see PROGRESS_LOCAL).

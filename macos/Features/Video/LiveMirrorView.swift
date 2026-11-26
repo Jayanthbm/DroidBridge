@@ -40,6 +40,21 @@ struct LiveMirrorView: View {
                     .font(.system(.caption, design: .monospaced))
             }
 
+            // Audio state is measured, not inferred: the rms comes from the decoded PCM, so it can
+            // say "silence" instead of showing a live-looking meter over a refused capture.
+            HStack(spacing: 12) {
+                Toggle("Mute", isOn: Binding(
+                    get: { model.audio.muted },
+                    set: { model.audio.muted = $0 }
+                ))
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                Text("audio=\(model.audio.state.rawValue) \(model.audioStatus) " +
+                     "frames=\(model.audio.frames) rms=\(Int(model.audio.rms))" +
+                     (model.audio.silent && model.audio.frames > 0 ? " (silence)" : ""))
+                    .font(.system(.caption, design: .monospaced))
+            }
+
             GroupBox("Clipboard") {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(model.clipboardStatus)

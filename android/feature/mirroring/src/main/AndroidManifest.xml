@@ -10,10 +10,21 @@
       foreground service with the mediaProjection type, or Android stops it (R-04).
       POST_NOTIFICATIONS: the capture service's ongoing notification, requested at the moment
       mirroring starts and never at launch.
+
+      RECORD_AUDIO (owner-approved 2026-11-26, ADR-057): playback audio. The permission is only
+      ever used with `AudioPlaybackCaptureConfiguration` bound to the same MediaProjection consent
+      that screen capture uses — it is not microphone input, and the capture configuration names
+      exactly the three usages it may hear (media, game, unknown). The dialog is requested when the
+      user turns audio on and starts a share, never at launch, and a denial only removes the audio
+      track. `microphone` is declared as a foreground-service type because Android 14+ classifies a
+      service that records audio — even playback audio — under it while the mediaProjection type
+      covers the screen.
     -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application>
         <!--
@@ -24,7 +35,7 @@
         <service
             android:name=".MirroringService"
             android:exported="false"
-            android:foregroundServiceType="mediaProjection"
+            android:foregroundServiceType="mediaProjection|microphone"
             android:stopWithTask="false" />
     </application>
 </manifest>

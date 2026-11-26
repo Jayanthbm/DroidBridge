@@ -149,6 +149,13 @@ Exit: feature remains optional and tested.
 - no default dialer role unless owner approves.
 - no call recording.
 
+Status: **media audio shipped** (owner-approved 2026-11-26, ADR-057: AAC-LC over `AUDIO`/`AUDIO_FORMAT`,
+measured 2026-11-26 on the S24 Ultra with matching phone/Mac RMS and measured silence for opted-out apps
+and for `ALLOW_CAPTURE_BY_NONE`). **Call audio stays NO-GO**: cellular voice is not capturable and
+`USAGE_VOICE_COMMUNICATION` measures as digital silence (ADR-045); no dialer role was requested and no
+call recording exists. Open for this phase: the A/V offset is unmeasured, the `RECORD_AUDIO` denial path
+is implemented but unmeasured on device, and the OnePlus path is untested.
+
 Exit: documented feasibility decision.
 
 ## Phase 9 — Release

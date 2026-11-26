@@ -164,6 +164,25 @@ specified by the shared, unit-tested `ClipboardSync` object.
 - `mirror.keyframe_request`
 - `mirror.error`
 
+### Audio messages (ADR-057, shipping since 2026-11-26)
+
+Control types: `audio.format` (`AUDIO_FORMAT`, 0x22) and `audio.frame` (`AUDIO`, 0x21, a media frame).
+
+- Codec: AAC-LC, 44 100 Hz, 2 channels, 128 000 bit/s. This is the universal platform encoder
+  (`c2.android.aac.encoder`) and decodable by `AVAudioConverter` on macOS without a container.
+- `audio.format` carries `codec` ("aac-lc"), `sampleRate`, `channels`, `bitrate` and `audioSpecificConfig`
+  (Base64 of the 2-byte AAC AudioSpecificConfig, e.g. `EhA=` for 44.1 kHz stereo LC). It is sent once
+  before the first audio frame and again after any change; the Mac treats a change as a new decoder.
+- An `audio.frame` payload is `[8-byte big-endian ptsUs][AAC access unit]`. One access unit per message,
+  no length prefix beyond the envelope, no ADTS header: the access unit is exactly what MediaCodec emits.
+- Both sides measure amplitude (RMS of decoded PCM, 16-bit units) and log `signal` / `silence`. A stream
+  that carries frames but measures 0 is digital silence, not success: apps can set
+  `ALLOW_CAPTURE_BY_NONE`, and calls/notifications are excluded by the usage set (ADR-045, ADR-057).
+- Audio and video are **not** re-timed. The receiver schedules audio as it arrives; the A/V offset is a
+  known unmeasured quantity and is not to be presented as fixed.
+- `mirror.stop` ends audio capture and the receiver tears down the audio player; an audio failure never
+  stops video.
+
 ### Media channel framing (settled by ADR-027, pending P07/P08)
 
 Codec: H.264/AVC only for the MVP. VideoToolbox and Android hardware encoders both support it, and it keeps the parameter-set path on CoreMedia's documented API.

@@ -68,6 +68,9 @@ class MirroringService : Service() {
         /** P08 idle-cost comparison: `true` omits `KEY_REPEAT_PREVIOUS_FRAME_AFTER` for this run. */
         const val EXTRA_OMIT_REPEAT_FRAME = "omitRepeatFrame"
 
+        /** True when the user asked for playback audio alongside the screen. */
+        const val EXTRA_AUDIO = "withAudio"
+
         private const val CHANNEL_ID = "p08_mirroring"
         private const val NOTIFICATION_ID = 8108
         private const val STATS_INTERVAL_MS = 5_000L
@@ -103,12 +106,14 @@ class MirroringService : Service() {
             resultCode: Int,
             resultData: Intent,
             omitRepeatFrame: Boolean = false,
+            withAudio: Boolean = false,
         ) {
             val intent = Intent(context, MirroringService::class.java).apply {
                 action = ACTION_START
                 putExtra(EXTRA_RESULT_CODE, resultCode)
                 putExtra(EXTRA_RESULT_DATA, resultData)
                 putExtra(EXTRA_OMIT_REPEAT_FRAME, omitRepeatFrame)
+                putExtra(EXTRA_AUDIO, withAudio)
             }
             context.startForegroundService(intent)
         }
@@ -126,6 +131,7 @@ class MirroringService : Service() {
     private val queue = FrameQueue(QUEUE_CAPACITY)
 
     private var projection: MediaProjection? = null
+    private var audio: AudioCapture? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var encoder: MirrorEncoder? = null
     private var senderThread: Thread? = null
@@ -209,6 +215,7 @@ class MirroringService : Service() {
         }
 
         stats.resetSession()
+        val wantAudio = intent.getBooleanExtra(EXTRA_AUDIO, false)
         running.set(true)
         isRunning = true
         queue.clear()
@@ -242,6 +249,21 @@ class MirroringService : Service() {
                 stats.contentWidth.set(contentWidth)
                 stats.contentHeight.set(contentHeight)
                 startPipeline(mp, contentWidth, contentHeight)
+
+                // Audio starts after the projection so the playback-capture config can be built
+                // from it, and its failure never takes the screen stream down with it: the Mac
+                // still needs the picture when the phone cannot (or may not) send sound.
+                if (wantAudio) {
+                    val capture = AudioCapture(applicationContext, mp, activeTransport)
+                    if (capture.start()) {
+                        audio = capture
+                    } else {
+                        stats.audioState.set(capture.stats.state)
+                        Log.w(TAG, "audio requested but unavailable: ${capture.stats.state}")
+                    }
+                } else {
+                    Log.i(TAG, "audio not requested for this run")
+                }
 
                 mainHandler.postDelayed(statsRunnable, STATS_INTERVAL_MS)
                 Log.i(TAG, "mirroring started content=${contentWidth}x${contentHeight}")
@@ -534,6 +556,12 @@ class MirroringService : Service() {
     private val statsRunnable = object : Runnable {
         override fun run() {
             if (!running.get()) return
+            audio?.let { capture ->
+                stats.audioFrames.set(capture.stats.framesSent)
+                stats.audioBytes.set(capture.stats.bytesSent)
+                stats.audioState.set(capture.stats.state)
+                stats.audioRms.set(capture.stats.rms.toLong())
+            }
             val line = stats.summaryLine()
             Log.i(TAG, line)
             mainHandler.postDelayed(this, STATS_INTERVAL_MS)
@@ -581,6 +609,10 @@ class MirroringService : Service() {
                 sendStop()
             }
         }
+
+        audio?.stop()
+        if (audio != null) stats.audioState.set("stopped")
+        audio = null
 
         senderThread?.interrupt()
         senderThread = null
