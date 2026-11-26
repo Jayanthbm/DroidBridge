@@ -81,6 +81,24 @@ class MirroringService : Service() {
         private const val FRAME_RATE = 30
         private const val BITRATE_BPS = 4_000_000
 
+        /**
+         * Cap on surface input handed to the encoder (see [MirrorEncoder]).
+         *
+         * The panel composes at up to 120 Hz and the VirtualDisplay forwards every frame, so a shade
+         * animation can double the configured rate. 60 keeps motion smooth, halves the worst-case
+         * burst and stays well inside the receiver's 120 frames/s budget (ADR-058).
+         */
+        private const val MAX_FPS_TO_ENCODER = 60
+
+        /**
+         * How long the sender keeps the pipeline alive with an unusable session before it stops.
+         *
+         * A reconnect needs the pipeline to survive long enough to re-announce its format, but a
+         * session that is gone for good must not leave the encoder running at panel rate: measured
+         * 2026-11-26, the phone encoded for 13+ s at 66-80 fps after the Mac closed the connection.
+         */
+        private const val SESSION_LOST_GRACE_NS = 15_000_000_000L
+
         val stats = MirrorStats()
 
         /**
@@ -333,6 +351,7 @@ class MirroringService : Service() {
             height = height,
             frameRate = FRAME_RATE,
             bitrate = BITRATE_BPS,
+            maxFpsToEncoder = MAX_FPS_TO_ENCODER,
             onFormat = { sets -> publishFormat(width, height, sets) },
             onAccessUnit = { unit -> queueFrame(unit) },
             onError = { message ->
@@ -447,6 +466,10 @@ class MirroringService : Service() {
 
     private fun startSender(activeTransport: MirrorTransport) {
         val thread = Thread({
+            // Set when a send fails; cleared as soon as one succeeds. Frames that cannot be queued
+            // are not counted, and the pipeline stops once the session has been unusable for the
+            // grace period instead of encoding into a dead connection forever.
+            var lostSinceNs = 0L
             while (running.get()) {
                 val entry = queue.take()
                 if (entry == null) {
@@ -476,7 +499,24 @@ class MirroringService : Service() {
                     }
                     val payload = VideoPayload.encode(entry.ptsUs, entry.payload)
                     val startedNs = System.nanoTime()
-                    activeTransport.send(ControlMessage.Type.VIDEO, payload)
+                    val sent = activeTransport.send(ControlMessage.Type.VIDEO, payload)
+                    if (!sent) {
+                        val now = System.nanoTime()
+                        if (lostSinceNs == 0L) {
+                            lostSinceNs = now
+                            Log.i(TAG, "session cannot carry frames; waiting up to 15 s for a reconnect")
+                            stats.state.set("waiting for session")
+                        }
+                        if (now - lostSinceNs > SESSION_LOST_GRACE_NS) {
+                            Log.i(TAG, "session lost for 15 s; stopping capture")
+                            teardown("session lost")
+                            stopSelf()
+                            return@Thread
+                        }
+                        Thread.sleep(10)
+                        continue
+                    }
+                    lostSinceNs = 0L
                     val elapsedMs = (System.nanoTime() - startedNs) / 1_000_000
                     if (elapsedMs > stats.maxSendMs.get()) stats.maxSendMs.set(elapsedMs)
 

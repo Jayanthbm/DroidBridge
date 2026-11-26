@@ -41,6 +41,15 @@ class MirrorEncoder(
     val height: Int,
     private val frameRate: Int = 30,
     private val bitrate: Int = 4_000_000,
+    /**
+     * Cap on frames the encoder accepts from the input surface per second.
+     *
+     * `KEY_FRAME_RATE` is only a hint: on a 120 Hz panel the VirtualDisplay delivers every composed
+     * frame, and a shade animation was measured pushing the encoder to 66-80 fps (2026-11-26). The
+     * cap is what bounds that burst. It is a hint too - some encoders ignore it - so the receiver's
+     * budget (ADR-058) stays the enforcement point.
+     */
+    private val maxFpsToEncoder: Int = 60,
     private val onFormat: (H264ParameterSets) -> Unit,
     private val onAccessUnit: (AccessUnit) -> Unit,
     private val onError: (String) -> Unit,
@@ -98,6 +107,7 @@ class MirrorEncoder(
             )
             setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
             setInteger(MediaFormat.KEY_FRAME_RATE, frameRate)
+            setInteger(MediaFormat.KEY_MAX_FPS_TO_ENCODER, maxFpsToEncoder)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, I_FRAME_INTERVAL_SECONDS)
             // No reordering: the receiver assumes decode order is display order.
             setInteger(MediaFormat.KEY_MAX_B_FRAMES, 0)
@@ -115,7 +125,17 @@ class MirrorEncoder(
 
         val created = MediaCodec.createEncoderByType(MIME)
         try {
-            created.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            try {
+                created.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            } catch (e: IllegalArgumentException) {
+                // An encoder that does not know the cap rejects the whole format. Drop the hint and
+                // retry once: without it the codec still encodes, the receiver budget still bounds
+                // the rate, and the mirror does not fail to start over an optional key.
+                if (!format.containsKey(MediaFormat.KEY_MAX_FPS_TO_ENCODER)) throw e
+                format.removeKey(MediaFormat.KEY_MAX_FPS_TO_ENCODER)
+                Log.w(TAG, "encoder ${created.name} rejected KEY_MAX_FPS_TO_ENCODER; continuing without the cap")
+                created.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+            }
             codecName = created.name
             inputSurface = created.createInputSurface()
             created.start()
@@ -134,7 +154,10 @@ class MirrorEncoder(
         handler = drainHandler
         drainHandler.post { drain(created) }
 
-        Log.i(TAG, "started ${width}x$height@$frameRate name=$codecName bitrate=$bitrate")
+        Log.i(
+            TAG,
+            "started ${width}x$height@$frameRate cap=$maxFpsToEncoder name=$codecName bitrate=$bitrate",
+        )
     }
 
     /** Asks the encoder for an IDR at the next opportunity. */

@@ -11,6 +11,14 @@
   exceeding its 120 media frames/s bound. Over-budget media frames are now dropped (up to 600 in a row,
   ~5 s) and only a sustained flood still closes; the sustained 120/s budget and the control-frame limit
   are unchanged (ADR-058).
+- **The phone stops sharing when the Mac goes away.** The sender used to ignore a failed write and keep
+  encoding into a dead connection (measured at 66-80 fps for 13+ s). It now waits up to 15 s for a
+  reconnect - long enough for the format re-announce - and then tears the pipeline down; verified on the
+  S24: `session lost for 15 s; stopping capture` → `teardown complete reason=session lost`, service and
+  notification gone, no encoder activity.
+- **Frames delivered to the encoder are capped at 60 fps** (`KEY_MAX_FPS_TO_ENCODER`; the nominal rate
+  stays 30). A shade animation on the 120 Hz panel was doubling the rate; the S24's encoder accepted the
+  cap, and an encoder that rejects it still starts without the cap.
 - **Known and unmeasured:** the notification's own `Stop` action still has no measured row (the shade
   cannot be inspected with `uiautomator` while it is open, and screen capture is prohibited), and the
   phone keeps encoding for a while after the receiver closes (recorded as an open defect in the P08 doc).

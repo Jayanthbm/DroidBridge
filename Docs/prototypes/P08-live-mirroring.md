@@ -416,12 +416,33 @@ alive (`received=4680 enqueued=4680`, no `CLOSED`). The drop path itself fired o
 that: `media frames dropped=120 accepted=1721` at 12:02:59 while the shade was open, session still live.
 `FrameRateLimiterTests`: 5 tests, 0 failures.
 
-### Defect (open): the phone keeps encoding after the receiver closes
+### Defect fixed: the phone now stops encoding shortly after the receiver closes
 
 After the 12:12:33 close the phone kept capturing: `fps=66.3 → 79.7` over ten seconds, `frames=3200`,
 `keyframes` climbing ~2/s, `largestFrame=207237`, `stopReason=active`, notification still up until the app
-was force-stopped. A closed transport should tear the pipeline down (or at least stop requesting
-keyframes). Not fixed tonight; the numbers are recorded here.
+was force-stopped.
+
+Cause: the sender ignored the transport's return value. `MirrorTransport.send` is specified to return
+`false` when the session cannot carry a frame, and the video path used it as a bare statement, so the
+loop kept encoding and "sending" into nothing. The sender now arms a 15 s grace window on the first
+failed send, keeps the pipeline alive that long so a reconnect can still re-announce its format, and then
+calls `teardown("session lost")`. Frames that cannot be queued are no longer counted as sent.
+
+Verified end to end on the S24 over Wi-Fi (2026-11-26, USB disconnected): session up at 12:30:42, share
+started 12:31:36 (`mirroring started content=1080x2340`, `P08Encoder: started 590x1280@30 cap=60
+name=c2.qti.avc.encoder`), harness killed 12:31:48 → `state=waiting for session` → 12:32:03.712
+`session lost for 15 s; stopping capture` → `state=stopped: session lost` (fps 3.9 → 3.6, durationMs
+27 370) → 12:32:03.826 `teardown complete reason=session lost`. Afterwards no `MirroringService` record
+in `dumpsys activity services`, no `p08_mirroring` notification in the live notification list, and no
+encoder log lines. The 15 s window is deliberate: a reconnect inside it still re-announces the format.
+
+### Sender-side frame cap
+
+The encoder now carries `KEY_MAX_FPS_TO_ENCODER = 60` (its configured rate stays 30). On the S24 the
+platform encoder accepted the key - the start line reports `cap=60` and no fallback warning - so the
+worst-case burst the receiver's 120/s budget sees is halved. If an encoder rejects the key, the codec is
+reconfigured without it once and the mirror still starts; the receiver budget remains the enforcement
+point.
 
 ### Follow-up worth doing
 

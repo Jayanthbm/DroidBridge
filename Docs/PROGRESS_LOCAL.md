@@ -78,9 +78,23 @@ and the dry runs, not an acceptance sweep.
   120/s sustained budget and the control-frame limit are unchanged. Verified on the fixed build: the
   same HOME -> shade sequence and five rapid shade toggles kept the session (`received=4680`), and the
   drop path fired once (12:02:59, `dropped=120 accepted=1721`) with the session alive.
-- *Open defect: the phone keeps encoding after the receiver closes.* After the 12:12:33 close the
-  encoder ran at 66-80 fps, `frames=3200`, `keyframes` climbing ~2/s, notification still up until the app
-  was force-stopped. A closed transport should tear the pipeline down; not fixed tonight.
+- *Post-close encoding: fixed and verified (was the open defect above).* The sender ignored
+  `MirrorTransport.send`'s `false` return, so after the Mac went away the loop kept encoding into
+  nothing. It now waits up to 15 s for a reconnect (so the format re-announce still works) and then tears
+  the pipeline down. Verified on the S24 over Wi-Fi at 12:31-12:32: harness killed at 12:31:48 ->
+  `state=waiting for session` -> `session lost for 15 s; stopping capture` -> `teardown complete
+  reason=session lost`; no service record, no `p08_mirroring` notification and no encoder lines after.
+- *Sender-side frame cap added.* `KEY_MAX_FPS_TO_ENCODER = 60` on the encoder (nominal rate stays 30).
+  The S24's platform encoder accepted it (`P08Encoder: started 590x1280@30 cap=60
+  name=c2.qti.avc.encoder`), halving the worst-case burst; an encoder that rejects the key is
+  reconfigured without it and still starts.
+- *Staging note (cost about 25 minutes).* The Android 17 system picker
+  (`com.google.android.connectivity.resources`) can sit frozen: the "Choose a device to connect" dialog
+  appears, taps on the Mac row dismiss it, and nothing happens - no `P03Discovery: picker discovery
+  requested` line at all. `am force-stop com.google.android.connectivity.resources` followed by a fresh
+  "Find the Mac" fixed it; the picker path then logged `picker discovery requested flags=2`, resolved
+  `192.168.31.109:64410 pv=1`, and the Connect row appeared after scrolling the dashboard's Nearby
+  section into view.
 - *Harness build caveat (unchanged from P10 precedent).* The receiver used for the recording was the
   Debug build copied to `/tmp/DroidBridgeHarness.app` and re-signed ad-hoc **without**
   `com.apple.security.app-sandbox`, because the sandboxed build cannot create
