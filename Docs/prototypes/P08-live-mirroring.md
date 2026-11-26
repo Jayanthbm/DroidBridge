@@ -508,6 +508,30 @@ One defect surfaced by this run belongs to the transport rather than the stream 
 refused frames that arrived before its own pairing confirm, so a phone that confirmed first looped.
 See the D2 entry in `Docs/PROGRESS_LOCAL.md` and ADR-060.
 
+### Notification-shade stop — measured in the final sweep (2026-11-26)
+
+The one row the sweep above still owed: tapping **Stop** on the ongoing capture notification, which is
+the only stop affordance that lives outside the app. Same conditions as the rest of the sweep —
+**USB connected: no · USB debugging: off · wireless debugging: off**, phone driven by hand, no ADB
+input, no screen capture, no clipboard read. Receiver: the plain Debug app (PID 66319) on port 64429.
+
+| Step | Evidence |
+|---|---|
+| Live share before the tap | `FRAMES received=2640 enqueued=2640 dropped=0 ptsUs=26941671332 status=rendering` 17:41:30.486; `AUDIO rms=0 silence … total=3551` at 17:41:30.033 (audio still arriving) |
+| `Stop` tapped in the shade | Mac `frame mirror.stop:6405:user stop` 17:41:30.486 → `MIRROR_STOP reason=user stop audioFrames=3575` 17:41:30.545 |
+| Notification cleared | owner-observed: **yes** - the ongoing "Mirroring your screen" notification left the shade |
+| App shows no active share | owner-observed: **yes** - the dashboard was back to its idle state |
+| Screen-sharing chip gone | owner-observed: **yes** - the status-bar / Quick Settings sharing chip disappeared |
+| Session survives the stop | `frame ping:6406` at 17:41:40 - the TLS session stayed up, so this stop ends capture and not the pairing |
+| Share again on the same session | `MIRROR_STARTED` 17:43:09.762 → `MIRROR_FORMAT 590x1280 rotation=0 … sps=18 pps=4` → `MIRROR_STOP reason=user stop audioFrames=104` 17:43:12.466, with no code comparison and no re-pairing |
+
+The notification action is `ACTION_STOP` → `teardown("user stop")` (`MirroringService.kt:164`, `:223`),
+the same handler the in-app button reaches, so the row proves the widget end to end rather than a
+separate code path. **Known limitation to keep:** both stop paths log `reason=user stop`, so the Mac
+log alone cannot say which control was used; the three phone-side observations above are what
+identifies this row. Prior attempts could not measure it because `uiautomator dump` fails with
+`ERROR: could not get idle state.` while the shade is open and screen capture is prohibited.
+
 Still not measured anywhere in P08: glass-to-glass latency and device cost under a fixed workload
-(carried forward unchanged from the 2026-11-12 acceptance), and the notification-shade stop row.
+(carried forward unchanged from the 2026-11-12 acceptance).
 

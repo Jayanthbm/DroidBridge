@@ -1,3 +1,31 @@
+**2026-11-26 (final sweep closes the notification-shade stop row):**
+
+The last P08 row the v1 sweep owed - the ongoing capture notification's **Stop** action, the only stop
+affordance outside the app - is now measured. Conditions unchanged from the sweep below: USB
+**disconnected**, USB debugging **off**, wireless debugging **off**; the owner tapped Stop at the phone
+and reported the three phone-side outcomes; no ADB input, screen capture or clipboard access. Receiver:
+the plain Debug app (66319) on port 64429.
+
+- *Stream before the tap.* `FRAMES received=2640 enqueued=2640 dropped=0 status=rendering` at 17:41:30.486,
+  with `AUDIO rms=0 silence … total=3551` a second earlier, so video and audio were both live.
+- *The tap.* Mac `frame mirror.stop:6405:user stop` 17:41:30.486 → `MIRROR_STOP reason=user stop
+  audioFrames=3575` 17:41:30.545. The notification action is `ACTION_STOP` → `teardown("user stop")`
+  (`MirroringService.kt:164`, `:223`) - the same handler as the in-app button, so the widget itself, not a
+  parallel path, is what this row proves.
+- *Phone side (owner-observed).* Notification gone from the shade: **yes**; app back to no active share:
+  **yes**; screen-sharing chip in the status bar / Quick Settings gone: **yes**. All three are the platform
+  teardown signals, so capture ended rather than the app merely losing its UI.
+- *Session kept.* `frame ping:6406` at 17:41:40 arrived after the stop, so the stop ends the projection and
+  not the pairing; a new share started 17:43:09.762 (`MIRROR_STARTED`, `MIRROR_FORMAT 590x1280 … sps=18
+  pps=4`) and stopped 3 s later (`MIRROR_STOP reason=user stop audioFrames=104`) with no code comparison.
+- *Known limitation, recorded not fixed.* Both stop paths log `reason=user stop`, so the log alone cannot
+  distinguish the notification stop from the in-app one; the phone-side observations above are the
+  discriminator. `uiautomator dump` still fails with `could not get idle state` while the shade is open, so
+  this row can only be driven by a human at the device.
+
+With that, every P08 row that was carried as unmeasured is measured; glass-to-glass latency and device cost
+remain the only P08 gaps.
+
 **2026-11-26 (v1 final acceptance sweep: USB disconnected, both debuggings off, device driven by hand):**
 
 State for every row below (checked at the start of each row with `adb devices`, which is also the proof
