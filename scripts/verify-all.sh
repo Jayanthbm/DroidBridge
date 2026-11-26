@@ -60,6 +60,21 @@ fi
     :experiments:session:assembleDebug \
     :experiments:session:testDebugUnitTest \
     :experiments:session:lintDebug \
+    :experiments:background-session:assembleDebug \
+    :experiments:background-session:testDebugUnitTest \
+    :experiments:background-session:lintDebug \
+    :experiments:audio-capture:assembleDebug \
+    :experiments:audio-capture:testDebugUnitTest \
+    :experiments:audio-capture:lintDebug \
+    :experiments:tone-player:assembleDebug \
+    :experiments:tone-player:testDebugUnitTest \
+    :experiments:tone-player:lintDebug \
+    :experiments:bluetooth-hid:assembleDebug \
+    :experiments:bluetooth-hid:testDebugUnitTest \
+    :experiments:bluetooth-hid:lintDebug \
+    :experiments:av-sync-stimulus:assembleDebug \
+    :experiments:av-sync-stimulus:testDebugUnitTest \
+    :experiments:av-sync-stimulus:lintDebug \
     :feature:mirroring:assembleDebug \
     :feature:mirroring:testDebugUnitTest \
     :feature:mirroring:lintDebug \

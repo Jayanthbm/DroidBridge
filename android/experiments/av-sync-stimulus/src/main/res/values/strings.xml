@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="experiment_name">P12 A/V Stimulus</string>
+    <string name="stimulus_starting">P12 A/V sync stimulus\nstarting…</string>
+    <string name="stimulus_cycle">cycle %1$d / %2$d</string>
+    <plurals name="stimulus_done">
+        <item quantity="one">done (%1$d cycle)</item>
+        <item quantity="other">done (%1$d cycles)</item>
+    </plurals>
+</resources>

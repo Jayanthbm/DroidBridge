@@ -367,6 +367,17 @@ The recording harness needs to write outside the sandbox, so measurement runs si
 acceptance builds keep using `DroidBridge.entitlements` unchanged (three keys, ADR-026). The recording
 is a local artefact of a synthetic test surface and a throwaway OTP string.
 
+### Product-path re-check 2026-11-26 (dry run)
+
+Whole-display sharing on the shipping `com.droidbridge.app` (not the P10 experiment's own recorder), with
+the receiver running the ad-hoc re-signed harness build. With
+`com.droidbridge.experiment.mediaprojection`'s `ContentTestActivity` (`FLAG_SECURE`) in front, the
+recorded stream kept advancing on a static screen (~0.24 s per frame, about 5 fps) while mean luma fell
+from 219.8 (the DroidBridge UI) to **1.0**, and stayed at 1.0 for the last 15 decoded frames. The product
+path withholds protected content the same way the experiment path does. Conditions: **USB not connected,
+wireless ADB on**; the screen-share consent and the app switch were driven through ADB at the owner's
+instruction. This is a dry run of the product path, not the final no-debug acceptance pass.
+
 ## Current assessment
 
 **In progress — core claim now measured.** Protected surfaces are withheld as required in every case

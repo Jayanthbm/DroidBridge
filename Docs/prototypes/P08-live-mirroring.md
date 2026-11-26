@@ -232,6 +232,15 @@ measured stream, and no screen capture or clipboard read was performed.
 | Reconnect re-announce through the product path | **Pass** — listener killed at 08:07:16 with the stream live. Phone `RECONNECTING` 08:07:22.760 → `CONNECTED` 08:07:28.271 (5.9 s, inside one backoff step), `re-announced format 590x1280 on new session gen=2`, and the new receiver saw `MIRROR_FORMAT 590x1280 … sps=18 pps=4` at 08:07:28 followed by `FRAMES received=60 → 120 dropped=0 status=rendering`. The restarted listener authenticated on the stored pin (`authenticated=true`) with no code comparison and no tap. |
 | Stop path (notification action, system sharing chip) | **Not measured.** The affordance is verified present — `dumpsys notification` shows `id=8108 android.title="Mirroring your screen"`, `numWithActions=2`, `[0] "Stop" -> PendingIntent … com.droidbridge.app startService` — but it cannot be exercised by ADB on this build: expanding the shade makes `uiautomator` fail with `ERROR: could not get idle state`, leaves `mCurrentFocus=null`, and every subsequent tap is swallowed until the device is rebooted. Reproduced twice. The in-app `Stop sharing` control could not be measured for the same reason: the window manager had already wedged, so the tap was never delivered. |
 
+A 2026-11-26 dry run retried the in-app `Stop sharing` row on the S24 with the UI responsive and its
+frame counter live. After returning from `com.droidbridge.experiment.mediaprojection`'s `FLAG_SECURE`
+activity via `am start`, `dumpsys window` still reported `mCurrentFocus` on that experiment window even
+though the DroidBridge UI was on screen; two taps on `Stop sharing` (at its scrolled, unobstructed
+position) and one long-press were swallowed and no `mirror.stop` reached the receiver. `KEYCODE_HOME`
+returned focus to the launcher. The row stays **not measured**: this attempt exercises a focus-loss mode,
+not the app's stop path, and the input never reached the app. USB state for that dry run: **not
+connected**; wireless ADB on.
+
 Three defects were found by running this, and all three are fixed:
 
 - **A first pairing could never complete.** A clean install confirmed the code on the phone, whose heartbeat

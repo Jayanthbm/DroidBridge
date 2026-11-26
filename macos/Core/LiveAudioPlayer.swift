@@ -68,6 +68,12 @@ public final class LiveAudioPlayer: ObservableObject {
     private var windowSquares = 0.0
     private var windowSamples = 0
 
+    /// Harness-only evidence sink (`P08_AUDIO_TIMELINE_DIR`): one row per decoded access unit, with
+    /// the host wall clock at which it was scheduled. Paired with the video recorder's timeline it
+    /// gives the A/V offset the P12 evidence needs, without trusting either side's PTS domain.
+    private var timelineFile: FileHandle?
+    private var timelineIndex = 0
+
     public init() {}
 
     /// Builds the decoder for a newly announced stream. Returns false when the format is unusable.
@@ -211,6 +217,9 @@ public final class LiveAudioPlayer: ObservableObject {
         }
 
         // pcm.frameLength is set by the converter.
+        if let dir = HarnessFlags.environment("P08_AUDIO_TIMELINE_DIR") {
+            writeTimeline(directory: dir, pcm: pcm, ptsUs: ptsUs)
+        }
         measureAmplitude(pcm)
 
         // Bound the queue at half a second. Without this, a slow decode or a stalled output device
@@ -238,6 +247,8 @@ public final class LiveAudioPlayer: ObservableObject {
     public func stop() {
         player.stop()
         engine?.stop()
+        try? timelineFile?.close()
+        timelineFile = nil
         converter = nil
         inputFormat = nil
         engine = nil
@@ -286,6 +297,40 @@ public final class LiveAudioPlayer: ObservableObject {
         windowStart = now
         windowSquares = 0
         windowSamples = 0
+    }
+
+    /// Harness-only timeline writer. RMS is computed per access unit (not per one-second window) so
+    /// a 150 ms beep is visible at buffer resolution; values are in the same 16-bit units as the
+    /// phone's `AUDIO rms=` lines.
+    private func writeTimeline(directory: String, pcm: AVAudioPCMBuffer, ptsUs: Int64) {
+        if timelineFile == nil {
+            try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
+            let path = directory + "/audio.csv"
+            FileManager.default.createFile(atPath: path, contents: nil)
+            timelineFile = FileHandle(forWritingAtPath: path)
+            timelineFile?.write(Data("index,wallUs,ptsUs,frames,rms16\n".utf8))
+        }
+        var sum = 0.0
+        var count = 0
+        if let data = pcm.floatChannelData {
+            let frames = Int(pcm.frameLength)
+            let channels = Int(pcm.format.channelCount)
+            for channel in 0..<channels {
+                let samples = data[channel]
+                for frame in 0..<frames {
+                    let value = Double(samples[frame])
+                    sum += value * value
+                }
+                count += frames
+            }
+        }
+        let rms = count > 0
+            ? Int(((sum / Double(count)).squareRoot() * 32_768).rounded())
+            : 0
+        timelineIndex += 1
+        let wallUs = Int64(Date().timeIntervalSince1970 * 1_000_000)
+        let line = "\(timelineIndex),\(wallUs),\(ptsUs),\(pcm.frameLength),\(rms)\n"
+        timelineFile?.write(Data(line.utf8))
     }
 
     private func fail(_ reason: String) {

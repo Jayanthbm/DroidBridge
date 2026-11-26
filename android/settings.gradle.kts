@@ -50,6 +50,8 @@ include(":feature:settings")
 include(":experiments:media-projection")
 include(":experiments:audio-capture")
 include(":experiments:tone-player")
+// P12 A/V offset stimulus: one trigger fires the flash and the beep together.
+include(":experiments:av-sync-stimulus")
 include(":experiments:clipboard")
 include(":experiments:clipboard-receive")
 include(":experiments:discovery")

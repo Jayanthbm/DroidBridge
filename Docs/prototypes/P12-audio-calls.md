@@ -6,6 +6,10 @@ merely cited** · call notifications/control **deferred**
 **Measured:** 2026-11-22 on SM-S928B (Galaxy S24 Ultra), Android 17 / API 37, serial `RZCY81TKBSV`.
 **Test conditions:** USB connected, USB debugging **enabled**, wireless debugging **disabled**.
 
+**2026-11-26 dry run:** the A/V offset baseline on the live mirroring path is **measured** (audio later
+than video by **+276 ms** mean) — see *A/V offset baseline* below. Conditions for that run differ:
+**USB not connected, wireless ADB on**.
+
 ## Question
 
 `PRODUCT_REQUIREMENTS.md` P1 asks to "investigate audio streaming under Android's playback-capture
@@ -145,6 +149,67 @@ ADB did **not** generate any audio. The functional input under test — the 440 
 policy — came from `AudioTrack` inside the experiment apps, and the consent was only the authorisation
 step. No screenshot or screen recording was taken, and no clipboard content was read or written.
 
+## A/V offset baseline measured 2026-11-26 (dry run)
+
+The question: when a phone-side source changes on screen and in the speakers at the same instant, how
+far apart do the mirror's video and audio arrive at the Mac? This is the first measurement of that
+offset on the product path; it is a dry run of the harness, not a perceptual verdict.
+
+**Conditions:** SM-S928B (Galaxy S24 Ultra), Android 17 / API 37, build
+`CP2A.260605.016.S928BXXU6EZJB`; Mac macOS 27.2.1 (`26B131`). **USB connected: no.** adb listed only
+`192.168.31.197:5555` and `192.168.31.64:5555` (TCP) — no USB transport. **USB debugging: cannot be
+asserted off from this host; no cable was attached, so it had no effect on the run. Wireless debugging
+on (ADB over Wi-Fi drove setup).**
+
+Receiver: the Debug build copied to `/tmp/DroidBridgeHarness.app` and re-signed ad-hoc **without**
+`com.apple.security.app-sandbox`, so `P08_RECORD_DIR` and `P08_AUDIO_TIMELINE_DIR` could write under
+`/tmp` (the sandboxed build cannot create those directories outside its container). Sources and
+entitlements are otherwise unchanged; securityd logged the new cdhash's Keychain access as `user
+approved 'always allow'`.
+
+Stimulus: the new `experiments/av-sync-stimulus` app (`com.droidbridge.experiment.avsync`) fires a
+150 ms 1 kHz stereo burst from an `AudioTrack` and turns the whole window white for 180 ms from the same
+main-thread step, ten times six seconds apart. Its log line carries one `tNs` for both events.
+
+Measurement: `P08_RECORD_DIR` wrote `stream.h264` plus `timeline.csv` (`index,ptsUs,bytes,wall`), and the
+new `P08_AUDIO_TIMELINE_DIR` wrote `audio.csv` (`index,wallUs,ptsUs,frames,rms16`). Flash onset is the
+first frame whose mean luma is above 200 after a dark frame (ffmpeg decode to 59x128 grey); beep onset
+is the first access unit with 16-bit RMS above 300 after silence.
+
+| Cycle | Flash frame arrival (Unix s) | Beep AU scheduled (Unix s) | Audio later by |
+|---|---|---|---|
+| 1 | 1795670967.700 | 1795670968.022 | +322 ms |
+| 2 | 1795670973.739 | 1795670974.062 | +323 ms |
+| 3 | 1795670979.754 | 1795670980.012 | +258 ms |
+| 4 | 1795670985.778 | 1795670985.967 | +189 ms |
+| 5 | 1795670991.781 | 1795670992.085 | +305 ms |
+| 6 | 1795670997.811 | 1795670998.045 | +234 ms |
+| 7 | 1795671003.827 | 1795671004.123 | +296 ms |
+| 8 | 1795671009.983 | 1795671010.219 | +236 ms |
+| 9 | 1795671016.018 | 1795671016.336 | +319 ms |
+| 10 | 1795671022.018 | 1795671022.301 | +284 ms |
+
+**Mean +276.5 ms, median +289.7 ms, standard deviation 43.2 ms, min +189 ms, max +323 ms (n = 10):
+audio later than video.** Captured 3205 video frames and 5832 audio access units (~135 s). Beep peak
+RMS was 7735 of 32768 (-12.5 dBFS), i.e. real signal rather than the silent-capture failure this
+prototype warns about.
+
+Limits, which is why this is a baseline and not a verdict:
+
+- The audio number is when the decoded buffer was **scheduled** on the Mac, not when it left the
+  speaker; the player schedules each buffer on arrival (`at: nil`), so no deliberate delay is added.
+  The video number is when the encoded frame **reached the receiver**, not when it was displayed; the
+  screen capture emits on change, so it includes capture, encode and network time.
+- Quantisation: audio access units are 23.2 ms; the flash step is resolved to the captured frame
+  interval (0.13-0.25 s on this mostly static screen), which is the source of the 134 ms spread.
+- One path only: whole-display `MediaProjection`, AAC-LC 44.1 kHz stereo 128 kbit/s, no Bluetooth and
+  no resampling, one ~150 s run.
+
+Consequence: on the current path the Mac plays mirrored audio roughly a quarter second after the
+matching video frame arrives — noticeable for speech. Nothing re-times it today: the phone sends no
+presentation offset and the Mac does not delay video. P12's remaining decision is whether to re-time
+(delay video, or start audio earlier) and then re-measure against the chosen policy.
+
 ## Not measured / open
 
 - **A live cellular or VoIP call.** Row 6 measures the platform rule that makes call audio
@@ -179,3 +244,22 @@ adb logcat -s P12Audio
 
 Expected: `rms=5791.5 peak=8190` for the allowed rows, `rms=0.0` with frames still advancing for
 every refused row.
+
+For the A/V offset measurement (the stimulus is a separate app with no permissions):
+
+```bash
+adb install -r android/experiments/av-sync-stimulus/build/outputs/apk/debug/av-sync-stimulus-debug.apk
+
+# receiver records both timelines; the transcript also prints the event lines
+P08_RECORD_DIR=/tmp/av/video P08_AUDIO_TIMELINE_DIR=/tmp/av/audio \
+  DroidBridge.app/Contents/MacOS/DroidBridge --p08-listen --p08-allow-capture
+
+# connect and share the whole screen, then fire ten flash+beep cycles six seconds apart
+adb shell am start -n com.droidbridge.experiment.avsync/.AvSyncActivity
+adb logcat -s P12AvSync
+```
+
+Analyse `video/timeline.csv` + `video/stream.h264` for the flash frames and `audio/audio.csv` for
+the beep access units; the offset is beep onset minus flash onset. A sandboxed build cannot create
+those directories outside its container, so a measurement build needs the sandbox entitlement removed
+(the 2026-11-26 run used an ad-hoc re-signed copy under `/tmp`).

@@ -7,6 +7,56 @@ are met.
 
 **Last updated:** 2026-11-26
 
+**2026-11-26 (S1 staging session: A/V offset baseline measured, P10 product-path re-check, P08 stop row retried):**
+The owner asked for an unattended run of the staging-session work (S1) with ADB available, starting
+while they sleep; no owner input was requested or needed. This entry records the first A/V measurement
+and the dry runs, not an acceptance sweep.
+
+- *New stimulus module.* `android/experiments/av-sync-stimulus/` (tenth experiment app,
+  `com.droidbridge.experiment.avsync`, no permissions) fires a 150 ms 1 kHz stereo burst and a 180 ms
+  white flash from one main-thread step, ten times six seconds apart, and logs one `tNs` for both.
+  Added to `android/settings.gradle.kts` and to the experiment table; `:app` still does not depend on
+  it.
+- *A/V timeline hook.* `LiveAudioPlayer` can now write `audio.csv`
+  (`index,wallUs,ptsUs,frames,rms16`) when `P08_AUDIO_TIMELINE_DIR` is set. The environment read is
+  inside `HarnessFlags.environment`, which compiles to nil in Release, so a shipped build cannot write
+  it.
+- *A/V offset baseline (dry run, one ~150 s session).* 10/10 stimulus cycles detected on both sides:
+  video flash frames in `timeline.csv`, beep access units in `audio.csv`. Audio was **later than video
+  by +276.5 ms mean** (median +289.7, sd 43.2, min +189, max +323 ms, n = 10). Evidence: 3205 video
+  frames, 5832 audio access units, beep peak RMS 7735/32768 (-12.5 dBFS). Method, per-cycle table and
+  limits are in `Docs/prototypes/P12-audio-calls.md`; the headline is a receiver-side baseline, not a
+  perceptual verdict. Nothing re-times audio today.
+- *P10 product-path re-check (dry run).* With the whole display shared by the shipping app and the P10
+  experiment's `FLAG_SECURE` activity in front, the recorded stream kept advancing (~5 fps) while mean
+  luma fell from 219.8 to **1.0** for the last 15 decoded frames. Same result as the 2026-11-21
+  experiment-path measurement, now on the product path.
+- *P08 in-app `Stop sharing` retried.* The row is still **not measured**, and the reason is recorded:
+  after returning from the experiment's `FLAG_SECURE` activity, `dumpsys window` kept `mCurrentFocus` on
+  that window while the DroidBridge UI was on screen, so two taps and one long-press on the button were
+  swallowed and no `mirror.stop` reached the receiver. Not a product finding — input never reached the
+  app. `KEYCODE_HOME` restored focus.
+- *Harness build caveat (unchanged from P10 precedent).* The receiver used for the recording was the
+  Debug build copied to `/tmp/DroidBridgeHarness.app` and re-signed ad-hoc **without**
+  `com.apple.security.app-sandbox`, because the sandboxed build cannot create
+  `P08_RECORD_DIR`/`P08_AUDIO_TIMELINE_DIR` outside its container. Sources and entitlements are
+  otherwise unchanged, and the shipping/acceptance entitlement set was not edited.
+
+ADB actions this session (operator mode, owner-directed): installed the two experiment APKs
+(`avsync`, `mediaprojection`), force-stopped and launched the app and experiment activities, drove the
+NSD picker, `Connect`, `Share this screen`, the Android 17 consent ("Share one app" → "Share entire
+screen" → "Share screen"), the audio switch, and `uiautomator`/`dumpsys`/`logcat` reads. No screenshots,
+no `screencap`/`screenrecord`, no clipboard read or write, and no ADB input inside any measured stream.
+
+Device/debug state for every run above: **USB connected: no** (adb listed only
+`192.168.31.197:5555` and `192.168.31.64:5555`, both TCP); **USB debugging: no cable attached, so it
+had no effect; not asserted off from this host**; **wireless debugging: on** (ADB over Wi-Fi drove the
+setup). Final acceptance still needs USB out and both debuggings off.
+
+Housekeeping: the 2026-11-26 cleanup had uninstalled all experiment APKs at the owner's request;
+`avsync` and `mediaprojection` are installed on the S24 again because S1 needs them. They will be
+uninstalled when the staging runs no longer need them. Evidence lives under `/tmp/avsync2` and
+`/tmp/avsync3` and is not committed.
 **2026-11-26 (pre-Phase 9 cleanup: documentation truth, Release surface, experiment separation, device
 fixtures):** The owner asked for a cleanup on both platforms before Phase 9. Four commits, no behaviour
 change to a shipped feature:

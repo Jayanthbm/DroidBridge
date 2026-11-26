@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A flash burst crossed by a tone wave: the P12 A/V stimulus, not a product icon. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,18l10,26h26l-21,15l8,27l-23,-16l-23,16l8,-27l-21,-15h26z" />
+</vector>

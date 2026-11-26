@@ -5,6 +5,7 @@ package com.droidbridge.experiment.backgroundsession
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.edit
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
@@ -283,18 +284,18 @@ object Prefs {
     private const val KEY_ENABLED = "enabled"
 
     fun save(context: Context, host: String, port: Int, pin: String) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit()
-            .putString(KEY_HOST, host)
-            .putInt(KEY_PORT, port)
-            .putString(KEY_PIN, pin)
-            .putBoolean(KEY_ENABLED, true)
-            .apply()
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putString(KEY_HOST, host)
+            putInt(KEY_PORT, port)
+            putString(KEY_PIN, pin)
+            putBoolean(KEY_ENABLED, true)
+        }
     }
 
     fun setEnabled(context: Context, enabled: Boolean) {
-        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit()
-            .putBoolean(KEY_ENABLED, enabled)
-            .apply()
+        context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit {
+            putBoolean(KEY_ENABLED, enabled)
+        }
     }
 
     fun enabled(context: Context): Boolean =

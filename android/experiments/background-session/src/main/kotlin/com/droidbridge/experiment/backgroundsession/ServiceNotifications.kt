@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: none — internal feasibility experiment, not for distribution.
 package com.droidbridge.experiment.backgroundsession
 
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -94,6 +95,7 @@ object ServiceNotifications {
 }
 
 /** Keeps the application context alive for notification refreshes from the log store. */
+@SuppressLint("StaticFieldLeak") // application context only: it lives as long as the process does
 object NotificationContext {
     @Volatile
     var context: Context? = null

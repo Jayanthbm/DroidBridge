@@ -15,6 +15,7 @@ dependencies.
 | `background-session/` | P14 | Foreground-service persistence, Doze and restart behaviour | `Docs/prototypes/P14-background-persistence.md` |
 | `audio-capture/` | P12 | `AudioPlaybackCaptureConfiguration` boundaries (media vs calls), measured PCM | `Docs/prototypes/P12-audio-calls.md` |
 | `tone-player/` | P12 | Deterministic 440 Hz source with selectable capture policy and usage class | `Docs/prototypes/P12-audio-calls.md` |
+| `av-sync-stimulus/` | P12 | One trigger fires a white flash and a 150 ms 1 kHz beep together, so the recorded timelines measure the A/V offset | `Docs/prototypes/P12-audio-calls.md` |
 | `bluetooth-hid/` | P16, P17 | Android-side HID receiver for the arrow-key delivery tests | `Docs/prototypes/P16-ble-hid.md`, `Docs/prototypes/P17-classic-hid.md` |
 
 ## Why they stay
