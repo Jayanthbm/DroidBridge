@@ -38,6 +38,14 @@ class MainActivity : ComponentActivity() {
         get() = (application as DroidBridgeApplication).controller
     private lateinit var clipboard: ClipboardBridge
 
+    /** Phases in which the process already owns a session, so a new discovery would only disturb it. */
+    private val LIVE_PHASES = setOf(
+        com.droidbridge.core.pairing.Pairing.Phase.CONNECTING,
+        com.droidbridge.core.pairing.Pairing.Phase.CONFIRMING,
+        com.droidbridge.core.pairing.Pairing.Phase.CONNECTED,
+        com.droidbridge.core.pairing.Pairing.Phase.RECONNECTING,
+    )
+
     /** True while this activity is the resumed one, i.e. while Android will let us touch the clipboard. */
     @Volatile private var isForeground = false
 
@@ -59,12 +67,20 @@ class MainActivity : ComponentActivity() {
 
         val identity = DeviceIdentity.loadOrCreate()
         logDeviceOnce()
-        // Discovery starts immediately on every platform. API 37 uses the system picker, which is
-        // the scoped consent path and needs no broad permission (ADR-010) — measured on the S24 with
-        // ACCESS_LOCAL_NETWORK explicitly denied: the picker still resolved the Mac and the session
-        // connected. So the broad permission is never requested unless the picker path itself fails,
-        // and then only because the user asks for it.
-        controller.startDiscovery()
+        // Discovery starts immediately on every platform, but never over a session this process already
+        // owns: Android keeps the process (and the session it holds) when the user goes to the launcher
+        // and comes back, and a second discovery would put the system picker on top of a connection that
+        // never dropped (measured 2026-11-26: relaunching showed "Choose a device to connect" while the
+        // dashboard still read connected). API 37 uses the system picker, which is the scoped consent
+        // path and needs no broad permission (ADR-010) — measured on the S24 with ACCESS_LOCAL_NETWORK
+        // explicitly denied: the picker still resolved the Mac and the session connected. So the broad
+        // permission is never requested unless the picker path itself fails, and then only because the
+        // user asks for it.
+        if (controller.state.value.phase in LIVE_PHASES) {
+            android.util.Log.i("P03Shell", "session already live, not starting discovery")
+        } else {
+            controller.startDiscovery()
+        }
 
         // The clipboard bridge must exist before the composition reads its state, or the first frame
         // throws UninitializedPropertyAccessException.

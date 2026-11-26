@@ -342,6 +342,13 @@ satisfy.
   DISCOVERING, so a drop, a stop or a competing peer can never be overridden by a late list. Measured:
   choosing the Mac row produced `state=CONNECTING` then `CONNECTED` within 240 ms with no second tap, and
   an explicit `Disconnect` stayed `IDLE` for 10 s afterwards.
+- Implemented (2026-11-26): discovery is request-triggered, not lifecycle-triggered. Because the session is
+  owned by the process, an activity recreation (a launcher round trip, or `am start
+  --activity-clear-task` while the process lives) ran `startDiscovery()` again and put the picker over a
+  live connection. `MainActivity.onCreate` now skips discovery while the phase is
+  CONNECTING/CONFIRMING/CONNECTED/RECONNECTING. Measured 15:07:18 on the S24 Ultra: `session already live,
+  not starting discovery`, focus stayed on the dashboard, no `state=` line followed - the session was
+  untouched.
 
 ## ADR-009 — Media transport not yet selected
 - Date: 2026-11-07

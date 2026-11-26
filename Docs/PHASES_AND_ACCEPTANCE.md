@@ -40,7 +40,11 @@ and no-certificate rejection pass on the S24 Ultra under API 37 default CT. **P0
 sustained duplex, airplane-mode outage recovery, Android process recreation/reboot, and a real Mac
 sleep/wake pass (Sleep 21:41:50, Wake 21:42:15; same-port reconnect with no picker). Mac
 advertiser/cold restart is measured: a new Mac service instance requires one picker re-approval;
-that is a documented product limitation for Phase 2. Advertising and inbound require
+that is a documented product limitation for Phase 2. **Update (2026-11-26):** a Mac app restart no longer
+costs anything visible when the phone app is already running - the phone noticed the peer was gone and
+reconnected to the same stored pin about 12 s after the Mac came back (Mac killed 14:36:06, `CONNECTED`
+14:36:18), with no picker and no tap. The picker re-appears only when the phone starts a new discovery
+round (app start or `Find the Mac`), which is the request-triggered picker described above. Advertising and inbound require
 `ACCESS_LOCAL_NETWORK`; the picker, approved-only discovery and outbound TCP do not. **P03** has
 all six acceptance criteria met, including the USB-disconnected run. **P04** is verified on
 Android 12 and Android 17.

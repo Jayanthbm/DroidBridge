@@ -1,3 +1,29 @@
+**2026-11-26 (21-minute endurance run with audio; the picker no longer opens over a live session):**
+
+- *Endurance.* `Share entire screen` at 14:45:10, stopped from the Mac's Screen pane at 15:06:18
+  (`durationMs=1268525`, 21 min 8 s): `frames=9210 bytes=128629010 keyframes=154 fps=7.3 dropped=1
+  maxSendMs=2 largestFrame=149959`, `audioState=capturing 44100Hz stereo audioFrames=54492
+  audioBytes=20244828`. The Mac side: `FRAMES received=9660 enqueued=9660 dropped=0 status=rendering` and
+  `MIRROR_STOP reason=mac stop audioFrames=54616` - 54 616 access units at 1024 samples/44.1 kHz is 1268 s,
+  exactly the run length, so no audio ran dry. The one dropped frame is the first the phone has reported in
+  a long run (the 28-minute baseline had none); it is a single frame in 9210 and nothing else moved.
+- *Why 7.3 fps and not the baseline's ~26.* The frame rate here is content-driven: the phone's screen was off
+  (`screen_off_timeout` 30000) and mostly static, so the encoder only produced a frame when something
+  changed. It is not a regression - the bitrate (811-821 kbit/s) and `maxSendMs=2` show the pipeline was
+  idle, not saturated - and the earlier 26 fps figure came from a run with the screen awake and animating.
+- *The picker over a live session (fixed).* Bringing the app back from the launcher while its process still
+  owned a connected session showed `Choose a device to connect` on top of a connection that had never
+  dropped. `MainActivity` now starts discovery only when the phase is not CONNECTING/CONFIRMING/CONNECTED/
+  RECONNECTING, so the picker appears when the app needs it and not otherwise. `Home` alone does not
+  recreate the activity, so the case was reproduced with `am start --activity-clear-task`, which builds a new
+  activity in the same process: measured 15:07:18, `session already live, not starting discovery`, focus stayed
+  on the dashboard, and no `state=` line followed - the session was untouched.
+- *ADB actions (operator-at-owner's-instruction, setup only):* installed the debug APK, `am start` (plain and
+  `--activity-clear-task`), `input keyevent 3` (Home), taps on the picker row, `Share this screen` and the
+  consent dialog (`Share one app` -> `Share entire screen` -> `Next`), `uiautomator dump` to locate those
+  controls, `logcat`. Consent was granted through automation at the owner's instruction. No screen capture,
+  no clipboard access, no settings changed (the developer-options shortcut was deliberately not used). USB
+  disconnected; wireless debugging on; sharing stopped again at the end.
 **2026-11-26 (regression run after tonight's changes: one session, share, audio, stop from the Mac):**
 A single run through the whole v1 path, after `device.info`, picker auto-connect and Mac-initiated stop
 all landed, to make sure the pieces still work together and not only one at a time.
@@ -644,7 +670,7 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 
 - **Bluetooth HID control is unverified.** P16's first short-form UUID registration returned CoreBluetooth's UUID-not-allowed message. The isolated POC now uses canonical SIG UUIDs and includes Battery/Device Information/PnP ID services. Apple's public CoreBluetooth descriptor API cannot create Report Reference `0x2908`, so the POC is Boot Keyboard only; service publication remains untested after the change. The already-bonded OnePlus stayed disconnected with no active HID host input; no key was sent. S24 compatibility is unknown. P17 Classic HIDP remains independent and pending. Accessibility, ADB functional control/data paths, root, Knox and hidden APIs remain prohibited. See [P16 result](prototypes/P16-ble-hid.md).
 - **Automatic background clipboard sync is not a release claim.** Android requires focus/IME for reads; macOS 15.4+ can prompt or deny programmatic pasteboard access.
-- **Android 17 LAN path is resolved for the primary design.** P02 proved the picker path on the S24 Ultra: approval, resolve, connect, 60 s duplex and approved-only recovery all work. Discovery, approved-only discovery and outbound TCP work **without** `ACCESS_LOCAL_NETWORK`; advertising and inbound listening require it. Revoking it does not take effect for a running process until reboot. The product must keep the picker as its consent mechanism and must not treat the permission as the sole boundary. The one open P02 item is Mac sleep/wake; the Mac advertiser/cold restart is measured and requires a one-time re-approval for a new service instance.
+- **Android 17 LAN path is resolved for the primary design.** P02 proved the picker path on the S24 Ultra: approval, resolve, connect, 60 s duplex and approved-only recovery all work. Discovery, approved-only discovery and outbound TCP work **without** `ACCESS_LOCAL_NETWORK`; advertising and inbound listening require it. Revoking it does not take effect for a running process until reboot. The product must keep the picker as its consent mechanism and must not treat the permission as the sole boundary. The one open P02 item is Mac sleep/wake; the Mac advertiser/cold restart is measured and requires a one-time re-approval for a new service instance. Refined 2026-11-26: with the phone app already running, a Mac app restart reconnects on the stored pins with no picker and no tap (killed 14:36:06, `CONNECTED` 14:36:18); the re-approval is tied to a new discovery round on the phone, not to the Mac restart itself.
 - **Mac-as-Bluetooth-HID-peripheral remains conditional and unproven overall.** P16's short-form UUID attempt returned CoreBluetooth's uuidNotAllowed message; it now uses canonical UUIDs and the required Device Information/Battery services. Public CoreBluetooth cannot create HOGP Report Reference `0x2908`, limiting the test to Boot Keyboard. Manual Mac publication and Android Boot Host compatibility are untested; the earlier paired OnePlus attempt stayed disconnected. No S24 BLE compatibility is known. P17 Classic HIDP is independent.
 - **Background clipboard sync is best-effort, not guaranteed.** The `connectedDevice` foreground service keeps the session alive in normal use, but Doze suspends network access device-wide, so the design is reconnect-on-resume rather than an always-on promise. Whether a socket survives a full night is unproven (U11).
 - **The macOS app cannot be released without a paid Apple Developer Program membership.** Notarisation requires a Developer ID certificate, only the Account Holder can create one, and an unnotarised app is blocked by Gatekeeper on current macOS (R-27). This is an external dependency on the owner, not a technical uncertainty, and it blocks Phase 9 rather than Phase 0.
@@ -723,8 +749,23 @@ P09/P13 were still unchecked as "not run". The evidence was in this file all alo
 headings and the checklist were stale. They now match the reports; nothing was promoted on the
 strength of a commit message.
 
-The next prototype is **P08 — end-to-end mirroring**, which is the critical path (P01 + P03 + P07 are
-all accepted).
+**Current (2026-11-26).** That queue is empty: P08 mirroring, P10 protected surfaces, P05/P06 clipboard,
+P11/P15 identity and the v1 shell (main window, viewer, menu-bar item) are implemented and measured. The
+picker's answer now connects on its own, and a Mac app restart reconnects without a pair. What remains is
+not more shell code:
+
+1. **Remote input is blocked on hardware feasibility, not on UI work.** P17 Classic HIDP has not been
+   measured with a paired phone and P16's Boot-only BLE profile is unproven for publication, so the
+   viewer's click-to-control surface cannot be built honestly yet. This needs the owner at the Mac for the
+   Bluetooth/TCC prompt.
+2. **v1 acceptance has to be repeated with debugging off.** Every run recorded here went through wireless
+   ADB, which the final run forbids; the checklist must be repeated with USB disconnected and both
+   debugging modes disabled, with device-side steps done by hand.
+3. **Open design questions** - brand, and phone navigation including whether the lab controls on the
+   Connection card move behind a Diagnostics surface (`Docs/UI_DESIGN_DIRECTION.md` §7).
+4. **Housekeeping** - the login-keychain `set-key-partition-list` change recorded in the 2026-11-22 caveat
+   above should be reverted or narrowed now that the harness is signed with the Apple Development identity;
+   it was a workaround for an unattended run, not a product requirement.
 
 
 ## Agent handoff status (2026-11-08)

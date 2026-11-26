@@ -1,3 +1,11 @@
+## The device picker no longer opens over a live session (2026-11-26)
+
+- Coming back to the app while its session was still connected used to re-run discovery, so Android's
+  `Choose a device to connect` dialog covered a connection that had never dropped. Discovery now starts only
+  when the app actually needs it - never while a session is connecting, confirming, connected or
+  reconnecting.
+- Agreeing with it, a 21-minute share with audio (9210 frames, 128.6 MB, 54 492 audio frames) ran with one
+  dropped frame, `maxSendMs=2`, and an audio unit count that matches the run length exactly.
 ## A Mac app restart reconnects by itself (2026-11-26)
 
 - **Killing the Mac app no longer costs a re-pair.** The phone noticed the peer was gone, scheduled its

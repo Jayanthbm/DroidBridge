@@ -43,6 +43,15 @@ picker row -> `auto-connecting to the peer the system picker returned: DroidBrid
 -> `CONNECTED` in 240 ms; `Disconnect` -> `IDLE`, still `IDLE` 10 s later. The direct-browse path below API 37
 does not auto-connect, because it lists every Mac on the network rather than the one the user picked.
 
+**Discovery starts when the app needs it, not when the activity is built (implemented 2026-11-26).** The
+session belongs to the process, not to the activity: `MainActivity.onDestroy` deliberately leaves it open,
+because closing it there killed the stream on every rotation. Android also keeps a connected session while
+the user goes to the launcher and comes back, so an unconditional `startDiscovery()` in `onCreate` put the
+system picker on top of a connection that had never dropped. `onCreate` now skips discovery while the phase
+is `CONNECTING`, `CONFIRMING`, `CONNECTED` or `RECONNECTING`, and logs `session already live, not starting
+discovery` instead. A process that starts fresh holds no session, so the picker still appears on a cold
+start, after a `Disconnect`, and when the user presses `Find the Mac`.
+
 ## 4. Clipboard behaviour
 
 - Foreground/manual send is the initial guaranteed workflow.
