@@ -116,6 +116,10 @@ public final class LiveMirrorReceiver: ObservableObject {
     public let audio = LiveAudioPlayer()
     @Published public private(set) var audioStatus = "audio off"
 
+    /// What the phone said it is (`device.info`); nil until it says, which is what the sidebar's
+    /// "Android device" placeholder stands in for.
+    @Published public private(set) var deviceInfo: DeviceInfoPayload?
+
     @Published public private(set) var pairingCode: String?
     @Published public private(set) var peerPin: String?
 
@@ -363,6 +367,14 @@ public final class LiveMirrorReceiver: ObservableObject {
             } catch {
                 state = .failed
                 emit("MIRROR_FORMAT_FAILED \(error)")
+            }
+        case .deviceInfo:
+            do {
+                let info = try DeviceInfoPayload.parse(message.payload)
+                deviceInfo = info
+                emit("DEVICE_INFO \(info.displayName) \(info.detailLine)")
+            } catch {
+                emit("DEVICE_INFO_FAILED \(error)")
             }
         case .mirrorStop:
             let reason = String(data: message.payload, encoding: .utf8) ?? "unknown"

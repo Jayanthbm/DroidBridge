@@ -1,3 +1,34 @@
+**2026-11-26 (the Mac can name the phone: `device.info`):**
+The sidebar's device card said "Android device" because the handshake carries no model name, and the app
+refused to invent one. The phone now says what it is, and the card shows it.
+
+- *Protocol.* `ControlMessage.Type.DEVICE_INFO(0x40)` carries `DeviceInfo` JSON with `manufacturer`,
+  `model`, `androidRelease`, `sdkInt` and `appVersion`, fixed key order so it is a test vector on both
+  sides (`DeviceInfoTest` pins the literal; `DeviceInfoPayloadTests` parses that same literal). No serial
+  number, build fingerprint, user-set device name or account is sent: the field list is the phone's About
+  screen, and a payload that never contains personal data cannot leak it into a log later. Each field is
+  bounded at 64 characters so one message cannot fill the control channel.
+- *Android.* `DroidBridgeApplication` collects `session.state`, keeps distinct phases, and calls
+  `announceDevice()` on every transition into CONNECTED - silent reconnects included, because a Mac that
+  restarted has forgotten the name. Logs `device info sent=true samsung SM-S928B android=17`.
+- *macOS.* `LiveMirrorReceiver` handles `.deviceInfo`, publishes `DeviceInfoPayload?` and logs
+  `DEVICE_INFO samsung SM-S928B Android 17 (API 37) - app 0.1.0`. The card shows the name plus a tertiary
+  detail line, and keeps the "Android device" placeholder until the message arrives.
+- *Compatibility.* Unknown control types throw on both peers, so a new phone against an old Mac (or the
+  reverse) closes the session instead of ignoring the message. Both ends are on this build; the property is
+  documented in NETWORK_PROTOCOL §7 rather than worked around, since every added control type has had it.
+- *Evidence (14:24-14:25, S24 Ultra, wireless, USB disconnected, wireless debugging on).* Phone
+  `P03Shell: device info sent=true samsung SM-S928B android=17`; Mac `DEVICE_INFO samsung SM-S928B Android 17
+  (API 37) - app 0.1.0`; window capture `Docs/design/shell-main-device.png` shows the card reading
+  `samsung SM-S928B` / `Android 17 (API 37) - app 0.1.0` / `connected, not sharing`.
+- *Automated tests.* `DeviceInfoTest` (6) in the shared JVM build; `DeviceInfoPayloadTests` (5) in
+  `DroidBridgeTests`; `./scripts/verify-all.sh` passed afterwards (95 macOS tests, `** TEST SUCCEEDED **`,
+  `=== All verifications passed ===`).
+- *ADB actions tonight (operator-at-owner's-instruction), scoped to setup:* installed the debug APK,
+  force-stopped and relaunched the Mac app, `am start`-ed `MainActivity`, swiped the phone UI, tapped
+  `Connect` in the system NSD picker and the app's `Connect` button, `uiautomator dump` to find those
+  controls, `logcat`. No clipboard read/write, no `screencap`/`screenrecord`, no runtime debugging or root
+  changes. Device state unchanged: sharing stopped, `screen_off_timeout` 30000.
 **2026-11-26 (Mac-initiated stop: the viewer stops the phone's share):**
 Both peers can now stop a share. The phone has always sent `mirror.stop` on its own stop; the Mac had a
 `mirror.stop` type but no sender, so the viewer's stop glyph closed only the local session and the phone kept

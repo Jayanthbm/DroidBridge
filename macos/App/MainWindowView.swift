@@ -70,10 +70,16 @@ struct MainWindowView: View {
 
     private var deviceCard: some View {
         VStack(alignment: .leading, spacing: 3) {
-            // The handshake carries no model name, so the card says what is actually known: one
-            // Android device is paired to this Mac. A name would be invented until the protocol
-            // sends one (recorded as follow-up in Docs/UI_DESIGN_DIRECTION.md).
-            Text("Android device").font(.headline)
+            // The phone names itself in `device.info` after every session reaches CONNECTED. Until
+            // that message has arrived (first launch, or a phone that has not been updated) the card
+            // says exactly what is known rather than inventing a name.
+            Text(liveMirror.deviceInfo?.displayName ?? "Android device").font(.headline)
+            if let info = liveMirror.deviceInfo {
+                Text(info.detailLine)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            }
             HStack(spacing: 6) {
                 Circle().fill(liveMirror.state.dotColor).frame(width: 7, height: 7)
                 Text(liveMirror.state.shortLine)

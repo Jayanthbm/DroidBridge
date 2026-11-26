@@ -44,6 +44,11 @@ A `NavigationSplitView`: a 220 pt sidebar and a detail pane.
 - **Sidebar**, top to bottom: the device card (phone name, `Android 17`, status dot + one line of state,
   and the pairing code when it is showing); then `Clipboard`, `Screen`, `Audio`, `Settings`; then a
   footer with the app version and a "Diagnostics" item that opens the technical pane.
+  As built (2026-11-26): the card reads `samsung SM-S928B` / `Android 17 (API 37) - app 0.1.0` / dot +
+  `connected, not sharing`, fed by `device.info` rather than a placeholder, and the item list runs
+  `Overview`, `Clipboard`, `Screen`, `Audio`, `Settings`, `Diagnostics` (`Docs/design/shell-main-device.png`).
+  There is no app-version footer yet, and the Mac UI shows no version of its own anywhere (the phone's
+  version arrives in `device.info`).
 - **Detail**, default = the device overview: what is paired, when it last synced, and the two primary
   actions (`Send clipboard now`, `Share this screen`).
 - Status is one line of text plus a dot: `idle`, `looking for the Mac`, `connecting`, `confirm 051 647`,

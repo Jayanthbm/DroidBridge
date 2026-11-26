@@ -108,6 +108,12 @@ object ControlMessage {
 
         /** Either side paused or resumed sync. Payload: `"pause"` or `"resume"`, never content. */
         CLIPBOARD_PAUSE(0x35),
+
+        /**
+         * What the phone is, so the Mac can name it instead of saying "Android device".
+         * Payload: `DeviceInfo` JSON. Sent by the phone on every session that reaches CONNECTED.
+         */
+        DEVICE_INFO(0x40),
         ;
 
         /** True for media, which is paced and limited separately from control traffic. */

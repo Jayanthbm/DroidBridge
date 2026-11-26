@@ -22,6 +22,7 @@
 		36C3BCB3285EE7AB3AE9F00C /* Network.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1BCC5937B70DE2A8AC1D55D /* Network.framework */; };
 		373BA350DC174E06EAB118D2 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 45B21693499F9A7C73EA63AB /* AVFoundation.framework */; };
 		37D2C8BB3030876B47CD2390 /* LocalNetworkProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4ED6018AD3551CD238C2F9F /* LocalNetworkProbe.swift */; };
+		39525FC78E4D1C66D410064A /* DeviceInfoPayload.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010DFDBED36BA27EE0BC5C16 /* DeviceInfoPayload.swift */; };
 		3AF387E1DBAFCAED114F07C0 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF5CBD439A6B2AC73249449B /* MenuBarView.swift */; };
 		3BBB5C21329A089795FF0AE1 /* VideoPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98C134AF21AA5D5DAB4F906A /* VideoPayloadTests.swift */; };
 		3D5C68946C467BCD56D4FB41 /* PeerTrustPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229C6D53AC5716D1D331748B /* PeerTrustPolicy.swift */; };
@@ -62,6 +63,7 @@
 		B43C8476EEB1180D97D0F786 /* SessionFraming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B9F127C9E8BC2E7E05DA37D /* SessionFraming.swift */; };
 		B57BF4A800566773F77C29E6 /* ShortAuthenticationCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */; };
 		B761DDE9E0330B1CE1828DDE /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C6E7D435733DFE75E0B09E /* Security.framework */; };
+		BBC5B9F88531C401B0F28A1D /* DeviceInfoPayloadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1753A701FCBD4352B9696DA3 /* DeviceInfoPayloadTests.swift */; };
 		C2AAA3E20B0AC97DEAE5C23C /* ServiceAdvertisementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */; };
 		D309F285A5532D08A012761B /* HIDRemoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165370B1B1346061B359A63A /* HIDRemoteView.swift */; };
 		D50365C98344B775E93BA740 /* HIDDescriptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348B71677DB4A3AC5799C789 /* HIDDescriptor.swift */; };
@@ -90,6 +92,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		010DFDBED36BA27EE0BC5C16 /* DeviceInfoPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoPayload.swift; sourceTree = "<group>"; };
 		026BAE6BBFCB5AC7D861BAE6 /* ShortAuthenticationCodeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCodeTests.swift; sourceTree = "<group>"; };
 		045D97DC485774CFC0878C91 /* VideoReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoReceiver.swift; sourceTree = "<group>"; };
 		062980F55EED673BE05F608F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -98,6 +101,7 @@
 		0F667686705541706B7C6CAA /* H264AnnexBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexBTests.swift; sourceTree = "<group>"; };
 		16042E378A1EDC962453097F /* P16HIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16HIDPeripheral.swift; sourceTree = "<group>"; };
 		165370B1B1346061B359A63A /* HIDRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDRemoteView.swift; sourceTree = "<group>"; };
+		1753A701FCBD4352B9696DA3 /* DeviceInfoPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoPayloadTests.swift; sourceTree = "<group>"; };
 		21EB428B90101FA4647FD000 /* P16BLEHID.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = P16BLEHID.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		229C6D53AC5716D1D331748B /* PeerTrustPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerTrustPolicy.swift; sourceTree = "<group>"; };
 		23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerPinStoreTests.swift; sourceTree = "<group>"; };
@@ -297,6 +301,7 @@
 				3F1DA0C4B34F12E16875C27F /* ClassicHIDPeripheral.swift */,
 				FE3A8DE7D075AE642BC76066 /* ClipboardBridgeMac.swift */,
 				3F6F3421D00129EB9F67855F /* ControlMessage.swift */,
+				010DFDBED36BA27EE0BC5C16 /* DeviceInfoPayload.swift */,
 				9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */,
 				311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */,
 				D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */,
@@ -352,6 +357,7 @@
 			isa = PBXGroup;
 			children = (
 				2D11644E30E2E27916D38A35 /* AudioPayloadTests.swift */,
+				1753A701FCBD4352B9696DA3 /* DeviceInfoPayloadTests.swift */,
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
 				A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */,
 				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
@@ -567,6 +573,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5250D7254D6470E364EC699B /* AudioPayloadTests.swift in Sources */,
+				BBC5B9F88531C401B0F28A1D /* DeviceInfoPayloadTests.swift in Sources */,
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
 				AD65DC0095CE6EA22585D619 /* FrameRateLimiterTests.swift in Sources */,
 				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
@@ -595,6 +602,7 @@
 				95BEC56E046B47F08C4C066E /* ClipboardBridgeMac.swift in Sources */,
 				6D1062349945C763EA0F571B /* ControlMessage.swift in Sources */,
 				FEA762FDC8FE386D2BBCA19B /* DashboardView.swift in Sources */,
+				39525FC78E4D1C66D410064A /* DeviceInfoPayload.swift in Sources */,
 				6596ECB725F88A9E992B5769 /* DroidBridgeApp.swift in Sources */,
 				6C6CCFDB6D1DD46EB25C9F2C /* EnvironmentSummary.swift in Sources */,
 				22A2541015D47D6A6828E978 /* FrameRateLimiter.swift in Sources */,

@@ -29,11 +29,9 @@
   click-to-control input in the viewer (P17). The viewer's stop glyph asks the phone to stop sharing
   (`LiveMirrorReceiver.requestStopSharing()`); `Screen` - `Stop sharing` does the same and `Stop listening`
   ends the session.
-- The device card says "Android device" because no device-info message exists on the wire; the phone's
-  name, model and OS version need a protocol message before the card can show them.
-
-## 3. Features
-
+- The device card shows the phone's own name (`samsung SM-S928B`) and `Android 17 (API 37) - app 0.1.0`
+  once `device.info` (0x40) arrives, and keeps the "Android device" placeholder until it does; the phone
+  sends it on every CONNECTED transition, silent reconnects included.
 - Dashboard with paired Android device.
 - Local network discovery and pairing.
 - Clipboard synchronization controls.

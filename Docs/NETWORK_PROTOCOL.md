@@ -163,6 +163,12 @@ specified by the shared, unit-tested `ClipboardSync` object.
 - `mirror.rotation`
 - `mirror.keyframe_request`
 - `mirror.error`
+- `device.info` (0x40): what the phone is, so the Mac can name it. Payload is `DeviceInfo` JSON with
+  `manufacturer`, `model`, `androidRelease`, `sdkInt` and `appVersion`; fixed key order, so the encoding is
+  a test vector on both sides. Sent by the phone every time a session reaches CONNECTED, including silent
+  reconnects. It is a label, not an authorisation - the session is already authenticated - and it carries
+  no serial number, build fingerprint, user-set device name or account. Unknown control types are a framing
+  error on both peers, so this message needs both ends updated.
 
 ### Audio messages (ADR-057, shipping since 2026-11-26)
 

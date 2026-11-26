@@ -1,3 +1,20 @@
+## The Mac can name the phone (2026-11-26)
+
+- **The sidebar says `samsung SM-S928B`, not "Android device".** The handshake carried no model name, so the
+  card said what was actually known. The phone now sends `device.info` (0x40) each time a session reaches
+  CONNECTED - including silent reconnects, because a Mac that restarted has forgotten the name. The card
+  also shows `Android 17 (API 37) - app 0.1.0` under it and keeps the placeholder until the message arrives
+  (screenshot: `Docs/design/shell-main-device.png`).
+- **The payload is deliberately boring.** Manufacturer, model, Android release, API level and app version -
+  the facts the phone's own About screen shows. No serial number, no build fingerprint, no user-set device
+  name, no account: a payload that never contains personal data cannot leak it into a log later. Both
+  fields are length-bounded so a peer cannot fill the control channel with one message.
+- **Unknown control types are a framing error on both sides** (they throw and the connection closes), so this
+  needs both peers on the same build - the same property every added control type has had. The Mac asserts
+  the Kotlin encoding byte-for-byte from the same JSON literal the Kotlin test pins.
+- **Measured on the S24 Ultra**, 14:24: phone `device info sent=true samsung SM-S928B android=17` (the log
+  line predates the app-version field in the message it prints), Mac `DEVICE_INFO samsung SM-S928B Android 17
+  (API 37) - app 0.1.0`, and the sidebar rendered that name and detail line in the captured window.
 ## Stopping from the viewer stops the phone's share (2026-11-26)
 
 - **Either side can stop a share.** The phone has always sent `mirror.stop` when its stop control ran; the

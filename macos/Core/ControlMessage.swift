@@ -32,6 +32,9 @@ public enum ControlMessageType: UInt8, Equatable {
     case clipboardReject = 0x34
     case clipboardPause = 0x35
 
+    /// What the phone is: manufacturer, model, Android release, API level, app version.
+    case deviceInfo = 0x40
+
     public var label: String {
         switch self {
         case .ping: return "ping"
@@ -50,6 +53,7 @@ public enum ControlMessageType: UInt8, Equatable {
         case .clipboardAck: return "clipboard.ack"
         case .clipboardReject: return "clipboard.reject"
         case .clipboardPause: return "clipboard.pause"
+        case .deviceInfo: return "device.info"
         }
     }
 
