@@ -1,3 +1,19 @@
+**2026-11-26 (fix for the lifetime retry counter: long sessions no longer give up):**
+
+Source review while planning long autonomous runs found that `SessionController.runSession`'s local
+`attempt` counter was reset only after a fresh pairing confirmation. Silent stored-pin reconnects
+incremented it without ever resetting, so the 10-attempt budget became a lifetime count: after ten
+successful drops the phone reached `giving up after 10 attempts` and needed a manual tap. The 2026-11-23
+overnight run had 21 reconnects, so this would have killed it. Extracted `RetryCounter` (`:core:network`),
+which charges consecutive failures and resets on **any** successful handshake; `runSession` now resets it
+right after `SecureSession.connect` succeeds. The give-up log says "consecutive attempts". Decision ADR-062.
+
+- *Built and unit-verified.* `:core:network:testDebugUnitTest` — `RetryCounterTest` 3/3 (real give-up,
+  reset on success, 21-reconnect session never gives up); `:app:assembleDebug`, `:app:lintDebug` and
+  `:core:network:lintDebug` clean.
+- *Device verification pending.* A long OnePlus session (>10 reconnects) is owed before this is called
+  device-proven; the S24 is the owner's daily phone and unavailable for long runs.
+
 **2026-11-26 (fix for the idle drop: the budget is no longer spent while the phone sleeps):**
 
 Owner picked the full fix. `RetryGate` (`:core:network`) is a `fun interface` the controller holds before

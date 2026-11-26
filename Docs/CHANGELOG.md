@@ -1,3 +1,10 @@
+## A long session no longer gives up just because it reconnected a lot (2026-11-26)
+
+- **The retry budget now counts consecutive failures, not lifetime drops.** A successful reconnect on a
+  stored pin clears the streak, so a peer that keeps coming back can never exhaust the budget. Before this,
+  the counter reset only on a fresh pairing, and the phone gave up after 10 successful drops — the overnight
+  run had 21. A real outage still gives up after 10 consecutive failures.
+
 ## A phone that slept through its retries now reconnects by itself (2026-11-26)
 
 - **Retries are no longer wasted while the phone is asleep.** With no share running, the display going off

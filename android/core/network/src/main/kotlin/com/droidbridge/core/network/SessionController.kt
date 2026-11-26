@@ -413,7 +413,9 @@ class SessionController(
      * one's cleanup.
      */
     private suspend fun runSession(peer: ServiceDiscovery.Peer) {
-        var attempt = 0
+        // A streak of failures, not a lifetime count: a successful handshake on a stored pin resets
+        // it, so a peer that keeps coming back can never exhaust the budget (see RetryCounter).
+        val attempts = RetryCounter(maxAttempts)
         while (scope.isActive) {
             val expectedPin = storedPin(peer)
             val opened = try {
@@ -427,7 +429,7 @@ class SessionController(
                 )
             } catch (e: Exception) {
                 val failure = classify(e)
-                Log.e(TAG, "connect attempt=${attempt + 1} failed: ${e.javaClass.simpleName}: ${e.message}")
+                Log.e(TAG, "connect attempt=${attempts.nextAttempt()} failed: ${e.javaClass.simpleName}: ${e.message}")
                 if (failure == Failure.PIN_MISMATCH) {
                     // A pin mismatch is never retried: retrying an impersonation attempt only gives
                     // it more chances, and the user must decide.
@@ -435,18 +437,22 @@ class SessionController(
                     return
                 }
                 awaitRetryWindow()
-                attempt += 1
-                if (!retryable(attempt)) {
-                    update(Event.Disconnected(attempt, retryable = false))
+                val withinBudget = attempts.charge()
+                if (!withinBudget) {
+                    update(Event.Disconnected(attempts.failures, retryable = false))
                     return
                 }
-                update(Event.Disconnected(attempt, retryable = true))
-                delay(backoff.delayFor(attempt))
+                update(Event.Disconnected(attempts.failures, retryable = true))
+                delay(backoff.delayFor(attempts.failures))
                 update(Event.Retrying)
                 continue
             }
 
             session = opened
+            // Any successful handshake proves the peer is reachable, including a silent stored-pin
+            // reconnect. Resetting only after a fresh confirmation made the budget a lifetime count
+            // and killed long sessions after 10 successful drops (see RetryCounter).
+            attempts.reset()
             roundTrips = 0
             lastRttMs = -1
             // The code travels with the session either way: when the phone authenticated the Mac
@@ -483,7 +489,6 @@ class SessionController(
                     Log.i(TAG, "pairing did not complete; nothing pinned")
                     return
                 }
-                attempt = 0
             }
 
             val ended = keepAlive(opened)
@@ -495,15 +500,15 @@ class SessionController(
             if (stateFlow.value.phase == Phase.IDLE) return
 
             awaitRetryWindow()
-            attempt += 1
-            if (!retryable(attempt)) {
-                Log.i(TAG, "giving up after $attempt attempts (last: $ended)")
-                update(Event.Disconnected(attempt, retryable = false))
+            val withinBudget = attempts.charge()
+            if (!withinBudget) {
+                Log.i(TAG, "giving up after ${attempts.failures} consecutive attempts (last: $ended)")
+                update(Event.Disconnected(attempts.failures, retryable = false))
                 return
             }
-            update(Event.Disconnected(attempt, retryable = true))
-            Log.i(TAG, "reconnect scheduled attempt=$attempt reason=$ended")
-            delay(backoff.delayFor(attempt))
+            update(Event.Disconnected(attempts.failures, retryable = true))
+            Log.i(TAG, "reconnect scheduled attempt=${attempts.failures} reason=$ended")
+            delay(backoff.delayFor(attempts.failures))
             update(Event.Retrying)
         }
     }
@@ -611,8 +616,6 @@ class SessionController(
         gate.awaitUsable()
         Log.i(TAG, "device usable again; retrying with the budget intact")
     }
-
-    private fun retryable(attempt: Int): Boolean = attempt <= maxAttempts
 
     /**
      * Re-resolves a peer so a reconnect dials the current address rather than the remembered one.
