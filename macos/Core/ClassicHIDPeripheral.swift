@@ -432,14 +432,57 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
     // MARK: - Reports
 
-    /// Sends one arrow press followed by a release.
+    /// Sends one arrow press followed by a release. The byte pattern is unchanged from the
+    /// P17 acceptance runs (report 2, key usage in slot 0, then a neutral report).
     func sendArrow(_ usage: UInt8) {
+        sendKeyReport(modifiers: 0, keys: [usage])
+    }
+
+    /// Sends one arbitrary key press/release by HID keyboard usage (1...101).
+    func sendKey(_ usage: UInt8, modifiers: UInt8 = 0) {
+        sendKeyReport(modifiers: modifiers, keys: [usage])
+    }
+
+    /// Surfaces a caller-side input validation error in the shared activity log.
+    func reportInputError(_ message: String) {
+        lastError = message
+        note(message)
+    }
+
+    /// Types a string as a sequence of key press/release pairs using the US HID keyboard map.
+    /// Characters outside the map are reported and skipped; nothing is read from the clipboard.
+    func typeText(_ text: String) {
         guard isReady else {
             lastError = "Not connected: no HID channels"
             return
         }
-        var pressed = HIDIdentity.neutralReport
-        pressed[2] = usage
+        var skipped: [String] = []
+        for character in text {
+            guard let press = HIDKeyboardMap.press(for: character) else {
+                skipped.append(String(character))
+                continue
+            }
+            sendKeyReport(modifiers: press.modifiers, keys: [press.usage])
+        }
+        if skipped.isEmpty {
+            note("typed \(text.count) characters")
+        } else {
+            lastError = "Skipped unmappable characters: \(skipped.joined())"
+            note("typed \(text.count - skipped.count) characters; skipped \(skipped.count)")
+        }
+    }
+
+    /// Shared report builder: one press report followed by a neutral release. Every report still
+    /// travels over the single HID control/interrupt pair created by this app.
+    private func sendKeyReport(modifiers: UInt8, keys: [UInt8]) {
+        guard isReady else {
+            lastError = "Not connected: no HID channels"
+            return
+        }
+        guard let pressed = HIDKeyboardMap.report(modifiers: modifiers, keys: keys) else {
+            lastError = "Invalid keyboard report (usage or key count out of range)"
+            return
+        }
         sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: pressed)
         sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: HIDIdentity.neutralReport)
     }

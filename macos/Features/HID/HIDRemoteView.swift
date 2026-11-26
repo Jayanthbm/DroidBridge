@@ -10,11 +10,27 @@ import SwiftUI
 struct HIDRemoteView: View {
     @ObservedObject var peripheral: ClassicHIDPeripheral
     @State private var receiverConfirmed = false
+    @State private var textConfirmed = false
     @State private var peerAddress = ""
+    @State private var textToType = ""
+    @State private var keyUsage = ""
+    @State private var modifierShift = false
+    @State private var modifierControl = false
+    @State private var modifierAlt = false
+    @State private var modifierGUI = false
 
     private let arrows: [(String, UInt8)] = [
         ("UP", 0x52), ("DOWN", 0x51), ("LEFT", 0x50), ("RIGHT", 0x4F)
     ]
+
+    private var activeModifiers: UInt8 {
+        var bits: UInt8 = 0
+        if modifierShift { bits |= HIDKeyboardMap.shift }
+        if modifierControl { bits |= HIDKeyboardMap.control }
+        if modifierAlt { bits |= HIDKeyboardMap.alt }
+        if modifierGUI { bits |= HIDKeyboardMap.gui }
+        return bits
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -128,6 +144,52 @@ struct HIDRemoteView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            GroupBox("Send a key or modifier chord") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("One click sends one press/release. The confirmation is used up each time.")
+                        .font(.callout)
+                    Toggle("The DroidBridge receiver is foreground and focused", isOn: $receiverConfirmed)
+                    HStack {
+                        Toggle("Shift", isOn: $modifierShift)
+                        Toggle("Ctrl", isOn: $modifierControl)
+                        Toggle("Alt", isOn: $modifierAlt)
+                        Toggle("Cmd", isOn: $modifierGUI)
+                    }
+                    HStack {
+                        TextField("Usage (hex), e.g. 04 for A", text: $keyUsage)
+                            .font(.system(.body, design: .monospaced))
+                            .frame(maxWidth: 240)
+                        Button("Send key") {
+                            if let usage = UInt8(keyUsage.trimmingCharacters(in: .whitespaces), radix: 16) {
+                                peripheral.sendKey(usage, modifiers: activeModifiers)
+                            } else {
+                                peripheral.reportInputError("Key usage must be a hex byte (01...65)")
+                            }
+                            receiverConfirmed = false
+                        }
+                        .disabled(!peripheral.isReady || !receiverConfirmed)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            GroupBox("Type text") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Types US-layout ASCII into the focused receiver, one key per character. Non-ASCII is skipped and reported. Never use for passwords or sensitive fields.")
+                        .font(.callout)
+                    Toggle("Receiver focused — I confirm this text is safe to type", isOn: $textConfirmed)
+                    HStack {
+                        TextField("Text to type", text: $textToType)
+                        Button("Type") {
+                            peripheral.typeText(textToType)
+                            textConfirmed = false
+                        }
+                        .disabled(!peripheral.isReady || !textConfirmed || textToType.isEmpty)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             GroupBox("Activity") {
                 VStack(alignment: .leading, spacing: 3) {
                     if peripheral.activity.isEmpty {
@@ -143,7 +205,7 @@ struct HIDRemoteView: View {
 
             GroupBox("Scope") {
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("• Keyboard arrow usages only; no pointer, text entry or touch-equivalent control.")
+                    Text("• Keyboard usages and US-layout ASCII text only; no pointer, touch-equivalent control or password entry.")
                     Text("• No Accessibility permission, event tap or Mac input capture.")
                     Text("• Send only to the purpose-built DroidBridge receiver, never to a sensitive app.")
                 }

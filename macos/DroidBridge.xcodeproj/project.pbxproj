@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		03526CC76E4EDCA193BBA00A /* p07-1280x720.h264 in Resources */ = {isa = PBXBuildFile; fileRef = 9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */; };
 		0431767BF78F478395F96886 /* Crypto in Frameworks */ = {isa = PBXBuildFile; productRef = 7444ED0C876CC5A748B2389A /* Crypto */; };
+		06D7C2F8E9D3CF4AB6DACEA8 /* HIDKeyboardMapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119F0508B489D7B79A4827ED /* HIDKeyboardMapTests.swift */; };
+		083363F117670DFF86534542 /* HIDKeyboardMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C8DF85208D3E5A8A9703CFA /* HIDKeyboardMap.swift */; };
 		0B0A5088E05375403841001C /* P16BLEHIDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */; };
 		14AFA8D0D288E0435809BF47 /* HarnessFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F18C7C9BBADA2F7FC258AF5 /* HarnessFlags.swift */; };
 		14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */; };
@@ -99,6 +101,7 @@
 		065D48B378A42C1AF9A285B4 /* AudioPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPayload.swift; sourceTree = "<group>"; };
 		0B26FFA0E025EDE7D12D6209 /* BridgeAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeAppDelegate.swift; sourceTree = "<group>"; };
 		0F667686705541706B7C6CAA /* H264AnnexBTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = H264AnnexBTests.swift; sourceTree = "<group>"; };
+		119F0508B489D7B79A4827ED /* HIDKeyboardMapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDKeyboardMapTests.swift; sourceTree = "<group>"; };
 		16042E378A1EDC962453097F /* P16HIDPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16HIDPeripheral.swift; sourceTree = "<group>"; };
 		165370B1B1346061B359A63A /* HIDRemoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDRemoteView.swift; sourceTree = "<group>"; };
 		1753A701FCBD4352B9696DA3 /* DeviceInfoPayloadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceInfoPayloadTests.swift; sourceTree = "<group>"; };
@@ -131,6 +134,7 @@
 		5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16BLEHIDApp.swift; sourceTree = "<group>"; };
 		6654147B222D56D1F88548FF /* MirrorStreamValidatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorStreamValidatorTests.swift; sourceTree = "<group>"; };
 		68BFBFA4D4482B51A97EFE3F /* P16BLEHID.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = P16BLEHID.entitlements; sourceTree = "<group>"; };
+		6C8DF85208D3E5A8A9703CFA /* HIDKeyboardMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HIDKeyboardMap.swift; sourceTree = "<group>"; };
 		6E613770B1999B0142EB0FFC /* ViewerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewerWindow.swift; sourceTree = "<group>"; };
 		6EDC18A7AF563DBDE04E0E28 /* MirrorFormatPayload.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFormatPayload.swift; sourceTree = "<group>"; };
 		7422664024570F46C67EDCDD /* PeerPinStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerPinStore.swift; sourceTree = "<group>"; };
@@ -307,6 +311,7 @@
 				D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */,
 				9F18C7C9BBADA2F7FC258AF5 /* HarnessFlags.swift */,
 				348B71677DB4A3AC5799C789 /* HIDDescriptor.swift */,
+				6C8DF85208D3E5A8A9703CFA /* HIDKeyboardMap.swift */,
 				C8C25B08644A45C0D4D68939 /* LiveAudioPlayer.swift */,
 				2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */,
 				83380E99630102BDBDA54D64 /* MacIdentity.swift */,
@@ -361,6 +366,7 @@
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
 				A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */,
 				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
+				119F0508B489D7B79A4827ED /* HIDKeyboardMapTests.swift */,
 				428B4D71263FCCDFB012C585 /* InfoPlistTests.swift */,
 				7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */,
 				6654147B222D56D1F88548FF /* MirrorStreamValidatorTests.swift */,
@@ -577,6 +583,7 @@
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
 				AD65DC0095CE6EA22585D619 /* FrameRateLimiterTests.swift in Sources */,
 				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
+				06D7C2F8E9D3CF4AB6DACEA8 /* HIDKeyboardMapTests.swift in Sources */,
 				803960101AC399630CC6FEC0 /* InfoPlistTests.swift in Sources */,
 				60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */,
 				F7EA45131CEE40F44DCD4C37 /* MirrorStreamValidatorTests.swift in Sources */,
@@ -608,6 +615,7 @@
 				22A2541015D47D6A6828E978 /* FrameRateLimiter.swift in Sources */,
 				EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */,
 				D50365C98344B775E93BA740 /* HIDDescriptor.swift in Sources */,
+				083363F117670DFF86534542 /* HIDKeyboardMap.swift in Sources */,
 				D309F285A5532D08A012761B /* HIDRemoteView.swift in Sources */,
 				14AFA8D0D288E0435809BF47 /* HarnessFlags.swift in Sources */,
 				DF432C48F59C37E806F82576 /* LiveAudioPlayer.swift in Sources */,

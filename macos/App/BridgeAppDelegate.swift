@@ -13,7 +13,9 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
 
     /// Set by the SwiftUI scene after the state objects exist; the HID peripheral must be
     /// withdrawn (SDP record removed, L2CAP channels closed) before the process dies.
-    weak var hidPeripheral: ClassicHIDPeripheral?
+    /// Owned here so the HID harness and termination cleanup are reachable from AppKit even before
+    /// the SwiftUI main window's `onAppear` has run (which is not guaranteed in a headless run).
+    var hidPeripheral: ClassicHIDPeripheral?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         if HarnessFlags.isOn("--p08-mirror")
@@ -22,6 +24,15 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
             holdTermination(reason: "mirror receiver or advertiser is active")
         }
         installTerminationSignalHandlers()
+        // The HID harness must not depend on the Diagnostics > HID tab being shown. Launch it here
+        // (after IOBluetooth warm-up, off the main thread) so unattended --harness-* runs work.
+        if HarnessFlags.isOn("--p17-hid") {
+            Task { @MainActor in
+                await self.hidPeripheral?.warmUpIOBluetooth()
+                self.hidPeripheral?.refreshPairedDevices()
+                self.hidPeripheral?.runHarnessIfRequested()
+            }
+        }
     }
 
     /// Withdraws the HID SDP record and closes the L2CAP channels before the process goes away.

@@ -22,6 +22,8 @@ enum AppBoot {
         appDelegate.hidPeripheral = hidPeripheral
         if HarnessFlags.isOn("--p17-hid") {
             appDelegate.holdTermination(reason: "HID peripheral is active")
+            // The harness itself is started by BridgeAppDelegate.applicationDidFinishLaunching,
+            // which owns the same peripheral instance and does not depend on this view appearing.
         }
         // Force the monitor to start with the window, independent of SwiftUI's lazy view
         // creation. The prompt needs a real app window, not a headless harness.

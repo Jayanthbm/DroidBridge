@@ -1,3 +1,18 @@
+## P17 production keyboard + text entry implemented (2026-11-27)
+
+- The promoted HID peripheral now sends arbitrary key usages, modifier chords and US-layout ASCII
+  text (`HIDKeyboardMap`, `sendKey`, `typeText`) from a new keyboard/text panel in the HID view.
+  Non-ASCII is skipped and reported; no clipboard, Accessibility or protected-surface access.
+  The Android P16 receiver gained a focused text field so typed characters can be observed.
+- Harness wiring fixed so `--p17-hid --harness-*` runs headlessly: the app delegate owns the same
+  peripheral instance and starts the harness at launch, independent of the Diagnostics > HID tab.
+- 104 macOS unit tests pass, 0 failures (9 new mapper tests); `verify-all.sh` exits 0.
+- **Not device-verified:** a fresh Classic bond could not be established. The Mac's programmatic
+  numeric-comparison callback does not fire (the documented single Classic pairing-agent conflict),
+  and the code-comparison harness correctly refused to confirm a mismatched pair (Mac `108952`,
+  phone `456266` — the phone dialog was stale). No unverified code was accepted, per AGENTS.md.
+  HID text entry stays unit-verified only until a bond is available.
+
 ## ADR-062 retry-budget fix device-verified (2026-11-26)
 
 - **No behaviour change** from this verification; it proves the shipped `RetryCounter` fix on a real

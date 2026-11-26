@@ -8,12 +8,15 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,6 +31,7 @@ class HidReceiverActivity : ComponentActivity() {
     private var leftCount by mutableIntStateOf(0)
     private var rightCount by mutableIntStateOf(0)
     private val observations = mutableStateListOf<String>()
+    private var typedText by mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +47,14 @@ class HidReceiverActivity : ComponentActivity() {
                     Text("Keep this screen visible and focused while testing.")
                     Text("UP: $upCount    DOWN: $downCount")
                     Text("LEFT: $leftCount    RIGHT: $rightCount")
+                    Text("Text entry receiver — tap to focus, then type from the Mac")
+                    TextField(
+                        value = typedText,
+                        onValueChange = { typedText = it },
+                        label = { Text("Typed characters") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     Text(
                         "Test input arrives only over the Bluetooth HID link under test. " +
                             "ADB is used for installation and diagnostics, never to deliver input, " +

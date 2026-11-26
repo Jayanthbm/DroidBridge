@@ -28,10 +28,16 @@ struct DroidBridgeApp: App {
     /// P08 live mirror receiver.
     @StateObject private var liveMirror = LiveMirrorReceiver()
 
-    /// Phase 5: Bluetooth Classic HID keyboard peripheral (promoted from P17).
-    @StateObject private var hidPeripheral = ClassicHIDPeripheral()
+    /// Phase 5: Bluetooth Classic HID keyboard peripheral (promoted from P17). The delegate owns
+    /// the same instance so AppKit can reach it before the main window's onAppear runs.
+    @StateObject private var hidPeripheral: ClassicHIDPeripheral
 
     init() {
+        // One peripheral instance shared by the SwiftUI tree and the AppKit delegate.
+        let hid = ClassicHIDPeripheral()
+        _hidPeripheral = StateObject(wrappedValue: hid)
+        appDelegate.hidPeripheral = hid
+
         // P03 headless harness. Handled before SwiftUI starts so a scripted run gets a listener
         // without a window, and exits with the harness's status rather than the app's.
         //
