@@ -741,7 +741,8 @@ would silently have returned an empty map on this OS — the new store does not 
 
 ## ADR-055 — An unconfirmed pin is a pairing candidate on the Mac, never a dead handshake
 
-**Status:** accepted 2026-11-25. Unit-tested; the device row is blocked (see the verification note).
+**Status:** accepted 2026-11-25; device-verified 2026-11-26. The S24 Ultra presented a pin that was not
+in a non-empty set and reached the code prompt; data moved only after the codes were compared.
 
 **Context.** ADR-054 made trust set membership so both phones of record could be trusted at once. The
 listener's decision code did not follow: `SecureListener` still read the set as three-state — empty
@@ -757,13 +758,13 @@ ADR-054 exists to remove.
 (they previously duplicated the three-state expression and could drift). A pin that is not in the
 confirmed set is `.candidate`: the handshake completes so the short authentication code can be derived
 and shown on both screens, the session is reported unconfirmed, no application data moves, nothing is
-written to the keychain, and the existing 120 s confirmation timeout and the user's Reject still close
-it. `.refused` is now reachable only from the explicit-pin test mode.
+written to the keychain, and the existing confirmation timeout and the user's Reject still close it. `.refused` is now reachable only from the explicit-pin test mode.
 
 **Residual consideration (recorded, not patched).** Refusing an unknown pin used to be instant; a
-candidate session instead holds the single connection slot for up to `pairingTimeout` (120 s) unless the
-user confirms or rejects. A peer on the LAN that keeps presenting a fresh identity can therefore keep
-the listener busy for two minutes at a time, where before it was refused in milliseconds. The exposure
+candidate session instead holds the single connection slot for up to `pairingTimeout` unless the user
+confirms or rejects (300 s in the shipping mirror receiver, measured at 301 s on 2026-11-26; the test
+harness defaults to 120 s). A peer on the LAN that keeps presenting a fresh identity can therefore keep
+the listener busy for five minutes at a time, where before it was refused in milliseconds. The exposure
 is availability only (it already existed on a fresh install, where every connection is a first
 pairing), the user can stop and restart the listener, and the fix that mirrors the existing 3-strike
 cap — stop accepting after N consecutive unconfirmed sessions and say so on screen — is deliberately
@@ -784,11 +785,19 @@ still refuses a Mac pin it does not know (its store is a single-Mac case and the
 one tap), so a Mac that is reinstalled needs "Forget the Mac's pin" on the phone — recorded as a
 deliberate asymmetry, to be revisited if a second Mac ever enters the picture.
 
-**Verification note (honest).** Seven unit tests cover the policy (`PeerTrustPolicyTests`, 79 macOS
-tests pass, 0 failures). The on-device row was **not** run: after every ad-hoc-signed rebuild macOS
-demands the login-keychain password before the new binary may read the peer-pin item or sign with the
-TLS identity key, and an unattended session cannot supply it (recorded in ADR-056). The regression
-itself — the OnePlus refused with a non-empty set — was measured and is the reason for this change.
+**Verification.** Seven unit tests cover the policy (`PeerTrustPolicyTests`, 79 macOS tests pass, 0
+failures). The device row was blocked on the night of the change (Keychain ACL prompts, ADR-056) and
+was measured the next morning on the S24 Ultra. The regression was first seen live: with the S24's pin
+confirmed, the OnePlus's unknown pin produced `verify: PIN MISMATCH … is not confirmed` and the
+handshake died with `NWError -9808`. After the change, the same shape of event — a pin absent from a
+**non-empty** set — reached the code prompt instead: at 07:36 the S24's old identity connected with
+`verify: pin matched f68f9062…`, and at 07:37 a freshly installed app presented a new identity
+(`c0054183…`) which the Mac reported as `verify: unknown peer pin … awaiting confirmation` with
+`authenticated=false code=419 987`. The phone showed `419987` and the instruction to compare; the codes
+were checked equal on both sides before anything was confirmed; then the Mac logged `pairing confirmed
+locally; pin stored` and `AUTHENTICATED`, and a listener restart reconnected with `verify: pin matched
+c0054183… authenticated=true`. No frame, media or clipboard event crossed the connection during the
+118 s it spent unconfirmed.
 
 ## ADR-056 — The Keychain ACLs make every ad-hoc rebuild need the owner's password (proposed)
 

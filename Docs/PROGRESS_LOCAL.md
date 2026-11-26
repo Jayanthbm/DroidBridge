@@ -1164,6 +1164,84 @@ on) did the device work.
   up to the 120 s pairing timeout, so an unknown peer that keeps reconnecting can occupy it — the fix
   (a cap like the existing 3-strike handshake cap) belongs in a build that can be measured on a device.
 
+**2026-11-26 Phase 6 hardening verified on a device: an unknown pin reaches the code prompt while the
+key set is non-empty (ADR-055).** S24 Ultra `SM-S928B`, Android 17 (API 37), serial `RZCY81TKBSV` —
+USB connected: yes; USB debugging: yes; wireless debugging: yes (`adb_wifi_enabled=1`), with the ADB
+transport in use being USB. ADB did only setup and operator taps (wake, keyguard dismiss, the API 37
+NSD picker, the app's `Connect`, the app's `Codes match — confirm`, force-stop/relaunch, and
+`uninstall` + `install` to mint a fresh phone identity); the pairing code was read on both sides and
+compared before anything was confirmed.
+
+The scenario is the regression the OnePlus hit last night, reproduced deliberately: with a pin already
+confirmed, a phone appears whose pin is not in the set.
+
+- **Baseline (07:36:08)** — the S24's original identity connected: Mac `verify: pin matched
+  f68f9062…`, `READY … authenticated=true code=903 717`. So the store was readable and non-empty.
+- **New identity (07:37:29)** — after `adb uninstall` + `adb install` of `app-debug.apk` (2026-11-24
+  19:44), the app had a new key `c0054183…` and no memory of the Mac. Discovery went through the API 37
+  picker (`P03Discovery: picker discovery requested flags=2` → `resolved name=DroidBridge-P08-Mac
+  host=192.168.31.109 port=59715 pv=1`), then `Connect` on the Nearby row.
+- **ADR-055, measured** — the Mac logged `verify: unknown peer pin c0054183… awaiting confirmation`,
+  `connection ready … authenticated=false code=419 987`. It did **not** log `PIN MISMATCH` and the
+  handshake did not die. The phone logged `state=CONFIRMING code=419987` and its screen showed `419987`
+  with "Compare this code with the one on the Mac. Only confirm if they match exactly." — the Mac's
+  `419 987` and the phone's `419987` were checked equal before either side was confirmed.
+- **Nothing flowed while unconfirmed** — between the handshake and the confirmation (118 s) the Mac
+  logged zero frame, media, clipboard or mirroring events.
+- **Confirmation (07:39:27)** — `pairing confirmed locally; pin stored for android-p08` → `AUTHENTICATED`;
+  the phone logged `PAIRING_CONFIRMED code=419987`.
+- **The new pin persisted (07:40:16)** — listener restarted on a new port (59716); the phone
+  reconnected and the Mac logged `verify: pin matched c0054183…`, `READY … authenticated=true`. The
+  Keychain write and a fresh read both work for this build.
+
+Two smaller findings from the run. First, the Keychain ACL prompts did not reappear for the 23:15 build:
+the app started, read the set, signed and stored a pin with no password prompt, so the owner's earlier
+grant holds for this binary — ADR-056 still applies to the next rebuild. Second, discovery is two taps
+and slightly misleading: the system picker returns the service, the state label stays "looking for the
+Mac", and the actual connection only starts from the `Connect` button on the `Nearby` row — worth
+tightening when the connection card is next touched, and recorded here rather than patched mid-run.
+
+**Open, deliberately not changed:** the set keeps pins whose key no longer exists (the uninstalled
+identity). They are harmless — nothing can present them unless a backup restores that key material —
+but the only affordance is `Forget phone pin`, which clears the whole set. Showing how many phones are
+trusted, and letting one be dropped, is a UI decision for the phase that owns the connection card.
+
+**2026-11-26 the pairing window measured, and what the phone does when the Mac gives up.** A
+deliberate run of the timeout path the same morning: fresh install (new identity `73e96f52…`),
+connect, show the code, confirm nothing on either side.
+
+- **The window is 300 s in the product, and it closes** — `closed: pairing not confirmed within
+  300s` at 07:47:27 for a session that became ready at 07:42:26 (301 s), with no pin written. (The
+  `SecureListener` default and the test harness are 120 s; the shipping mirror receiver passes 300.)
+- **The phone does not notice.** 53 s after the Mac hung up it still showed "waiting for you to
+  compare the code", the code, and `Codes match — confirm`. The confirm screen waits on the session's
+  own state and does not read the socket, so the Mac's close is invisible until the user acts.
+- **A confirm tapped after that pins the Mac and reports itself connected.** The tap sent nothing the
+  Mac could receive, reconnected, and produced `established authenticated=true code=none` on the
+  phone while the Mac logged `verify: unknown peer pin … awaiting confirmation`, `authenticated=false`.
+  Both lines are true of their own side — the phone had pinned the Mac, the Mac had not pinned the
+  phone — but read together they contradict, and the phone's card says "connected and
+  authenticated" with no hint that the Mac is still waiting for a human.
+- **The Mac's guard held.** That phone offered `Share this screen`; the first `mirror_format` was
+  refused and the session closed with `framing/protocol violation: peer sent data before the pairing
+  was confirmed` (07:50:00). No media was accepted from an unconfirmed peer, which is the property
+  the second layer exists for.
+- **Recovery works.** Comparing the codes by hand (phone `051 647`, Mac `051 647`) and confirming on
+  the Mac authenticated the same session; a share then produced `mirror_started`, an accepted
+  `mirror_format` and 324 media frames with `MAIN ran=60` on the Mac. So the asymmetry is a UX and
+  sequencing defect, not a data-protection one.
+
+Recorded as the next change to the pairing path, not patched in place: while `Phase.CONFIRMING` the
+phone should read the socket (so a peer that hangs up turns into a visible "the Mac stopped
+waiting") and should only remember the Mac's pin once the confirmation actually reaches it. Both
+need a rebuild and a re-run of this exact scenario, which is why they are written down here with the
+measured evidence rather than changed blind at the end of a session.
+
+One tooling note from the same run: the in-app `Stop sharing` button did not respond to taps at the
+coordinates the UI hierarchy reported (774,1555 and 774,1860), twice; `am force-stop` ended the share
+instead. This may be my coordinates rather than the button's hit target — it is recorded, not
+diagnosed.
+
 **2026-11-25 Phase 7 audit — Bluetooth stays optional.**
 
 - **Permissions, measured on the artifacts:** the product Android manifest still declares no
