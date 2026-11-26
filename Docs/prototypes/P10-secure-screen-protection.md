@@ -378,6 +378,24 @@ path withholds protected content the same way the experiment path does. Conditio
 wireless ADB on**; the screen-share consent and the app switch were driven through ADB at the owner's
 instruction. This is a dry run of the product path, not the final no-debug acceptance pass.
 
+### No-debug acceptance row 2026-11-26
+
+The `FLAG_SECURE` comparison above was re-run as part of the v1 no-debugging acceptance sweep, by hand
+at the phone: **USB connected: no · USB debugging: off · wireless debugging: off**, Bluetooth off, the
+phone absent from `adb devices` (only the OnePlus was listed). With the product app sharing the whole
+display and `com.droidbridge.experiment.mediaprojection` in front:
+
+- **Normal content test** -> the Mac showed the bright white "P01 NORMAL content test" screen.
+- **Secure content test** (`FLAG_SECURE`) -> the Mac went **black**; no text from the protected window
+  was visible. The status bar (clock, battery) stayed visible, which is expected: it is a separate
+  system window without `FLAG_SECURE`, so ordinary system UI still mirrors while the protected window's
+  content is withheld. That is the platform behaving correctly, not a leak.
+
+The row therefore passes by observation with no instrumentation. Unlike the 2026-11-26 dry run above it
+produced no luma numbers - that run's recorder needed a harness-signed build and ADB-driven consent,
+neither of which is allowed here - so the quantified evidence remains the dry run and this row supplies
+the no-debug confirmation. The experiment app was uninstalled by the owner straight after the row.
+
 ## Current assessment
 
 **In progress — core claim now measured.** Protected surfaces are withheld as required in every case

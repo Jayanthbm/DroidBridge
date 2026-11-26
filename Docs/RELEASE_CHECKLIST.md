@@ -38,21 +38,32 @@
 - [ ] Viewer handles disconnect and rotation.
 
 ## Security
-- [ ] Pairing code verification.
-- [ ] TLS and peer authentication.
-- [ ] Revoke peer tested.
+- [x] Pairing code verification.
+- [x] TLS and peer authentication.
+- [x] Revoke peer tested.
 - [ ] No clipboard/screen content in logs.
 - [ ] No cloud endpoints.
 - [ ] No protected content bypass.
 - [ ] No secrets in repository.
 
 ## Final no-debugging acceptance
-- [ ] USB cable disconnected.
-- [ ] USB debugging disabled.
-- [ ] Wireless debugging disabled.
-- [ ] Bluetooth disabled and core features still work.
-- [ ] Both devices on same Wi-Fi.
-- [ ] Pairing and reconnect tested.
-- [ ] Clipboard sync tested.
-- [ ] Screen mirroring tested.
-- [ ] Secure-screen behaviour tested.
+- [x] USB cable disconnected.
+- [x] USB debugging disabled.
+- [x] Wireless debugging disabled.
+- [x] Bluetooth disabled and core features still work.
+- [x] Both devices on same Wi-Fi.
+- [x] Pairing and reconnect tested.
+- [x] Clipboard sync tested.
+- [x] Screen mirroring tested.
+- [x] Secure-screen behaviour tested.
+
+Run 2026-11-26 on the S24 Ultra (`RZCY81TKBSV`, SM-S928B, Android 17, debug APK 0.1.0) against the
+Debug Mac app from `macos/build`, device-side steps performed by the owner at the phone. State verified
+at each row with `adb devices`: only `192.168.31.64:5555` (the OnePlus, untouched) was present, so the
+S24 was not on USB and had no debug transport; Developer options and USB debugging were off on the phone
+and wireless debugging was off. Bluetooth off throughout. Blocker found during the run and fixed before
+it closed: the Mac closed the connection when the phone confirmed first (three defects, D1/D1a/D2 in
+`Docs/PROGRESS_LOCAL.md`, ADR-060); the pairing row was re-run on the fixed build and passed with the
+phone confirming first. Evidence: `Docs/PROGRESS_LOCAL.md` (2026-11-26 sweep entry),
+`Docs/prototypes/P08-live-mirroring.md`, `Docs/prototypes/P10-secure-screen-protection.md`.
+Signing: the APK is the debug build - release signing is Phase 9 and not part of this acceptance.

@@ -108,6 +108,17 @@ public final class SecureListener {
 
     private var decoder = FrameDecoder()
     private var replayWindow = ReplayWindow()
+
+    /// Frames that arrived before this side confirmed. Confirming is a human act on each side and
+    /// the two can happen in either order, so the peer is entitled to believe the session is live
+    /// first. Closing on that made a first pairing impossible whenever the phone's confirm came
+    /// first (measured 2026-11-26 as an endless "peer sent data before the pairing was confirmed"
+    /// loop). Held frames are replayed in order after the local confirm; nothing reaches the app
+    /// before it, and the pin is still stored only by confirmPairing(). Bounded, so the wait cannot
+    /// be used as unbounded storage.
+    private var heldFrames: [ControlMessage] = []
+    private let heldFrameLimit = 128
+    private var heldFramesDropped: UInt64 = 0
     private var outboundSequence: UInt32 = 0
     private var lastActivity = Date()
 
@@ -358,6 +369,28 @@ public final class SecureListener {
             lastActivity = Date()
             confirmedPin = pin
             emit("pairing confirmed locally; pin stored for \(peerId)")
+
+            // The peer confirmed first: deliver what it sent while this side was still waiting for
+            // its human, in arrival order, through exactly the checks a live frame gets.
+            let held = heldFrames
+            heldFrames.removeAll()
+            if heldFramesDropped > 0 {
+                emit("held frames dropped over the cap: \(heldFramesDropped)")
+                heldFramesDropped = 0
+            }
+            if !held.isEmpty {
+                emit("replaying \(held.count) frame(s) held before confirmation")
+                for message in held {
+                    do {
+                        try deliver(message)
+                    } catch {
+                        if let connection {
+                            close(connection, reason: "held frame refused: \(error)")
+                        }
+                        break
+                    }
+                }
+            }
         }
 
         // Outside the queue: the callback may call back into this listener.
@@ -488,6 +521,8 @@ public final class SecureListener {
         if freshHandshake { verdict.clear() }
         decoder = FrameDecoder()
         replayWindow = ReplayWindow()
+        heldFrames.removeAll()
+        heldFramesDropped = 0
         outboundSequence = 0
         controlRateLimiter.reset()
         mediaRateLimiter.reset()
@@ -614,14 +649,6 @@ public final class SecureListener {
         }
     }
 
-    /// True when the frame's type byte is PING. Used only for the pre-confirmation keepalive check, so
-    /// it reads the envelope's type byte rather than trusting a decode that has not run yet.
-    private static func isPingFrame(_ frame: Data) -> Bool {
-        // [version][type][sequence:4][payload]
-        // Data carries the indices of the slice it came from, so this must not assume index 0.
-        frame.count >= 6 && frame[frame.startIndex + 1] == ControlMessageType.ping.rawValue
-    }
-
     /// Feeds bytes through the frame decoder and dispatches every completed frame.
     private func ingest(_ data: Data) throws {
         let frames = try decoder.feed(data)
@@ -631,17 +658,6 @@ public final class SecureListener {
     }
 
     private func handleFrame(_ frame: Data) throws {
-        // Data before the user confirmed is not "early" — it is a protocol violation for content,
-        // because the peer was told the session is not yet authenticated. Keepalive is the exception:
-        // confirming is a human act on this side, so the peer's heartbeat always arrives first and
-        // closing on it made a first pairing impossible to complete — measured as an endless
-        // "peer sent data before the pairing was confirmed" loop where the confirm arrived one frame
-        // too late. PING carries no user data and is answered; everything else is still refused.
-        let isKeepalive = state != .authenticated && Self.isPingFrame(frame)
-        guard state == .authenticated || isKeepalive else {
-            throw SecureListenerError.dataBeforeAuthentication
-        }
-
         let message: ControlMessage
         do {
             message = try ControlMessageCodec.decode(frame)
@@ -649,10 +665,23 @@ public final class SecureListener {
             throw SecureListenerError.malformedControl(String(describing: error))
         }
 
-        if state != .authenticated, message.type == .ping {
-            // Answer only. No pin is stored and nothing is delivered to the app until the user
-            // confirms. Written straight to the socket because sendControl() requires an authenticated
-            // session and would also re-enter the serial queue we are already running on.
+        guard state == .authenticated else {
+            try holdBeforeConfirmation(message)
+            return
+        }
+
+        try deliver(message)
+    }
+
+    /// Parks a frame that arrived while this side was still waiting for its human.
+    ///
+    /// A malformed frame is still a violation and still closes the connection. Content is held
+    /// rather than refused because the peer's own confirm may legitimately have happened first;
+    /// it is replayed by confirmPairing() and never reaches the app before then. PING is answered
+    /// immediately and not stored — written straight to the socket because sendControl() requires an
+    /// authenticated session and would also re-enter the serial queue we are already running on.
+    private func holdBeforeConfirmation(_ message: ControlMessage) throws {
+        if message.type == .ping {
             if let connection {
                 outboundSequence &+= 1
                 try? send(type: .pong, sequence: outboundSequence, payload: message.payload, on: connection)
@@ -660,6 +689,21 @@ public final class SecureListener {
             return
         }
 
+        guard heldFrames.count < heldFrameLimit else {
+            // Media is regenerable and is simply dropped; a control flood during the wait is not a
+            // slow human, it is a peer ignoring the protocol.
+            if message.type.isMedia {
+                heldFramesDropped &+= 1
+                return
+            }
+            throw SecureListenerError.dataBeforeAuthentication
+        }
+
+        heldFrames.append(message)
+    }
+
+    /// The post-confirmation path: sequence window, rate limit, accounting and dispatch.
+    private func deliver(_ message: ControlMessage) throws {
         do {
             try replayWindow.accept(message.sequence)
         } catch {

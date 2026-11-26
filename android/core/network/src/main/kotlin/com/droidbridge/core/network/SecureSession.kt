@@ -116,6 +116,14 @@ class SecureSession private constructor(
     private val reader = FrameReader()
     private val pending = ArrayDeque<ByteArray>()
 
+    /**
+     * Bytes already taken off the socket by [peerStillConnected] while the code was on screen.
+     *
+     * They belong to the stream and must be decoded in order once the user confirms, so the probe
+     * keeps them here rather than dropping or failing on them. Guarded by [lock].
+     */
+    private var carry = ByteArray(0)
+
     /** Per-direction replay window; reset only by creating a new session. */
     private val replayWindow = ReplayWindow()
 
@@ -422,9 +430,67 @@ class SecureSession private constructor(
             "no control message within ${idleTimeoutMs}ms",
         )
 
+    /**
+     * Notices a peer that went away while the user is still comparing the code.
+     *
+     * [tryReceive] refuses to run before confirmation, and that left the phone waiting forever on a
+     * code whose Mac had already gone: measured 2026-11-26, the peer reset 39 s after the code
+     * appeared, the phone stayed on CONFIRMING, and confirming then reported an authenticated
+     * session with no socket behind it. This reads the socket only to see that close.
+     *
+     * Bytes read here are **kept**, not interpreted: the Mac sends its `READY` frame straight after
+     * the handshake, and a first version of this probe treated that frame as a protocol violation
+     * and tore the session down (measured 2026-11-26). Whatever arrives goes into [carry] for the
+     * normal reader to decode once the user has confirmed.
+     *
+     * @return true while the connection is still open, after waiting up to [timeoutMs]
+     */
+    fun peerStillConnected(timeoutMs: Int): Boolean {
+        require(timeoutMs > 0) { "timeoutMs must be positive" }
+        synchronized(lock) {
+            when (sessionState) {
+                State.CLOSED -> return false
+                State.AUTHENTICATED -> return true
+                State.AWAITING_CONFIRMATION -> Unit
+            }
+        }
+        if (!runCatching { socket.soTimeout = timeoutMs }.isSuccess) return false
+        val probe = ByteArray(4096)
+        return try {
+            val read = inputStream.read(probe)
+            if (read < 0) {
+                close("peer closed before the code was confirmed")
+                false
+            } else {
+                synchronized(lock) { carry += probe.copyOf(read) }
+                true
+            }
+        } catch (e: SocketTimeoutException) {
+            true
+        } catch (e: IOException) {
+            failLocked(SessionException("read failed while confirming: ${e.javaClass.simpleName}"))
+        }
+    }
+
     private fun readNext(deadlineNanos: Long, closeOnTimeout: Boolean): ControlMessage.Message? {
         val buffer = ByteArray(8192)
         while (true) {
+            // Bytes a confirmation probe already took off the socket come first, in order.
+            val carried = synchronized(lock) {
+                val held = carry
+                carry = ByteArray(0)
+                held
+            }
+            if (carried.isNotEmpty()) {
+                val carriedFrames = try {
+                    reader.feed(carried, 0, carried.size)
+                } catch (e: FramingException) {
+                    failLocked(e)
+                }
+                synchronized(lock) { pending.addAll(carriedFrames) }
+                continue
+            }
+
             synchronized(lock) {
                 if (sessionState == State.CLOSED) {
                     throw SessionException("session is closed (${closeReason ?: "no reason"})")

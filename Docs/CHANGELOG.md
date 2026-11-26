@@ -1,3 +1,16 @@
+## A first pairing completes whichever side confirms first (2026-11-26)
+
+- **Confirming on the phone before the Mac no longer breaks the pairing.** The phone starts sending as soon as
+  it is confirmed, so its device announcement reached the Mac while the Mac was still waiting for its own
+  confirm; the Mac closed the connection as a protocol violation and the phone reconnected into the same wall.
+  The Mac now holds frames that arrive before its own confirm and replays them in arrival order once the human
+  confirms, so either order works - measured `connection ready authenticated=false code=836 347` →
+  `replaying 1 frame(s) held before confirmation` → `AUTHENTICATED` in 9 s, with heartbeats continuing and no
+  reconnect.
+- **A phone whose Mac vanished no longer pretends to be connected.** During the confirmation wait the phone
+  now checks that the socket is still there, so a peer that died ends the attempt with a handshake failure
+  instead of leaving a session that cannot carry anything.
+
 ## The device picker no longer opens over a live session (2026-11-26)
 
 - Coming back to the app while its session was still connected used to re-run discovery, so Android's

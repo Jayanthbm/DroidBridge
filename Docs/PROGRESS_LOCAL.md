@@ -1,3 +1,57 @@
+**2026-11-26 (v1 final acceptance sweep: USB disconnected, both debuggings off, device driven by hand):**
+
+State for every row below (checked at the start of each row with `adb devices`, which is also the proof
+ADB itself was alive): **USB connected: no** · **USB debugging: off** (Developer options switched off by
+the operator) · **wireless debugging: off**. `adb devices` listed only `192.168.31.64:5555` (the OnePlus
+AC2001, untouched, on Wi-Fi); the S24 Ultra (`RZCY81TKBSV`, SM-S928B, Android 17,
+`com.droidbridge.app` 0.1.0) was absent from ADB for the whole sweep. Device-side steps were performed
+by the owner at the phone - no ADB touch, tap, screen capture or clipboard access. The one
+debugging-on moment was the APK install (16:23:06, `adb install -r`, data kept) between rows; USB
+debugging was switched off and the cable unplugged again before the next row.
+
+- *Rows that passed.* The pairing code `836 347` derived identically on both screens and matched, and
+the first pairing completed and authenticated; a Mac restart reconnected silently on the stored pins
+(`authenticated=true` at 16:40:58 with no code prompt, the phone showing `reconnecting (attempt 1..7)`
+while the Mac was down); clipboard both ways (phone→Mac `droidbridge-clip-test1`, Mac→phone
+`droidbridge-clip-test-2`, pasted and read at each end); mirroring start, viewer, stop from the Mac, and
+stop from the phone (the Mac's viewer closed by itself on the phone-side stop); the `FLAG_SECURE` row
+(see P10) - the experiment app's normal content mirrored as a bright white screen, its secure content as
+black, with the status bar (clock/battery) still visible because that is a separate system window without
+`FLAG_SECURE`. No protected pixel leaked.
+- *Bluetooth.* Off on the S24 for the sweep, and every row above still worked.
+- *Defects the sweep found, all three fixed in this run:*
+  - **D1 - a phone that lost its peer still claimed a session.** After the Mac's socket died 39 s after
+the code appeared (the screen timeout is 30 s), the phone stayed on `CONFIRMING` and then reported
+`connected and authenticated` with no socket. `SecureSession.peerStillConnected()` now probes the socket
+during the wait and `awaitConfirmation()` returns a result, so a dead peer becomes `Failure.HANDSHAKE`
+instead of a virtual session.
+  - **D1a - the first version of that probe killed every handshake.** It read one byte and treated the
+Mac's post-handshake `READY` frame as a protocol violation. The probe now keeps what it read in a
+`carry` buffer that `readNext()` drains before reading the socket.
+  - **D2 - confirming on the phone first made a first pairing impossible.** The phone's confirm is what
+starts it sending, so `device.info` arrived while the Mac was still waiting for its own human; the Mac
+closed with `framing/protocol violation: peer sent data before the pairing was confirmed` and the phone
+reconnected into the same wall - measured at 16:14:35, 16:14:52, 16:15:11, 16:16:03, 16:16:31, 16:18:11,
+16:22:31, 16:24:13, 16:24:29 and 16:26:12, then again as a `reconnecting (attempt 5)` flicker once the
+phone kept a pin from a one-sided confirm. The Mac now **holds** pre-confirmation frames (PING answered,
+media over the cap dropped, control over the cap refused) and replays them in arrival order after
+`confirmPairing()`, so the two confirms can happen in either order (ADR-060). Verified on the fixed build
+with the phone confirming first: `connection ready authenticated=false code=836 347` (17:15:10) →
+`pairing confirmed locally; pin stored for android-p08` + `replaying 1 frame(s) held before confirmation`
+→ `AUTHENTICATED` (17:15:19) → heartbeats `ping:3..9` over the following two minutes, no close.
+- *Revocation.* `Disconnect` then `Forget the Mac's pin` stopped the loop and the phone stayed `idle`, so
+the revoke path does clear the stored pin; the one-sided state before that is what re-created it (a
+confirm on the phone stores its pin even when the Mac never confirmed, which is exactly the window D2
+closed).
+- *Builds.* Android debug APK installed 16:23:06 carrying both Android fixes; Mac Debug
+`DroidBridge.app` from `macos/build`, plain launch (no harness flags), **Start listening** pressed by the
+owner. The clipboard/mirroring/P10 rows ran on the app instance started 16:40; D2 was then fixed,
+rebuilt, signed with the Apple Development identity (`BJ57AFQQD6`, so the Keychain ACLs still work) and
+re-tested at 17:15 (instance 66319). `xcodebuild ... test`: 95/95 pass with the fix.
+- *Not measured in this sweep:* the notification-shade stop row, the audio/A/V rows, and glass-to-glass
+latency. Store-ready signing is still absent by design (Phase 9), so this accepts v1 behaviour on the
+debug APK.
+
 **2026-11-26 (21-minute endurance run with audio; the picker no longer opens over a live session):**
 
 - *Endurance.* `Share entire screen` at 14:45:10, stopped from the Mac's Screen pane at 15:06:18

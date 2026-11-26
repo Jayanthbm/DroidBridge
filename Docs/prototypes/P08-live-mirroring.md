@@ -15,7 +15,7 @@ are recorded with logs below. Two gaps remain and are stated explicitly at the e
 | Capture | `MediaProjection` whole-display, `1080x2340` content → `590x1280` (then `1280x590` after rotation), encoder `c2.qti.avc.encoder`, 4 Mbit/s, `KEY_I_FRAME_INTERVAL` + `KEY_REPEAT_PREVIOUS_FRAME_AFTER` |
 | **USB connected** | **No** — `adb devices -l` listed only `192.168.31.106:5555` (transport_id 2, TCP); no USB transport was present for any run in this report |
 | **USB debugging** | Not applicable for these runs (no cable attached); cannot be asserted off from this host |
-| **Wireless debugging / ADB over Wi-Fi** | **Yes** — required to drive `adb install`, `logcat`, `dumpsys` and `input` for the scripted runs. The final acceptance run with both debuggings disabled has not been performed |
+| **Wireless debugging / ADB over Wi-Fi** | **Yes** for the 2026-11-12 scripted runs (required to drive `adb install`, `logcat`, `dumpsys` and `input`). **Off** for the final acceptance run (2026-11-26) - see "Final no-debugging acceptance" below |
 | Commits landed during this run | `bd3f4b5`, `3246422` (P10 controls/docs), `29892b4` (receiver identity held per app run + scripted fault hook) |
 | Earlier relevant commit | `8937f3d` (live PTS rebased onto a host clock `CMTimebase`) |
 
@@ -484,4 +484,30 @@ The in-app stop was re-checked on the same build: tap -> `state=stopped: user st
 mirror_stop:121929:user stop`, `teardown complete reason=user stop`; the Mac logged `MIRROR_STOP
 reason=user stop`, the notification and the foreground service disappeared, and the TLS session stayed
 up (the next heartbeat went through).
+
+### Final no-debugging acceptance — 2026-11-26
+
+Gap closed: the "all debuggings disabled" run this report has carried as missing since 2026-11-12 was
+performed. Device: S24 Ultra `RZCY81TKBSV`, Android 17, `com.droidbridge.app` 0.1.0 debug APK; Mac: Debug
+`DroidBridge.app` launched plainly from `macos/build` with **Start listening** pressed by the owner.
+**USB connected: no · USB debugging: off · wireless debugging: off** for every row (`adb devices` listed
+only the OnePlus `192.168.31.64:5555`, so ADB itself was alive and the S24 was not on it). Bluetooth off.
+The device-side steps - pairing prompt, screen-share consent, the stop controls - were performed by the
+owner at the phone; no ADB input, capture or clipboard access.
+
+- *Start and viewer.* `Share this screen` -> consent -> the Mac showed the phone's screen live.
+- *Stop from the Mac.* The stop control ended the share: the phone reported not sharing and its
+  notification cleared.
+- *Stop from the phone.* `Stop sharing` ended the share and the Mac's viewer closed by itself, with no
+  action on the Mac.
+- *Reconnect.* The Mac app was killed mid-session: the phone showed `reconnecting (attempt 1..7)` and,
+  once the app was relaunched and listening, came back on the stored pins - `authenticated=true` at
+  16:40:58 with no code prompt and no user action on the phone.
+
+One defect surfaced by this run belongs to the transport rather than the stream and is fixed: the Mac
+refused frames that arrived before its own pairing confirm, so a phone that confirmed first looped.
+See the D2 entry in `Docs/PROGRESS_LOCAL.md` and ADR-060.
+
+Still not measured anywhere in P08: glass-to-glass latency and device cost under a fixed workload
+(carried forward unchanged from the 2026-11-12 acceptance), and the notification-shade stop row.
 

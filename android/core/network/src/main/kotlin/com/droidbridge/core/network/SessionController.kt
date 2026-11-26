@@ -459,12 +459,18 @@ class SessionController(
             Log.i(TAG, "established authenticated=${!requiresConfirmation} code=${if (requiresConfirmation) "pending" else "none"}")
 
             if (requiresConfirmation) {
-                // Nothing may move until the user decides; the keepalive would only time out.
-                awaitConfirmation(opened)
-                if (!opened.isAuthenticated) {
+                // Nothing may move until the user decides, but the socket is still watched: a Mac
+                // that goes away must not leave the phone on a code that can never be compared.
+                val confirmed = awaitConfirmation(opened)
+                if (!confirmed) {
                     runCatching { opened.close("pairing did not complete") }
                     if (session === opened) session = null
                     liveSessionCode = null
+                    // A rejection or a stop has already said what happened, in its own words.
+                    if (stateFlow.value.phase == Phase.CONFIRMING) {
+                        update(Event.Failed(Failure.HANDSHAKE))
+                    }
+                    Log.i(TAG, "pairing did not complete; nothing pinned")
                     return
                 }
                 attempt = 0
@@ -491,11 +497,23 @@ class SessionController(
         }
     }
 
-    private suspend fun awaitConfirmation(opened: SecureSession) {
-        // The user decides out-of-band (UI thread); this just waits without holding a lock.
+    /**
+     * Waits for the user to compare the code, watching the socket while it waits.
+     *
+     * @return true when the session is authenticated; false when the peer went away or the session
+     *   closed, in which case nothing is pinned
+     */
+    private suspend fun awaitConfirmation(opened: SecureSession): Boolean {
+        // The user decides out-of-band (UI thread); this waits without holding a lock, but it does
+        // read the socket: a peer that goes away must not leave the phone on a code that can never
+        // be compared (measured 2026-11-26 - the peer reset 39 s after the code appeared, the phone
+        // stayed on CONFIRMING, and confirming then reported an authenticated session with no
+        // socket behind it).
         while (scope.isActive && opened.state == SecureSession.State.AWAITING_CONFIRMATION) {
-            delay(200)
+            val alive = runCatching { opened.peerStillConnected(200) }.getOrElse { false }
+            if (!alive) return false
         }
+        return opened.isAuthenticated
     }
 
     /**
