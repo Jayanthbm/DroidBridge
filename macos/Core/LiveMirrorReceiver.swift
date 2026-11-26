@@ -484,7 +484,7 @@ public final class LiveMirrorReceiver: ObservableObject {
     }
 
     private nonisolated func recordIfConfigured(_ video: VideoPayload, ptsUs: UInt64) {
-        guard let dir = ProcessInfo.processInfo.environment["P08_RECORD_DIR"] else { return }
+        guard let dir = HarnessFlags.environment("P08_RECORD_DIR") else { return }
         recordQueue.async {
             let fm = FileManager.default
             if Self.recordFile == nil {
@@ -521,7 +521,7 @@ public final class LiveMirrorReceiver: ObservableObject {
     }
 
     private func dumpIfConfigured(_ sample: CMSampleBuffer) {
-        guard ProcessInfo.processInfo.environment["P08_DUMP_DIR"] != nil else { return }
+        guard HarnessFlags.environment("P08_DUMP_DIR") != nil else { return }
         // VTDecompressionSessionDecodeFrame blocks in a semaphore wait on this platform, so
         // decoding inline stalls whichever thread called it - on the main thread that stops every
         // later frame handler and the sink goes silent after roughly one decoder queue depth.
@@ -545,7 +545,7 @@ public final class LiveMirrorReceiver: ObservableObject {
 
     private func dumpOnEvidenceQueue(_ sample: CMSampleBuffer) {
         if dumpDir == nil {
-            guard let path = ProcessInfo.processInfo.environment["P08_DUMP_DIR"] else { return }
+            guard let path = HarnessFlags.environment("P08_DUMP_DIR") else { return }
             let dir = URL(fileURLWithPath: path, isDirectory: true)
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             dumpDir = dir

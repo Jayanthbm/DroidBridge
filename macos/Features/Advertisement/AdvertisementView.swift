@@ -127,7 +127,7 @@ final class AdvertisementModel: ObservableObject {
         // evidence for P02 is "does Bonjour publish this service", which is observable from
         // outside the app. Default behaviour is unchanged -- advertising on launch would be wrong
         // for the product, where the user decides when the Mac is discoverable.
-        if CommandLine.arguments.contains("--advertise-on-launch") {
+        if HarnessFlags.isOn("--advertise-on-launch") {
             sessionId = ServiceTxtRecord.randomSessionId()
             advertiser.start()
         }

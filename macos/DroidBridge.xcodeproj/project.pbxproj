@@ -10,6 +10,7 @@
 		03526CC76E4EDCA193BBA00A /* p07-1280x720.h264 in Resources */ = {isa = PBXBuildFile; fileRef = 9B87F8534C7EFD6F1E2A3676 /* p07-1280x720.h264 */; };
 		0431767BF78F478395F96886 /* Crypto in Frameworks */ = {isa = PBXBuildFile; productRef = 7444ED0C876CC5A748B2389A /* Crypto */; };
 		0B0A5088E05375403841001C /* P16BLEHIDApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */; };
+		14AFA8D0D288E0435809BF47 /* HarnessFlags.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F18C7C9BBADA2F7FC258AF5 /* HarnessFlags.swift */; };
 		14E38466DBA7CDD3DC36B38E /* P03Harness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86887F1AA3B04A0F0D31BB86 /* P03Harness.swift */; };
 		1E1A8644ED3EF85A7DB01788 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */; };
 		1F937102D0F6B3F040834F61 /* AdvertisementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5636899B12FBBA12480E3D6 /* AdvertisementView.swift */; };
@@ -131,6 +132,7 @@
 		9C4798110A5388A33070C264 /* DroidBridgeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DroidBridgeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvironmentSummary.swift; sourceTree = "<group>"; };
 		9E58C5FF63BA478CD3493875 /* ShortAuthenticationCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortAuthenticationCode.swift; sourceTree = "<group>"; };
+		9F18C7C9BBADA2F7FC258AF5 /* HarnessFlags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessFlags.swift; sourceTree = "<group>"; };
 		A277847708B2692DCD474697 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardView.swift; sourceTree = "<group>"; };
 		A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameRateLimiterTests.swift; sourceTree = "<group>"; };
 		AF0684372027EDE7E0346AF3 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
@@ -278,6 +280,7 @@
 				9CEE7DF25FA1678A686C2F65 /* EnvironmentSummary.swift */,
 				311920A2EFF013D0F9CD272F /* FrameRateLimiter.swift */,
 				D81EF5A8EA7CBD70628EF7E0 /* H264AnnexB.swift */,
+				9F18C7C9BBADA2F7FC258AF5 /* HarnessFlags.swift */,
 				348B71677DB4A3AC5799C789 /* HIDDescriptor.swift */,
 				C8C25B08644A45C0D4D68939 /* LiveAudioPlayer.swift */,
 				2CFC2976B52C87A59E05DE13 /* LiveMirrorReceiver.swift */,
@@ -574,6 +577,7 @@
 				EA297DB11976EE4816B924A3 /* H264AnnexB.swift in Sources */,
 				D50365C98344B775E93BA740 /* HIDDescriptor.swift in Sources */,
 				D309F285A5532D08A012761B /* HIDRemoteView.swift in Sources */,
+				14AFA8D0D288E0435809BF47 /* HarnessFlags.swift in Sources */,
 				DF432C48F59C37E806F82576 /* LiveAudioPlayer.swift in Sources */,
 				308F874E19E960CACEBAF4B3 /* LiveMirrorReceiver.swift in Sources */,
 				E3D6F3557BEF93868C34108C /* LiveMirrorView.swift in Sources */,

@@ -13,14 +13,14 @@ struct DroidBridgeApp: App {
 
     /// P06 pasteboard model. Auto-starts only under the explicit prototype flag.
     @StateObject private var pasteboard = PasteboardModel(
-        autoStart: CommandLine.arguments.contains("--p06-monitor"),
-        selfWriteAfter: CommandLine.arguments.contains("--p06-self-write") ? 5 : nil
+        autoStart: HarnessFlags.isOn("--p06-monitor"),
+        selfWriteAfter: HarnessFlags.isOn("--p06-self-write") ? 5 : nil
     )
 
     /// P07 receiver. The fixture is bundled; --p07-stream can point at an external Annex-B file.
     @StateObject private var video = VideoReceiverModel(
-        autoPlay: CommandLine.arguments.contains("--p07-autoplay"),
-        streamPath: Self.argumentValue("--p07-stream")
+        autoPlay: HarnessFlags.isOn("--p07-autoplay"),
+        streamPath: HarnessFlags.value(after: "--p07-stream")
     )
 
     /// P08 live mirror receiver.
@@ -30,17 +30,11 @@ struct DroidBridgeApp: App {
     @StateObject private var hidPeripheral = ClassicHIDPeripheral()
 
     /// Open a prototype tab directly for a scripted or manual run.
-    @State private var selectedTab: Int = CommandLine.arguments.contains("--p06-monitor")
+    @State private var selectedTab: Int = HarnessFlags.isOn("--p06-monitor")
         ? 2
-        : (CommandLine.arguments.contains("--p08-mirror") ? 4
-            : (CommandLine.arguments.contains("--p17-hid") ? 5
-                : (CommandLine.arguments.contains("--p07") ? 3 : 0)))
-
-    private static func argumentValue(_ flag: String) -> String? {
-        guard let index = CommandLine.arguments.firstIndex(of: flag),
-              index + 1 < CommandLine.arguments.count else { return nil }
-        return CommandLine.arguments[index + 1]
-    }
+        : (HarnessFlags.isOn("--p08-mirror") ? 4
+            : (HarnessFlags.isOn("--p17-hid") ? 5
+                : (HarnessFlags.isOn("--p07") ? 3 : 0)))
 
     init() {
         // P03 headless harness. Handled before SwiftUI starts so a scripted run gets a listener
@@ -49,12 +43,12 @@ struct DroidBridgeApp: App {
         // This is a prototype affordance, not a product feature: it exists so the P03 acceptance
         // criteria can be measured by a script instead of by tapping buttons.
         let arguments = Array(CommandLine.arguments.dropFirst())
-        if arguments.contains("--p06-harness") {
+        if HarnessFlags.isOn("--p06-harness") {
             exit(P06Harness.run(arguments))
         }
-        if arguments.contains("--listen")
-            || arguments.contains("--pair")
-            || arguments.contains("--identity") {
+        if HarnessFlags.isOn("--listen")
+            || HarnessFlags.isOn("--pair")
+            || HarnessFlags.isOn("--identity") {
             exit(P03Harness.run(arguments))
         }
     }
@@ -85,17 +79,17 @@ struct DroidBridgeApp: App {
             }
             .onAppear {
                 appDelegate.hidPeripheral = hidPeripheral
-                if CommandLine.arguments.contains("--p17-hid") {
+                if HarnessFlags.isOn("--p17-hid") {
                     appDelegate.holdTermination(reason: "HID peripheral is active")
                 }
                 // Force the monitor to start with the window, independent of SwiftUI's lazy tab
                 // creation. The prompt needs a real app window, not a headless harness.
-                if CommandLine.arguments.contains("--p06-monitor") {
+                if HarnessFlags.isOn("--p06-monitor") {
                     pasteboard.start()
                 }
                 // P08 keyframe-recovery harness: inject one corrupt sample after the given delay so
                 // the renderer-failed -> flush -> keyframe-request path can be measured by a script.
-                if let raw = Self.argumentValue("--p08-fault-after"),
+                if let raw = HarnessFlags.value(after: "--p08-fault-after"),
                    let seconds = TimeInterval(raw) {
                     liveMirror.scriptedFaultAfter = seconds
                 }
@@ -104,35 +98,35 @@ struct DroidBridgeApp: App {
                 // mirrored pixels cannot be recorded without turning it off for the run.
                 // P08/P10 harness: start the secure listener with the window so an unattended run
                 // does not need a Mac-side click to begin accepting the phone's connection.
-                if let expected = Self.argumentValue("--p08-expect-pin") {
+                if let expected = HarnessFlags.value(after: "--p08-expect-pin") {
                     liveMirror.expectedPeerPin = expected
                 }
                 // Phase 2 harness: confirm a first pairing only for a code the operator has already
                 // compared on both screens. Never a blind confirm.
-                if let code = Self.argumentValue("--p08-confirm-code") {
+                if let code = HarnessFlags.value(after: "--p08-confirm-code") {
                     liveMirror.expectedPairingCode = code
                 }
-                if let raw = Self.argumentValue("--p08-idle-timeout"), let seconds = TimeInterval(raw) {
+                if let raw = HarnessFlags.value(after: "--p08-idle-timeout"), let seconds = TimeInterval(raw) {
                     liveMirror.idleTimeoutSeconds = seconds
                 }
                 // Phase 3: watch the Mac pasteboard for user copies and send them to the phone.
-                if CommandLine.arguments.contains("--clipboard-poll") {
+                if HarnessFlags.isOn("--clipboard-poll") {
                     liveMirror.clipboard.startPolling()
                 }
-                if CommandLine.arguments.contains("--p08-listen") {
+                if HarnessFlags.isOn("--p08-listen") {
                     // Phase 2 harness: the peer id and service name select which stored pin applies,
                     // so a run can start from a genuinely unpinned peer instead of inheriting the
                     // pin left by an earlier prototype. Without this, a first pairing is impossible to
                     // exercise on a Mac that has ever paired with anything.
                     liveMirror.startListening(
-                        peerId: Self.argumentValue("--p08-peer-id") ?? "android-p08",
-                        serviceName: Self.argumentValue("--p08-service-name") ?? "DroidBridge-P08-Mac",
-                        resetPin: CommandLine.arguments.contains("--p08-reset-pin"),
+                        peerId: HarnessFlags.value(after: "--p08-peer-id") ?? "android-p08",
+                        serviceName: HarnessFlags.value(after: "--p08-service-name") ?? "DroidBridge-P08-Mac",
+                        resetPin: HarnessFlags.isOn("--p08-reset-pin"),
                         // Fixed port so a run can drop and restore the listener on the same address.
-                        port: Self.argumentValue("--p08-port").flatMap { UInt16($0) } ?? 0
+                        port: HarnessFlags.value(after: "--p08-port").flatMap { UInt16($0) } ?? 0
                     )
                 }
-                if CommandLine.arguments.contains("--p08-allow-capture") {
+                if HarnessFlags.isOn("--p08-allow-capture") {
                     liveMirror.allowScreenCapture()
                 }
             }
@@ -164,10 +158,9 @@ final class BridgeAppDelegate: NSObject, NSApplicationDelegate {
     weak var hidPeripheral: ClassicHIDPeripheral?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let arguments = CommandLine.arguments
-        if arguments.contains("--p08-mirror")
-            || arguments.contains("--advertise-on-launch")
-            || arguments.contains("--listen") {
+        if HarnessFlags.isOn("--p08-mirror")
+            || HarnessFlags.isOn("--advertise-on-launch")
+            || HarnessFlags.isOn("--listen") {
             holdTermination(reason: "mirror receiver or advertiser is active")
         }
         installTerminationSignalHandlers()

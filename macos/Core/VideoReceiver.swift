@@ -70,17 +70,17 @@ public final class VideoReceiverModel: ObservableObject {
             emit("NO_FIXTURE: pass --p07-stream <path> or bundle p07-test.h264")
         }
 
-        if CommandLine.arguments.contains("--p07-recover") {
+        if HarnessFlags.isOn("--p07-recover") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
                 self?.recover()
             }
         }
-        if CommandLine.arguments.contains("--p07-burst") {
+        if HarnessFlags.isOn("--p07-burst") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.burst()
             }
         }
-        if CommandLine.arguments.contains("--p07-corrupt") {
+        if HarnessFlags.isOn("--p07-corrupt") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
                 self?.injectCorruptSample()
             }

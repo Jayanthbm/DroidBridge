@@ -377,20 +377,21 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         guard !harnessRan else { return }
         harnessRan = true
         let arguments = ProcessInfo.processInfo.arguments
-        let wantsPublish = arguments.contains("--harness-publish")
-        let connectionIndex = arguments.firstIndex(of: "--harness-connect")
-        guard wantsPublish || connectionIndex != nil || arguments.contains("--harness-send") else { return }
+        let wantsPublish = HarnessFlags.isOn("--harness-publish")
+        let connectionIndex = HarnessFlags.isOn("--harness-connect")
+            ? arguments.firstIndex(of: "--harness-connect") : nil
+        guard wantsPublish || connectionIndex != nil || HarnessFlags.isOn("--harness-send") else { return }
 
         publishService()
         if let connectionIndex, arguments.indices.contains(connectionIndex + 1) {
             // Only an automated run whose operator has already verified the numeric value may
             // answer the confirmation without a click.
-            autoAcceptPairing = ProcessInfo.processInfo.environment["P17_AUTO_ACCEPT_PAIRING"] == "1"
-            forcePairing = arguments.contains("--harness-force-pair")
+            autoAcceptPairing = HarnessFlags.environment("P17_AUTO_ACCEPT_PAIRING") == "1"
+            forcePairing = HarnessFlags.isOn("--harness-force-pair")
             connect(to: arguments[connectionIndex + 1])
         }
 
-        if let sendIndex = arguments.firstIndex(of: "--harness-send"),
+        if let sendIndex = (HarnessFlags.isOn("--harness-send") ? arguments.firstIndex(of: "--harness-send") : nil),
            arguments.indices.contains(sendIndex + 1) {
             sendHarnessArrow(named: arguments[sendIndex + 1].uppercased())
         }
