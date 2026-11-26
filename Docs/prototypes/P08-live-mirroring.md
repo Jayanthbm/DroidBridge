@@ -535,3 +535,11 @@ identifies this row. Prior attempts could not measure it because `uiautomator du
 Still not measured anywhere in P08: glass-to-glass latency and device cost under a fixed workload
 (carried forward unchanged from the 2026-11-12 acceptance).
 
+**2026-11-26 — glass-to-glass latency waived by the owner.** DroidBridge is personal-use only with one
+developer and one tester (ADR-033). A real glass-to-glass figure needs a high-speed camera filming the
+phone and Mac screens together; that setup would change no product, security or usability decision in
+this scope, so the gate is explicitly **waived, not pending**. What is measured and stands: startup
+496.6 ms (P07), first frames on the Mac within ~1 s (above), and the idle-cost comparison in §6a.
+Device cost under an actual mirroring workload (battery/thermal/CPU) is still worth measuring and
+remains open; it needs no camera and can run autonomously.
+

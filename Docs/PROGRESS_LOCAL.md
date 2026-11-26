@@ -1,3 +1,13 @@
+**2026-11-26 (owner waived the P08 glass-to-glass latency gate for personal-use scope):**
+
+The owner confirmed DroidBridge is a personal app with one developer and one tester. A real
+glass-to-glass figure needs high-speed camera capture of both screens, which would change no
+product, security or usability decision in this scope, so the gate is recorded as **waived**, not
+left pending forever (ADR-033 personal-use scope). Startup latency (496.6 ms P07, ~1 s in P08) and
+the idle-cost comparison (3.7 fps / 342 kbit/s with the repeat-frame key) remain measured and
+stand. Device cost under an actual mirroring workload is still open and worth measuring: it needs
+no camera, only `dumpsys batterystats` and temperature sampling over a normal session.
+
 **2026-11-26 (fix for the lifetime retry counter: long sessions no longer give up):**
 
 Source review while planning long autonomous runs found that `SessionController.runSession`'s local

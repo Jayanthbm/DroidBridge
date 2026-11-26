@@ -1,3 +1,9 @@
+## P08 glass-to-glass latency gate waived for personal-use scope (2026-11-26)
+
+- **No behaviour change.** The owner confirmed a one-developer, one-tester personal app, so the
+  high-speed-camera latency measurement is recorded as waived rather than left pending. Startup
+  latency and idle cost remain measured; device cost under a mirroring workload is still planned.
+
 ## A long session no longer gives up just because it reconnected a lot (2026-11-26)
 
 - **The retry budget now counts consecutive failures, not lifetime drops.** A successful reconnect on a
