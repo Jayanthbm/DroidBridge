@@ -98,8 +98,10 @@ setup). The drift run kept the screen awake through the two blocks (see the ADB 
 acceptance still needs USB out and both debuggings off.
 
 Housekeeping: the 2026-11-26 cleanup had uninstalled all experiment APKs at the owner's request;
-`avsync` and `mediaprojection` are installed on the S24 again because S1 needs them. They will be
-uninstalled when the staging runs no longer need them. Evidence lives under `/tmp/avsync2`,
+`avsync` and `mediaprojection` were installed on the S24 again because S1 needed them, and both were
+uninstalled again at the end of this session (0 experiment packages left). `svc power stayon` is back to
+`false` and `screen_off_timeout` to 30 000 ms (the pre-change value was not captured; 30 s is the
+platform default), and the harness process was stopped. Evidence lives under `/tmp/avsync2`,
 `/tmp/avsync3`, `/tmp/avsync4` (aborted drift attempt) and `/tmp/avsync6` and is not committed.
 **2026-11-26 (pre-Phase 9 cleanup: documentation truth, Release surface, experiment separation, device
 fixtures):** The owner asked for a cleanup on both platforms before Phase 9. Four commits, no behaviour

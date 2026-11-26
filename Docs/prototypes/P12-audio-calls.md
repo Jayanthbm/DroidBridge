@@ -1,7 +1,7 @@
 # P12 — Audio and calls
 
-**Status:** media audio **measured GO (conditional)** · call audio **NO-GO, now measured rather than
-merely cited** · call notifications/control **deferred**
+**Status:** media audio **measured GO (conditional) and now shipping in `:app` (ADR-057)** · call audio
+**NO-GO, now measured rather than merely cited** · call notifications/control **deferred**
 
 **Measured:** 2026-11-22 on SM-S928B (Galaxy S24 Ultra), Android 17 / API 37, serial `RZCY81TKBSV`.
 **Test conditions:** USB connected, USB debugging **enabled**, wireless debugging **disabled**.

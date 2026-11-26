@@ -1,6 +1,6 @@
 # P14 — Background session persistence (clipboard while mirroring is off)
 
-**Status:** **ADR-023's premise holds on the target device and fails on the OnePlus.** On the **S24 Ultra (Android 17 / API 37)** the `connectedDevice` foreground service kept the TLS session alive while the app was backgrounded (10 min), with the screen off (`mWakefulness=Dozing`, 5 min), across a Wi-Fi off/on cycle, and across a real reboot (`BOOT_COMPLETED` → reconnected within 450 ms). On the **OnePlus Nord (Android 12)** the identical build was frozen within ~40 s of backgrounding despite a valid foreground service, so background sync there is foreground-only. Deep Doze (unplugged) and overnight rows remain unmeasured because the handset was charging over USB for these runs.
+**Status:** **ADR-023's premise holds on the target device and fails on the OnePlus.** On the **S24 Ultra (Android 17 / API 37)** the `connectedDevice` foreground service kept the TLS session alive while the app was backgrounded (10 min), with the screen off (`mWakefulness=Dozing`, 5 min), across a Wi-Fi off/on cycle, and across a real reboot (`BOOT_COMPLETED` → reconnected within 450 ms). On the **OnePlus Nord (Android 12)** the identical build was frozen within ~40 s of backgrounding despite a valid foreground service, so background sync there is foreground-only. **Deep Doze and overnight were measured on 2026-11-22/23** (handset unplugged, 8 h 17 m, 21 automatic reconnects, rows G–I pass in the section below).
 
 **Related:** ADR-023, ADR-043, R-20, R-21, R-37.
 
@@ -58,11 +58,11 @@ Baseline session: `state=connected`, `HEARTBEAT n=1 / PONG n=1` at 21:44:48, ste
 | 4a | App backgrounded, screen on, 10 min | **PASS** — `HEARTBEAT n=3 → n=44` over ten minutes, `/proc/<pid>/cgroup` stayed `5:freezer:/` (never frozen) | **FAIL — process frozen.** Beats stopped at n=8 within ~40 s; `isForeground=true`, `dumpsys activity oom` showed `fg +50 F/S/FGS`, `state: cur=FGS`, yet `/proc/<pid>/cgroup` → `6:freezer:/frozen`. Foregrounding → `/thaw`, beats resumed; backgrounding → `/frozen` again |
 | 4b | Screen off (charging), 5 min | **PASS** — `mWakefulness=Dozing`, `HEARTBEAT n=6 → n=26`, no stalls | not run (already frozen when backgrounded) |
 | 4c | Wi-Fi off/on | **PASS** — connection failures with backoff while `wifi_on=0` and wlan0 had no address, `RECONNECT` attempts, then `state=connected` and beats resumed from n=7 in the **same process** after Wi-Fi returned | **PASS** — `RECONNECT n=6`, reconnected 17 s after Wi-Fi returned |
-| 4d | 60 min Doze (unplugged) | **Not run** — the handset was charging over USB; `dumpsys deviceidle force-idle` reported `Unable to go deep idle; stopped at INACTIVE` | **Not run** |
-| 4e | Overnight, 8 h | **Not run** | **Not run** |
-| 5 | Doze forcing | **Blocked by charging state** (see 4d) | not run |
+| 4d | Deep Doze (unplugged) | **PASS, measured 2026-11-22/23** — 935 heartbeats over 8 h 17 m; 210 freezes of 20-45 s survived; long Doze windows of 80, 45 and 30 min, each ended by an automatic reconnect | not run |
+| 4e | Overnight, 8 h | **PASS, measured 2026-11-22/23** — 21 automatic reconnects, all authenticated on the stored pin with no prompt or tap | **Not run** |
+| 5 | Doze forcing | **Not needed** — `force-idle` refuses while charging, so the row ran as a real unplug (see 4d) | not run |
 | 6 | Notification behaviour | **Not run** — `POST_NOTIFICATIONS` was not granted (the prompt cannot be answered without a click) and the service ran regardless, with the notification suppressed | **Not run** |
-| 7 | Battery drain | **Not run** | **Not run** |
+| 7 | Battery drain | **Measured** — 100 % → 75 % across the 8 h 17 m overnight run | **Not run** |
 
 ### Device comparison, same build
 
@@ -111,9 +111,8 @@ Two operational notes that cost time and are now documented:
    protocol failure. `--p08-mirror`, `--advertise-on-launch` and `--listen` now disable automatic and
    sudden termination for the life of the process.
 
-Still open, and only for these reasons: **deep Doze and overnight** need the handset unplugged and idle
-(the S24 refuses `force-idle` while charging: `Unable to go deep idle; stopped at INACTIVE`), and the
-30-minute/notification-denied rows need a session that lasts longer than this run.
+Still open: the 30-minute awake-endurance row, notification dismissal/denied behaviour, and a repeat of
+the overnight under a different network. Deep Doze and overnight themselves are measured above.
 
 ## Defects found and fixed during bring-up
 
