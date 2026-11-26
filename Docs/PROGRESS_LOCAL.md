@@ -38,6 +38,17 @@ change to a shipped feature:
   Release app bundles, module cache, index) was deleted, then both configurations were rebuilt from
   scratch and the Debug build relaunched. There were no experiment app bundles to remove — the
   `P16BLEHID` and `P11LocalNetwork` targets exist in the project but had never been built here.
+- *Finder matches and a defect found while auditing them.* The owner asked why Finder found three "Droid"
+  entries: one was `~/Applications/DroidBridge.app`, a 12 MB copy built on 2026-11-24 that predates the
+  audio work (its binary contains no audio code); the other two are the DerivedData Debug and Release
+  build products. The stale copy was removed. Reading the three `DroidBridge-*.ips` crash reports while
+  there surfaced a **shipping defect, not yet fixed**: the 2026-11-25 22:06 and 2026-11-26 09:26 crashes
+  are `EXC_CRASH`/SIGABRT from TCC — "attempted to access privacy-sensitive data without a usage
+  description. The app's Info.plist must contain an NSBluetoothAlwaysUsageDescription key" — while
+  `App/Info.plist` indeed has no Bluetooth usage string, even though `App/DroidBridge.entitlements` grants
+  `com.apple.security.device.bluetooth` for the HID keyboard. Any `IOBluetooth` touch therefore aborts the
+  app. (The 2026-11-23 report is an unrelated SIGTRAP from earlier development.) Fixing it adds the
+  Bluetooth permission prompt, so it is held for owner approval rather than slipped into a cleanup.
 
 Device state for this cleanup: both phones reached over **wireless ADB** (`adb devices` listed only
 `192.168.31.197:5555` and `192.168.31.64:5555`; no USB transport appeared, so USB debugging state could
