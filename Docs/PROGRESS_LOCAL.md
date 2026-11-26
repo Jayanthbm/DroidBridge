@@ -1,3 +1,33 @@
+**2026-11-26 (idle-drop investigation: the resets were the phone's screen going off):**
+
+The four `Connection reset by peer` drops that had been carried as an open question (17:17:04, 17:26:35,
+17:44:37 and a fresh one at 17:44 during the sweep) are one phenomenon, and it is environmental rather than
+transport. Measured deliberately: S24 Ultra, USB **disconnected**, USB debugging **off**, wireless
+debugging **off**; session connected with **no share running** and **background sync not enabled**, so no
+foreground service held it. The phone was left untouched on the dashboard at 17:58:32 (`clipboard.accept`
+proves it was awake), and its `screen_off_timeout` is 30000 ms.
+
+- *Heartbeats were healthy to the last second.* `ping:5` 17:58:47, `ping:6` 17:59:02, `ping:7` 17:59:17.
+- *17:59:31.951* `closed: receive error … NWError 54 - Connection reset by peer` — an RST, not a timeout, so
+  the phone closed its own socket (the Mac's unanswered ping was still in the receive buffer); the Mac had
+  answered a ping 14 s earlier.
+- *The retry budget ran and never reached the Mac.* Ten attempts, ADR-051's ~150 s; the listener stayed up
+  and logged **zero** incoming connections over the next six minutes. With the display off the app had no
+  usable network, so the attempts failed before the LAN rather than being refused.
+- *~18:02 it went terminal.* `state: stopped` / "the connection kept dropping, so retrying stopped; tap
+  Try again when the Mac is back".
+- *18:12:54, `Try again` recovered it.* `verify: pin matched 3cac0163…` → `connection ready …
+  authenticated=true` → `READY … code=836 347`, heartbeats every 15 s, no code comparison, no re-pairing.
+
+Two findings, neither a transport defect. First, **screen-off survival belongs to the `connectedDevice`
+foreground service, not to the app**: with background sync off there is nothing holding the session, so an
+idle session dies with the display (P14 row C still holds for the case it measures, and now has the
+complement recorded). Second, the **give-up copy names the wrong cause** — "when the Mac is back" while the
+Mac never left and the phone's radio was asleep — and the retry budget is spent blind while the device is
+suspended, so it always burns out. Also noted: **Try again routes through the picker** rather than
+reconnecting straight to the peer it already knows; it auto-connects from there, so it works, but the list
+is noise for a retry the app could make itself. Fixes are product decisions, pending the owner's choice.
+
 **2026-11-26 (final sweep closes the notification-shade stop row):**
 
 The last P08 row the v1 sweep owed - the ongoing capture notification's **Stop** action, the only stop

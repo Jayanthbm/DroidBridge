@@ -254,3 +254,35 @@ shows every ping and pong with a wall-clock timestamp, so silence cannot be conf
   session honest (two missed intervals → reconnect).
 
 Conclusion: nothing worth changing; the review is recorded as the Phase 6 battery/perf item.
+
+## Screen-off without a foreground service — measured 2026-11-26 (the complement to row C)
+
+Row C measures the case background sync cares about: the `connectedDevice` service is running, so the
+process is not frozen and the session holds. The opposite case surfaced by accident during the v1
+acceptance sweep and is worth keeping, because it is what a user sees before they enable background sync.
+
+Setup: S24 Ultra `RZCY81TKBSV`, Android 17, Debug app; USB **disconnected**, USB debugging **off**,
+wireless debugging **off**. A session was connected with **no share running** and **background sync not
+enabled**, so no foreground service owned it. The phone was left alone on the dashboard at 17:58:32 (last
+activity: a `clipboard.accept`). Its `screen_off_timeout` is 30000 ms, so the display went off around
+17:59:0x.
+
+- Mac heartbeats were healthy to the second: `ping:5` 17:58:47, `ping:6` 17:59:02, `ping:7` 17:59:17.
+- **17:59:31.951** `closed: receive error … NWError 54 - Connection reset by peer`. A reset, not a timeout:
+  the phone closed its own side (with the Mac's last ping unread in the buffer, so Android's stack answered
+  RST). The Mac's socket had answered a ping 14 s earlier.
+- The phone then ran its normal reconnect budget (10 attempts, ADR-051). **None of those attempts reached
+  the Mac** — the listener was listening throughout and logged not one incoming connection for six
+  minutes. With the display off the app had no usable network, so every attempt failed before the LAN.
+- **~18:02 (estimated from the budget)** it expired into the terminal `GAVE_UP`: `state: stopped`,
+  "the connection kept dropping, so retrying stopped; tap Try again when the Mac is back".
+- **18:12:54**, after the owner tapped **Try again** (which routes through the picker and auto-connects),
+  `verify: pin matched 3cac0163…` → `connection ready … authenticated=true` → `READY … code=836 347`,
+  then `ping:1/3/4` at 15 s. No code comparison, no re-pairing.
+
+Reading: this does not contradict row C, it delimits it. Screen-off survival is a property of the
+`connectedDevice` foreground service, not of the app in general. Before background sync is enabled, an idle
+session cannot survive the display going off on this device, and the give-up copy misattributes the cause —
+"when the Mac is back" while the Mac never left and the phone's own radio was asleep. Two follow-ups, both
+product decisions rather than measurements: the copy should name the real cause, and arming a retry on
+screen-on / network-available would avoid spending a finite budget while the radio is suspended.
