@@ -1,3 +1,12 @@
+**2026-11-26 (owner waived the P08 device-cost measurement):**
+
+The owner confirmed the device-cost measurement is not needed for a personal app, so it is
+**waived**, not pending. No redo is planned. The failed 19:34:55–19:46:11 sample remains discarded
+(idle screen, Mac `idle timeout after 120s`); its 12 samples are not a device-cost result. P08 now
+has both instrumentation gates explicitly waived for personal-use scope: glass-to-glass latency and
+device cost. Everything else measured in P08 (rotation, keyframe recovery, stop paths, idle-cost
+comparison, 30/33-minute endurance) stands unchanged.
+
 **2026-11-26 (personal-use scope review of all remaining pending items):**
 
 Reviewed every open item against owner-confirmed personal-use scope (one developer, one tester).
@@ -23,8 +32,8 @@ glass-to-glass figure needs high-speed camera capture of both screens, which wou
 product, security or usability decision in this scope, so the gate is recorded as **waived**, not
 left pending forever (ADR-033 personal-use scope). Startup latency (496.6 ms P07, ~1 s in P08) and
 the idle-cost comparison (3.7 fps / 342 kbit/s with the repeat-frame key) remain measured and
-stand. Device cost under an actual mirroring workload is still open and worth measuring: it needs
-no camera, only `dumpsys batterystats` and temperature sampling over a normal session.
+stand. Device cost under an actual mirroring workload was subsequently waived by the owner
+2026-11-26 as not required for a personal app.
 
 **2026-11-26 (fix for the lifetime retry counter: long sessions no longer give up):**
 
@@ -837,7 +846,7 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run the remaining P05 clipboard prototype (Android 12 + Android 17).
 - [x] Run P06 macOS pasteboard prompt prototype (completed on macOS 27.0.1 with a platform limitation).
 - [x] Run the P07 Mac video receiver prototype.
-- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists. On 2026-11-17, one physical shade run mirrored normally and the session remained active; historical freeze root cause, rotation UI restoration, debugging-disabled final acceptance, latency and device cost remain open.
+- [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists. On 2026-11-17, one physical shade run mirrored normally and the session remained active; historical freeze root cause, rotation UI restoration and debugging-disabled final acceptance remain; latency and device cost waived by the owner 2026-11-26 (personal-use scope).
 - [x] Run P09 initial remote-input checks (historical, scoped NO-GO; not a final verdict on the newly identified Mac Bluetooth HIDP route).
 - [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. On 2026-11-17 one shade run mirrored normally; the synthetic OTP with a public version showed its redacted text. The private-only notification content was not visible in the captures, so that outcome remains inconclusive. See P10 evidence; do not generalize these observations.
 - [ ] Run P11 macOS local-network permission tests. On 2026-11-17, the ad-hoc Release app advertised and `dns-sd` browsed/resolved `_droidbridge-dev._tcp` on macOS 27.2.1. Prompt visibility/wording and denied-state behavior remain unverified because native UI inspection was unavailable; no TCC reset or permission change was made. Added a denied-state Settings recovery affordance; 67 macOS tests and the Release build passed. See [P11](prototypes/P11-local-network-permission.md).

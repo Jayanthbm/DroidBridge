@@ -1,3 +1,9 @@
+## P08 device-cost measurement waived for personal-use scope (2026-11-26)
+
+- **No behaviour change.** The owner confirmed the one-hour battery/thermal measurement is not
+  needed for a personal app. Both P08 instrumentation gates (glass-to-glass latency and device
+  cost) are now explicitly waived. The failed idle-screen sample stays discarded; no redo planned.
+
 ## Personal-use scope review of remaining pending items (2026-11-26)
 
 - **No behaviour change.** Waived P05 long auto-clear, P07 backpressure false state and P13
