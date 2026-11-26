@@ -8,6 +8,10 @@
   `P17_AUTO_ACCEPT_PAIRING` are inert outside Debug builds. Verified with the same arguments on both
   configurations: Debug logs `CAPTURE_ALLOWED preventsCapture=false` and `LISTENING port=0`, Release logs
   neither.
+- **The optional Bluetooth keyboard no longer kills the app.** Two crash reports (2026-11-25, 2026-11-26)
+  were TCC aborts: the app touched `IOBluetooth` while `Info.plist` had no
+  `NSBluetoothAlwaysUsageDescription`. The string is now declared, so the first use shows the standard
+  macOS Bluetooth alert instead of terminating the process; the sandbox entitlement was already present.
 - **Experiment apps are documented and off the phones.** `android/experiments/README.md` explains why each
   prototype app still exists and how to rebuild it; every `com.droidbridge.experiment.*` package was
   uninstalled from both test phones, leaving only the product app with its pairing data intact.

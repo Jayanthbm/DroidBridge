@@ -42,6 +42,7 @@
 		7C5AA12F868ABF3516AA7365 /* PeerPinStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7422664024570F46C67EDCDD /* PeerPinStore.swift */; };
 		7DB41ADDD235302D82CDFD2A /* p07-test.h264 in Resources */ = {isa = PBXBuildFile; fileRef = D25743DAABD330041FCEA833 /* p07-test.h264 */; };
 		7DCE7F8CE9C4571E7E55392E /* p07-480x640.h264 in Resources */ = {isa = PBXBuildFile; fileRef = BB3749161931C168AC4DDC03 /* p07-480x640.h264 */; };
+		803960101AC399630CC6FEC0 /* InfoPlistTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 428B4D71263FCCDFB012C585 /* InfoPlistTests.swift */; };
 		822FACECDF22D3A8BB1B1AA8 /* VideoReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045D97DC485774CFC0878C91 /* VideoReceiver.swift */; };
 		83C66FC81B5DEB3DDF6D82CC /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = B3E021A54F2552181A777380 /* X509 */; };
 		86ADBF953EA0690DC9911617 /* PasteboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA68C60D3FBE3B6E7239C5FE /* PasteboardView.swift */; };
@@ -111,6 +112,7 @@
 		3F6F3421D00129EB9F67855F /* ControlMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlMessage.swift; sourceTree = "<group>"; };
 		417C1A6183E87D2BD3960D20 /* P11LocalNetwork.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = P11LocalNetwork.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		425175127DAE94AC223230C1 /* ServiceAdvertisementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceAdvertisementTests.swift; sourceTree = "<group>"; };
+		428B4D71263FCCDFB012C585 /* InfoPlistTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoPlistTests.swift; sourceTree = "<group>"; };
 		45B21693499F9A7C73EA63AB /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		4629C90A002E90DC1FDFBE1D /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
 		5DDB106869A915837B5928EE /* P16BLEHIDApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P16BLEHIDApp.swift; sourceTree = "<group>"; };
@@ -335,6 +337,7 @@
 				EEA7148D2BCF336949219EE6 /* EnvironmentSummaryTests.swift */,
 				A94CC9D17020926FCA18E333 /* FrameRateLimiterTests.swift */,
 				0F667686705541706B7C6CAA /* H264AnnexBTests.swift */,
+				428B4D71263FCCDFB012C585 /* InfoPlistTests.swift */,
 				7EDFFBCBEF4459E1763E56C9 /* MacIdentityPersistenceTests.swift */,
 				6654147B222D56D1F88548FF /* MirrorStreamValidatorTests.swift */,
 				23E494084C2095C21A6ED7A3 /* PeerPinStoreTests.swift */,
@@ -549,6 +552,7 @@
 				50D0F54E8CFB56BB257C1EFF /* EnvironmentSummaryTests.swift in Sources */,
 				AD65DC0095CE6EA22585D619 /* FrameRateLimiterTests.swift in Sources */,
 				94D5330793899E6071760917 /* H264AnnexBTests.swift in Sources */,
+				803960101AC399630CC6FEC0 /* InfoPlistTests.swift in Sources */,
 				60380A68D428166A35EC25A4 /* MacIdentityPersistenceTests.swift in Sources */,
 				F7EA45131CEE40F44DCD4C37 /* MirrorStreamValidatorTests.swift in Sources */,
 				6362000D0E0CCA91A0C12D27 /* PeerPinStoreTests.swift in Sources */,

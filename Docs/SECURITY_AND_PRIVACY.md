@@ -132,5 +132,5 @@ Forbidden:
 - Disconnect.
 - Forget paired device.
 - Clear local app data/preferences.
-- Toggle optional Bluetooth; advertise/pair only after an explicit user action and expose a clear disconnect/stop control.
+- Toggle optional Bluetooth; advertise/pair only after an explicit user action and expose a clear disconnect/stop control. The first use shows the macOS Bluetooth permission alert (`NSBluetoothAlwaysUsageDescription`); denying it leaves the rest of the app untouched.
 - Review current permissions and active session.

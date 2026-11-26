@@ -40,5 +40,16 @@
 	<array>
 		<string>_droidbridge-dev._tcp</string>
 	</array>
+	<!--
+	  The optional Bluetooth keyboard (Phase 5, ADR-050) uses IOBluetooth, so TCC requires a usage
+	  string. Without it the first IOBluetooth touch is not denied but fatal: the process aborts with
+	  EXC_CRASH/SIGABRT (__TCC_CRASHING_DUE_TO_PRIVACY_VIOLATION__). Two such reports, 2026-11-25 and
+	  2026-11-26, were found during the pre-Phase 9 cleanup; the string was missing while the sandbox
+	  entitlement already granted com.apple.security.device.bluetooth.
+
+	  The prompt appears only when the user starts the keyboard, never at launch (ADR-016/ADR-050).
+	-->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>DroidBridge's optional Bluetooth keyboard sends arrow keys to your phone when you turn it on. Bluetooth is used only for that keyboard and stays off until you enable it.</string>
 </dict>
 </plist>

@@ -42,13 +42,24 @@ change to a shipped feature:
   entries: one was `~/Applications/DroidBridge.app`, a 12 MB copy built on 2026-11-24 that predates the
   audio work (its binary contains no audio code); the other two are the DerivedData Debug and Release
   build products. The stale copy was removed. Reading the three `DroidBridge-*.ips` crash reports while
-  there surfaced a **shipping defect, not yet fixed**: the 2026-11-25 22:06 and 2026-11-26 09:26 crashes
-  are `EXC_CRASH`/SIGABRT from TCC — "attempted to access privacy-sensitive data without a usage
+  there surfaced a shipping defect: the 2026-11-25 22:06 and 2026-11-26 09:26 crashes are
+  `EXC_CRASH`/SIGABRT from TCC — "attempted to access privacy-sensitive data without a usage
   description. The app's Info.plist must contain an NSBluetoothAlwaysUsageDescription key" — while
-  `App/Info.plist` indeed has no Bluetooth usage string, even though `App/DroidBridge.entitlements` grants
-  `com.apple.security.device.bluetooth` for the HID keyboard. Any `IOBluetooth` touch therefore aborts the
-  app. (The 2026-11-23 report is an unrelated SIGTRAP from earlier development.) Fixing it adds the
-  Bluetooth permission prompt, so it is held for owner approval rather than slipped into a cleanup.
+  `App/Info.plist` had no Bluetooth usage string, even though `App/DroidBridge.entitlements` grants
+  `com.apple.security.device.bluetooth` for the HID keyboard. The crashing thread was
+  `ClassicHIDPeripheral.warmUpIOBluetooth() → IOBluetoothDevice.pairedDevices() →
+  IOBluetoothCoreBluetoothCoordinator`, so the HID keyboard would have killed the app on first use. (The
+  2026-11-23 report is an unrelated SIGTRAP from earlier development.)
+
+  The owner approved the fix on 2026-11-26. `NSBluetoothAlwaysUsageDescription` is now declared in
+  `App/Info.plist` (the alert appears only when the keyboard is started, never at launch), and
+  `macos/Tests/InfoPlistTests.swift` asserts the Bluetooth and Local Network strings and the Bonjour
+  service type so an edit cannot silently drop one. Measured after the rebuild: launching the Debug build
+  with `--p17-hid` (which selects the HID tab and runs `warmUpIOBluetooth()`) keeps the process alive,
+  produces no new crash report, and `log show` records tccd's `found usage string` and
+  `display_prompt: called for com.droidbridge.app … kTCCServiceBluetoothAlways` — the standard prompt,
+  not an abort. That verifies the crash is gone; it does not verify a HID pairing or a grant on the
+  prompt, which remain untested.
 
 Device state for this cleanup: both phones reached over **wireless ADB** (`adb devices` listed only
 `192.168.31.197:5555` and `192.168.31.64:5555`; no USB transport appeared, so USB debugging state could
