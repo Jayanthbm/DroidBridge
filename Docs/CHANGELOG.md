@@ -1,3 +1,13 @@
+## A phone that slept through its retries now reconnects by itself (2026-11-26)
+
+- **Retries are no longer wasted while the phone is asleep.** With no share running, the display going off
+  killed the connection, and the phone then spent all ten retry attempts without reaching the Mac — which was
+  listening the whole time — so it settled on a failure that needed a manual tap. Attempts are now held until
+  the phone can actually reach the network, so the budget stays intact and the first attempt after the screen
+  comes back is a successful one.
+- **The give-up message no longer blames the Mac.** It said "tap Try again when the Mac is back"; what usually
+  ends the connection is the phone's screen staying off, and the text now says so.
+
 ## A first pairing completes whichever side confirms first (2026-11-26)
 
 - **Confirming on the phone before the Mac no longer breaks the pairing.** The phone starts sending as soon as

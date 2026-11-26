@@ -1,3 +1,21 @@
+**2026-11-26 (fix for the idle drop: the budget is no longer spent while the phone sleeps):**
+
+Owner picked the full fix. `RetryGate` (`:core:network`) is a `fun interface` the controller holds before
+charging an attempt to the retry budget; the app supplies `ScreenOnGate`, which suspends while
+`PowerManager.isInteractive` is false and resumes on `ACTION_SCREEN_ON`. `SessionController` now calls
+`awaitRetryWindow()` in both retry paths (failed connect and ended keepalive) *before* `attempt += 1`, so
+time spent suspended is free and the first attempt after the screen returns is attempt 1. The display state
+is the signal rather than a connectivity check because the radio still reports an active network during the
+window in which nothing gets through. The `GAVE_UP` copy no longer says "when the Mac is back"; it names the
+real cause. Decision recorded as ADR-061.
+
+- *Built and tested.* `./gradlew :app:assembleDebug :core:network:testDebugUnitTest
+  :feature:dashboard:testDebugUnitTest` - exit 0. The gate's default is null so every existing caller and
+  test keeps the unconditional-attempt behaviour.
+- *Not yet measured.* The screen-off/idle recovery row on the S24 (session idle, display off ~3 min, then
+  wake: should stay `RECONNECTING` and reconnect by itself). The change is verified by build and module
+  tests only, so ADR-061 stays "device verification pending" until that run is recorded.
+
 **2026-11-26 (idle-drop investigation: the resets were the phone's screen going off):**
 
 The four `Connection reset by peer` drops that had been carried as an open question (17:17:04, 17:26:35,

@@ -47,6 +47,10 @@ import kotlinx.coroutines.launch
  *   again. Ten attempts with the 30 s backoff cap span roughly 150 s, so a reconnect after a
  *   reboot gap lands inside the phone's own patience, and supersede (ADR-049) makes it a
  *   first-try success.
+ * * **A suspended phone does not spend that budget.** Attempts made while the device cannot reach
+ *   the network are doomed before they start, so [retryGate] holds the loop until it can and only
+ *   then charges an attempt (ADR-061). Without it an ordinary screen-off exhausted the budget in
+ *   ~150 s and left a terminal give-up for a Mac that had never left.
  */
 
 /** See [SessionController.messageTarget]: the routing contract is pinned by a unit test. */
@@ -60,6 +64,11 @@ class SessionController(
     private val pingIntervalMs: Long = 15_000,
     private val maxAttempts: Int = 10,
     private val backoff: BackoffPolicy = BackoffPolicy(),
+    /**
+     * Held before an attempt is charged to the budget, so time the phone cannot reach the network
+     * costs nothing. Null means "always attempt", which is what the tests and the reuse cases want.
+     */
+    private val retryGate: RetryGate? = null,
     /**
      * Where socket work runs. [Dispatchers.IO] by default because `SecureSession.connect` blocks:
      * a caller that passes a main-thread scope gets `NetworkOnMainThreadException` and every attempt
@@ -425,6 +434,7 @@ class SessionController(
                     update(Event.Failed(failure))
                     return
                 }
+                awaitRetryWindow()
                 attempt += 1
                 if (!retryable(attempt)) {
                     update(Event.Disconnected(attempt, retryable = false))
@@ -484,6 +494,7 @@ class SessionController(
             // A deliberate stop must not schedule a retry.
             if (stateFlow.value.phase == Phase.IDLE) return
 
+            awaitRetryWindow()
             attempt += 1
             if (!retryable(attempt)) {
                 Log.i(TAG, "giving up after $attempt attempts (last: $ended)")
@@ -584,6 +595,21 @@ class SessionController(
             delay(pingIntervalMs)
         }
         return if (opened === session) "controller stopped" else "session replaced"
+    }
+
+    /**
+     * Waits until a retry has a chance, before the attempt is charged to the budget.
+     *
+     * The order matters: charging first is what turned a screen-off into a terminal failure, because
+     * ten attempts that never left the device exhausted the same budget that exists to ride out a
+     * reboot gap. After the wait the whole budget is still available, so the first attempt after the
+     * screen comes back is attempt 1 and succeeds.
+     */
+    private suspend fun awaitRetryWindow() {
+        val gate = retryGate ?: return
+        Log.i(TAG, "holding the retry budget until the device can reach the network")
+        gate.awaitUsable()
+        Log.i(TAG, "device usable again; retrying with the budget intact")
     }
 
     private fun retryable(attempt: Int): Boolean = attempt <= maxAttempts

@@ -263,7 +263,11 @@ private fun explain(failure: Pairing.Failure): String = when (failure) {
     Pairing.Failure.HANDSHAKE -> "the secure connection could not be established"
     Pairing.Failure.PIN_MISMATCH -> "the Mac's identity does not match the one you paired with"
     Pairing.Failure.CODE_REJECTED -> "you rejected the code; nothing was saved"
-    Pairing.Failure.GAVE_UP -> "the connection kept dropping, so retrying stopped; tap Try again when the Mac is back"
+    // The old copy said "when the Mac is back", which blamed the peer for a cause measured on the
+    // phone: with nothing holding the session, the display going off kills it and the radio then
+    // eats every retry (ADR-061). Name what actually happened instead of sending the user to look
+    // at a Mac that never left.
+    Pairing.Failure.GAVE_UP -> "the connection dropped and retrying stopped; tap Try again - a screen left off is usually what ends it"
 }
 
 /**

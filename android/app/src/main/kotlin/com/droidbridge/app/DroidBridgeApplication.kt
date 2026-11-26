@@ -36,6 +36,11 @@ class DroidBridgeApplication : Application() {
             pinStore = KeystorePinStore(this),
             discovery = ServiceDiscovery(this),
             scope = processScope,
+            // A retry made while the phone is asleep cannot reach the network, so it must not be
+            // charged to the budget (ADR-061). Nothing holds this process yet - no connectedDevice
+            // service - so the display going off is what ends an idle session, and without this the
+            // budget burned out and left a terminal give-up for a Mac that was still listening.
+            retryGate = ScreenOnGate(this),
         ).also { session ->
             // Mirroring writes through the one session, so the binding belongs to the process rather
             // than to whichever activity happens to be on screen.
