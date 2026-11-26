@@ -120,7 +120,7 @@ pending; "conditional" means it matters only if that feature is actually used.
 | Permission revocation not immediate | No | **Accept** as a documented limitation |
 | Phase 9 Release / notarisation | No | **Deferred** by owner (ADR-033) |
 | P15 Developer ID / notarisation | No | **Deferred** by owner (ADR-033) |
-| ADR-062 long-session device verification | Yes | **Keep** — one autonomous OnePlus run, no S24 needed |
+| ADR-062 long-session device verification | Yes | **Done and device-verified** on the OnePlus 2026-11-26 (12 sequential stored-pin reconnects, zero give-ups) |
 
 **2026-11-26 device-cost run, invalidated and then waived:** the first sampler run (19:34:55–19:46:11)
 was stopped because the Mac closed the session at 19:37:51 with `idle timeout after 120s`. The phone

@@ -1,0 +1,411 @@
+--------- beginning of main
+11-26 20:36:05.684 I/P03Session(13942): state=CONNECTING attempt=0 code=none failure=none
+11-26 20:36:05.913 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:36:05.917 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:36:05.917 I/P03Session(13942): established authenticated=true code=none
+11-26 20:36:05.918 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:36:05.918 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:36:05.920 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:36:05.951 I/P03Session(13942): HEARTBEAT n=1 rttMs=33
+11-26 20:36:20.958 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:36:20.960 I/P03Session(13942): session message CLIPBOARD_OFFER target=CLIPBOARD
+11-26 20:36:20.994 I/P03Session(13942): sent clipboard_accept:4
+11-26 20:36:20.996 I/P03Session(13942): session message CLIPBOARD_TEXT target=CLIPBOARD
+11-26 20:36:21.147 I/P03Session(13942): HEARTBEAT n=2 rttMs=191
+11-26 20:36:37.663 I/P03Session(13942): sent ping:5:<1 bytes>
+11-26 20:36:37.710 I/P03Session(13942): HEARTBEAT n=3 rttMs=50
+11-26 20:36:42.218 I/P03Session(13942): drop requested by app
+11-26 20:36:42.218 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:36:52.721 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:36:52.726 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:36:52.731 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:36:52.731 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:36:53.229 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:36:53.469 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:36:53.473 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:36:53.473 I/P03Session(13942): established authenticated=true code=none
+11-26 20:36:53.474 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:36:53.475 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:36:53.477 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:36:53.587 I/P03Session(13942): HEARTBEAT n=1 rttMs=114
+11-26 20:37:09.389 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:37:09.433 I/P03Session(13942): HEARTBEAT n=2 rttMs=47
+11-26 20:37:24.448 I/P03Session(13942): sent ping:4:<1 bytes>
+11-26 20:37:24.535 I/P03Session(13942): HEARTBEAT n=3 rttMs=90
+11-26 20:37:39.544 I/P03Session(13942): sent ping:5:<1 bytes>
+11-26 20:37:39.793 I/P03Session(13942): HEARTBEAT n=4 rttMs=253
+11-26 20:37:54.800 I/P03Session(13942): sent ping:6:<1 bytes>
+11-26 20:37:55.031 I/P03Session(13942): HEARTBEAT n=5 rttMs=234
+11-26 20:38:10.041 I/P03Session(13942): sent ping:7:<1 bytes>
+11-26 20:38:10.150 I/P03Session(13942): HEARTBEAT n=6 rttMs=113
+11-26 20:38:25.164 I/P03Session(13942): sent ping:8:<1 bytes>
+11-26 20:38:25.184 I/P03Session(13942): HEARTBEAT n=7 rttMs=22
+11-26 20:38:40.189 I/P03Session(13942): sent ping:9:<1 bytes>
+11-26 20:38:40.240 I/P03Session(13942): HEARTBEAT n=8 rttMs=52
+11-26 20:38:55.249 I/P03Session(13942): sent ping:10:<1 bytes>
+11-26 20:38:55.281 I/P03Session(13942): HEARTBEAT n=9 rttMs=34
+11-26 20:39:10.290 I/P03Session(13942): sent ping:11:<1 bytes>
+11-26 20:39:10.413 I/P03Session(13942): HEARTBEAT n=10 rttMs=127
+11-26 20:39:25.421 I/P03Session(13942): sent ping:12:<1 bytes>
+11-26 20:39:25.477 I/P03Session(13942): HEARTBEAT n=11 rttMs=57
+11-26 20:39:40.484 I/P03Session(13942): sent ping:13:<1 bytes>
+11-26 20:39:40.520 I/P03Session(13942): HEARTBEAT n=12 rttMs=38
+11-26 20:39:55.531 I/P03Session(13942): sent ping:14:<1 bytes>
+11-26 20:39:55.621 I/P03Session(13942): HEARTBEAT n=13 rttMs=92
+11-26 20:40:10.633 I/P03Session(13942): sent ping:15:<1 bytes>
+11-26 20:40:10.739 I/P03Session(13942): HEARTBEAT n=14 rttMs=109
+11-26 20:40:25.751 I/P03Session(13942): sent ping:16:<1 bytes>
+11-26 20:40:25.798 I/P03Session(13942): HEARTBEAT n=15 rttMs=50
+11-26 20:40:40.806 I/P03Session(13942): sent ping:17:<1 bytes>
+11-26 20:40:40.849 I/P03Session(13942): HEARTBEAT n=16 rttMs=45
+11-26 20:40:55.862 I/P03Session(13942): sent ping:18:<1 bytes>
+11-26 20:40:56.013 I/P03Session(13942): HEARTBEAT n=17 rttMs=154
+11-26 20:41:11.026 I/P03Session(13942): sent ping:19:<1 bytes>
+11-26 20:41:11.077 I/P03Session(13942): HEARTBEAT n=18 rttMs=54
+11-26 20:41:26.087 I/P03Session(13942): sent ping:20:<1 bytes>
+11-26 20:41:26.260 I/P03Session(13942): HEARTBEAT n=19 rttMs=176
+11-26 20:41:41.265 I/P03Session(13942): sent ping:21:<1 bytes>
+11-26 20:41:41.300 I/P03Session(13942): HEARTBEAT n=20 rttMs=36
+11-26 20:41:57.235 I/P03Session(13942): sent ping:22:<1 bytes>
+11-26 20:41:57.261 I/P03Session(13942): HEARTBEAT n=21 rttMs=28
+11-26 20:42:12.274 I/P03Session(13942): sent ping:23:<1 bytes>
+11-26 20:42:12.367 I/P03Session(13942): HEARTBEAT n=22 rttMs=96
+11-26 20:42:27.378 I/P03Session(13942): sent ping:24:<1 bytes>
+11-26 20:42:27.430 I/P03Session(13942): HEARTBEAT n=23 rttMs=56
+11-26 20:42:30.887 I/P03Session(13942): drop requested by app
+11-26 20:42:30.888 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:42:42.440 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:42:42.443 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:42:42.447 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:42:42.447 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:42:42.895 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:42:43.116 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:42:43.118 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:42:43.118 I/P03Session(13942): established authenticated=true code=none
+11-26 20:42:43.119 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:42:43.121 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:42:43.125 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:42:43.158 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:43:00.468 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:43:00.601 I/P03Session(13942): HEARTBEAT n=2 rttMs=135
+11-26 20:43:03.916 I/P03Session(13942): drop requested by app
+11-26 20:43:03.916 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:43:07.473 I/P03Session(13942): drop requested by app
+11-26 20:43:11.151 I/P03Session(13942): drop requested by app
+11-26 20:43:14.719 I/P03Session(13942): drop requested by app
+11-26 20:43:16.256 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:43:16.260 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:43:16.265 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:43:16.265 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:43:16.689 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:43:16.987 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:43:16.988 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:43:16.988 I/P03Session(13942): established authenticated=true code=none
+11-26 20:43:16.989 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:43:16.990 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:43:16.991 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:43:17.023 I/P03Session(13942): HEARTBEAT n=1 rttMs=34
+11-26 20:43:18.173 I/P03Session(13942): drop requested by app
+11-26 20:43:18.173 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:43:21.899 I/P03Session(13942): drop requested by app
+11-26 20:43:25.476 I/P03Session(13942): drop requested by app
+11-26 20:43:29.066 I/P03Session(13942): drop requested by app
+11-26 20:43:32.028 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:43:32.029 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:43:32.031 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:43:32.032 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:43:32.536 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:43:32.758 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:43:32.760 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:43:32.760 I/P03Session(13942): established authenticated=true code=none
+11-26 20:43:32.760 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:43:32.763 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:43:32.765 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:43:32.799 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:43:36.237 I/P03Session(13942): drop requested by app
+11-26 20:43:36.237 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:43:39.825 I/P03Session(13942): drop requested by app
+11-26 20:43:47.807 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:43:47.807 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:43:47.812 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:43:47.812 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:43:48.305 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:43:48.515 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:43:48.516 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:43:48.516 I/P03Session(13942): established authenticated=true code=none
+11-26 20:43:48.517 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:43:48.520 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:43:48.527 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:43:48.556 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:44:03.565 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:44:03.670 I/P03Session(13942): HEARTBEAT n=2 rttMs=107
+11-26 20:44:15.159 I/P03Session(13942): drop requested by app
+11-26 20:44:15.159 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:44:18.676 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:44:18.679 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:44:18.682 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:44:18.683 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:44:19.176 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:44:19.451 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:44:19.452 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:44:19.452 I/P03Session(13942): established authenticated=true code=none
+11-26 20:44:19.453 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:44:19.454 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:44:19.457 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:44:19.505 I/P03Session(13942): HEARTBEAT n=1 rttMs=52
+11-26 20:44:21.183 I/P03Session(13942): drop requested by app
+11-26 20:44:21.183 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:44:34.515 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:44:34.516 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:44:34.519 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:44:34.519 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:44:34.982 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:44:35.267 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:44:35.268 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:44:35.268 I/P03Session(13942): established authenticated=true code=none
+11-26 20:44:35.269 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:44:35.271 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:44:35.274 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:44:35.305 I/P03Session(13942): HEARTBEAT n=1 rttMs=37
+11-26 20:44:50.316 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:44:50.355 I/P03Session(13942): HEARTBEAT n=2 rttMs=42
+11-26 20:45:05.365 I/P03Session(13942): sent ping:4:<1 bytes>
+11-26 20:45:05.404 I/P03Session(13942): HEARTBEAT n=3 rttMs=43
+11-26 20:45:20.759 I/P03Session(13942): sent ping:5:<1 bytes>
+11-26 20:45:20.799 I/P03Session(13942): HEARTBEAT n=4 rttMs=40
+11-26 20:45:35.808 I/P03Session(13942): sent ping:6:<1 bytes>
+11-26 20:45:35.876 I/P03Session(13942): HEARTBEAT n=5 rttMs=71
+11-26 20:45:50.891 I/P03Session(13942): sent ping:7:<1 bytes>
+11-26 20:45:51.024 I/P03Session(13942): HEARTBEAT n=6 rttMs=136
+11-26 20:46:06.028 I/P03Session(13942): sent ping:8:<1 bytes>
+11-26 20:46:06.052 I/P03Session(13942): HEARTBEAT n=7 rttMs=25
+11-26 20:46:21.059 I/P03Session(13942): sent ping:9:<1 bytes>
+11-26 20:46:21.097 I/P03Session(13942): HEARTBEAT n=8 rttMs=40
+11-26 20:46:36.111 I/P03Session(13942): sent ping:10:<1 bytes>
+11-26 20:46:36.152 I/P03Session(13942): HEARTBEAT n=9 rttMs=45
+11-26 20:46:51.164 I/P03Session(13942): sent ping:11:<1 bytes>
+11-26 20:46:51.302 I/P03Session(13942): HEARTBEAT n=10 rttMs=141
+11-26 20:47:06.312 I/P03Session(13942): sent ping:12:<1 bytes>
+11-26 20:47:06.348 I/P03Session(13942): HEARTBEAT n=11 rttMs=40
+11-26 20:47:19.287 I/P03Session(13942): drop requested by app
+11-26 20:47:19.287 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:47:21.355 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:47:21.359 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:47:21.362 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:47:21.362 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:47:21.814 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:47:22.063 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:47:22.065 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:47:22.066 I/P03Session(13942): established authenticated=true code=none
+11-26 20:47:22.067 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:47:22.067 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:47:22.069 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:47:22.112 I/P03Session(13942): HEARTBEAT n=1 rttMs=45
+11-26 20:47:37.122 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:47:37.188 I/P03Session(13942): HEARTBEAT n=2 rttMs=67
+11-26 20:47:39.350 I/P03Session(13942): drop requested by app
+11-26 20:47:39.350 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:47:52.194 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:47:52.198 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:47:52.201 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:47:52.202 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:47:52.679 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:47:52.916 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:47:52.917 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:47:52.917 I/P03Session(13942): established authenticated=true code=none
+11-26 20:47:52.918 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:47:52.920 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:47:52.924 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:47:52.957 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:47:58.584 I/P03Session(13942): drop requested by app
+11-26 20:47:58.584 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:48:07.967 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:48:07.971 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:48:07.973 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:48:07.974 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:48:08.419 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:48:08.686 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:48:08.689 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:48:08.689 I/P03Session(13942): established authenticated=true code=none
+11-26 20:48:08.691 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:48:08.691 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:48:08.695 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:48:08.734 I/P03Session(13942): HEARTBEAT n=1 rttMs=44
+11-26 20:48:23.746 I/P03Session(13942): sent ping:3:<1 bytes>
+11-26 20:48:23.890 I/P03Session(13942): HEARTBEAT n=2 rttMs=147
+11-26 20:48:38.903 I/P03Session(13942): sent ping:4:<1 bytes>
+11-26 20:48:39.011 I/P03Session(13942): HEARTBEAT n=3 rttMs=112
+11-26 20:48:54.021 I/P03Session(13942): sent ping:5:<1 bytes>
+11-26 20:48:54.066 I/P03Session(13942): HEARTBEAT n=4 rttMs=49
+11-26 20:49:09.077 I/P03Session(13942): sent ping:6:<1 bytes>
+11-26 20:49:09.169 I/P03Session(13942): HEARTBEAT n=5 rttMs=95
+11-26 20:49:24.180 I/P03Session(13942): sent ping:7:<1 bytes>
+11-26 20:49:24.206 I/P03Session(13942): HEARTBEAT n=6 rttMs=30
+11-26 20:49:24.499 I/P03Session(13942): drop requested by app
+11-26 20:49:24.499 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:49:39.213 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:49:39.217 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:49:39.220 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:49:39.221 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:49:39.698 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:49:39.961 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:49:39.964 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:49:39.965 I/P03Session(13942): established authenticated=true code=none
+11-26 20:49:39.965 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:49:39.967 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:49:39.968 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:49:40.125 I/P03Session(13942): HEARTBEAT n=1 rttMs=160
+11-26 20:49:45.597 I/P03Session(13942): drop requested by app
+11-26 20:49:45.597 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:49:55.132 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:49:55.136 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:49:55.142 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:49:55.143 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:49:55.647 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:49:56.008 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:49:56.010 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:49:56.010 I/P03Session(13942): established authenticated=true code=none
+11-26 20:49:56.010 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:49:56.012 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:49:56.016 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:49:56.034 I/P03Session(13942): HEARTBEAT n=1 rttMs=24
+11-26 20:50:04.826 I/P03Session(13942): drop requested by app
+11-26 20:50:04.826 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:50:11.041 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:50:11.044 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:50:11.046 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:50:11.046 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:50:11.495 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:50:11.747 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:50:11.749 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:50:11.749 I/P03Session(13942): established authenticated=true code=none
+11-26 20:50:11.751 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:50:11.752 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:50:11.755 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:50:11.782 I/P03Session(13942): HEARTBEAT n=1 rttMs=32
+11-26 20:50:16.897 I/P03Session(13942): drop requested by app
+11-26 20:50:16.897 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:50:26.786 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:50:26.786 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:50:26.787 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:50:26.787 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:50:27.271 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:50:27.504 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:50:27.507 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:50:27.507 I/P03Session(13942): established authenticated=true code=none
+11-26 20:50:27.508 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:50:27.509 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:50:27.511 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:50:27.542 I/P03Session(13942): HEARTBEAT n=1 rttMs=34
+11-26 20:50:36.379 I/P03Session(13942): drop requested by app
+11-26 20:50:36.379 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:50:42.545 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:50:42.547 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:50:42.548 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:50:42.548 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:50:43.033 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:50:43.318 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:50:43.320 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:50:43.321 I/P03Session(13942): established authenticated=true code=none
+11-26 20:50:43.322 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:50:43.323 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:50:43.324 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:50:43.349 I/P03Session(13942): HEARTBEAT n=1 rttMs=28
+11-26 20:50:48.401 I/P03Session(13942): drop requested by app
+11-26 20:50:48.401 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:50:58.355 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:50:58.356 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:50:58.359 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:50:58.359 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:50:58.826 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:50:59.100 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:50:59.104 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:50:59.104 I/P03Session(13942): established authenticated=true code=none
+11-26 20:50:59.104 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:50:59.105 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:50:59.108 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:50:59.143 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:51:07.611 I/P03Session(13942): drop requested by app
+11-26 20:51:07.611 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:51:14.151 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:51:14.153 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:51:14.156 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:51:14.156 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:51:14.579 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:51:14.863 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:51:14.865 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:51:14.866 I/P03Session(13942): established authenticated=true code=none
+11-26 20:51:14.867 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:51:14.867 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:51:14.869 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:51:15.026 I/P03Session(13942): HEARTBEAT n=1 rttMs=160
+11-26 20:51:19.506 I/P03Session(13942): drop requested by app
+11-26 20:51:19.507 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:51:30.031 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:51:30.031 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:51:30.033 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:51:30.033 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:51:30.535 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:51:30.787 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:51:30.789 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:51:30.789 I/P03Session(13942): established authenticated=true code=none
+11-26 20:51:30.790 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:51:30.792 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:51:30.796 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:51:30.829 I/P03Session(13942): HEARTBEAT n=1 rttMs=39
+11-26 20:51:37.675 I/P03Session(13942): drop requested by app
+11-26 20:51:37.675 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:51:45.835 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:51:45.839 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:51:45.840 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:51:45.840 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:51:46.293 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:51:46.631 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:51:46.635 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:51:46.635 I/P03Session(13942): established authenticated=true code=none
+11-26 20:51:46.636 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:51:46.636 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:51:46.639 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:51:46.659 I/P03Session(13942): HEARTBEAT n=1 rttMs=23
+11-26 20:51:52.411 I/P03Session(13942): drop requested by app
+11-26 20:51:52.411 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:52:01.665 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:52:01.666 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:52:01.669 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:52:01.670 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:52:02.081 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:52:02.326 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:52:02.327 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:52:02.327 I/P03Session(13942): established authenticated=true code=none
+11-26 20:52:02.328 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:52:02.330 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:52:02.335 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:52:02.360 I/P03Session(13942): HEARTBEAT n=1 rttMs=32
+11-26 20:52:06.851 I/P03Session(13942): drop requested by app
+11-26 20:52:06.851 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:52:17.365 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:52:17.366 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:52:17.368 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:52:17.369 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:52:17.756 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:52:18.257 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:52:18.259 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:52:18.259 I/P03Session(13942): established authenticated=true code=none
+11-26 20:52:18.260 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:52:18.261 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:52:18.268 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:52:18.331 I/P03Session(13942): HEARTBEAT n=1 rttMs=71
+11-26 20:52:25.020 I/P03Session(13942): drop requested by app
+11-26 20:52:25.021 I/P03Session(13942): session closed: dropped for reconnect test
+11-26 20:52:33.339 I/P03Session(13942): holding the retry budget until the device can reach the network
+11-26 20:52:33.342 I/P03Session(13942): device usable again; retrying with the budget intact
+11-26 20:52:33.343 I/P03Session(13942): state=RECONNECTING attempt=1 code=none failure=none
+11-26 20:52:33.343 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException
+11-26 20:52:33.777 I/P03Session(13942): state=CONNECTING attempt=1 code=none failure=none
+11-26 20:52:34.005 I/P03Session(13942): handshake complete: protocol=TLSv1.3 peerPin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb authenticated=true
+11-26 20:52:34.006 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none
+11-26 20:52:34.006 I/P03Session(13942): established authenticated=true code=none
+11-26 20:52:34.008 I/P03Session(13942): sent ping:1:<1 bytes>
+11-26 20:52:34.008 I/P03Shell(13942): device info sent=true OnePlus AC2001 android=12
+11-26 20:52:34.010 I/P03Session(13942): sent device_info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+11-26 20:52:34.173 I/P03Session(13942): HEARTBEAT n=1 rttMs=166

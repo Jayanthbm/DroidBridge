@@ -1,0 +1,24 @@
+cycle 1: drop_registered=yes (handshakes before=11)
+cycle 1: reconnect_ok=1 | 11-26 20:48:08.689 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:49:39.221 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:49:39.964 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 2: drop_registered=yes (handshakes before=12)
+cycle 2: reconnect_ok=1 | 11-26 20:49:39.964 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:49:55.143 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:49:56.010 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 3: drop_registered=yes (handshakes before=13)
+cycle 3: reconnect_ok=1 | 11-26 20:49:56.010 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:50:11.046 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:50:11.749 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 4: drop_registered=yes (handshakes before=14)
+cycle 4: reconnect_ok=1 | 11-26 20:50:11.749 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:50:26.787 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:50:27.507 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 5: drop_registered=yes (handshakes before=15)
+cycle 5: reconnect_ok=1 | 11-26 20:50:27.507 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:50:42.548 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:50:43.320 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 6: drop_registered=yes (handshakes before=16)
+cycle 6: reconnect_ok=1 | 11-26 20:50:43.320 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:50:58.359 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:50:59.104 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 7: drop_registered=yes (handshakes before=17)
+cycle 7: reconnect_ok=1 | 11-26 20:50:59.104 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:51:14.156 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:51:14.865 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 8: drop_registered=yes (handshakes before=18)
+cycle 8: reconnect_ok=1 | 11-26 20:51:14.865 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:51:30.033 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:51:30.789 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 9: drop_registered=yes (handshakes before=19)
+cycle 9: reconnect_ok=1 | 11-26 20:51:30.789 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:51:45.840 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:51:46.635 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 10: drop_registered=yes (handshakes before=20)
+cycle 10: reconnect_ok=1 | 11-26 20:51:46.635 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:52:01.670 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:52:02.327 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 11: drop_registered=yes (handshakes before=21)
+cycle 11: reconnect_ok=1 | 11-26 20:52:02.327 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:52:17.369 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:52:18.259 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|
+cycle 12: drop_registered=yes (handshakes before=22)
+cycle 12: reconnect_ok=1 | 11-26 20:52:18.259 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|11-26 20:52:33.343 I/P03Session(13942): reconnect scheduled attempt=1 reason=ping failed: SessionException|11-26 20:52:34.006 I/P03Session(13942): state=CONNECTED attempt=0 code=none failure=none|

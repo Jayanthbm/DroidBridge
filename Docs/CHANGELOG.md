@@ -1,3 +1,10 @@
+## ADR-062 retry-budget fix device-verified (2026-11-26)
+
+- **No behaviour change** from this verification; it proves the shipped `RetryCounter` fix on a real
+  device. 12 sequential stored-pin reconnects on the OnePlus, 22 total reconnects, every attempt
+  stayed at 1, zero give-ups. The old lifetime counter would have stopped at the 11th drop. This is
+  the fix that keeps long autonomous sharing sessions alive.
+
 ## P10 private-only notification row waived for personal-use scope (2026-11-26)
 
 - **No behaviour change.** The owner confirmed the private-only notification visual row is not needed

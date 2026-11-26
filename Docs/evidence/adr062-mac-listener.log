@@ -1,0 +1,510 @@
+2026-11-26 20:34:07.595 DroidBridge[41816:1434262] p07: PAUSE enqueued=0 next=0
+[p07] PAUSE enqueued=0 next=0
+2026-11-26 20:34:07.599 DroidBridge[41816:1434262] p07: LOADED path=/Users/jayanthbharadwajm/development/DroidBridge/macos/build/Build/Products/Debug/DroidBridge.app/Contents/Resources/p07-test.h264 bytes=48029 nals=97 units=90 sps=25 pps=5 preventsCapture=true status=unknown
+[p07] LOADED path=/Users/jayanthbharadwajm/development/DroidBridge/macos/build/Build/Products/Debug/DroidBridge.app/Contents/Resources/p07-test.h264 bytes=48029 nals=97 units=90 sps=25 pps=5 preventsCapture=true status=unknown
+2026-11-26 20:34:08.395 DroidBridge[41816:1434262] p08: STOPPED framesReceived=0 framesEnqueued=0 dropped=0
+[p08] STOPPED framesReceived=0 framesEnqueued=0 dropped=0
+2026-11-26 20:34:08.559 DroidBridge[41816:1434262] p08: LISTENING port=0 peer-id=android-p08 identity-pin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb
+[p08] LISTENING port=0 peer-id=android-p08 identity-pin=2178541711aede012c381f584e5ef2e1e39baf5b1b8772c3305005c6f7ff9ffb
+2026-11-26 20:34:08.785 DroidBridge[41816:1434262] p08: EVENT listening on port 64431
+[p08] EVENT listening on port 64431
+2026-11-26 20:36:05.829 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:36:05.855 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:36:05.855 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:36:05.855 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:36:05.866 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:36:05.866 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:36:05.889 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:36:06.882 DroidBridge[41816:1434262] p08: CLIPBOARD sent 32 bytes
+[p08] CLIPBOARD sent 32 bytes
+2026-11-26 20:36:21.033 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:36:21.061 DroidBridge[41816:1434262] p08: EVENT frame clipboard.accept:4
+[p08] EVENT frame clipboard.accept:4
+2026-11-26 20:36:21.083 DroidBridge[41816:1434262] p08: CLIPBOARD phone accepted the offer
+[p08] CLIPBOARD phone accepted the offer
+2026-11-26 20:36:37.593 DroidBridge[41816:1434262] p08: EVENT frame ping:5:<1 bytes>
+[p08] EVENT frame ping:5:<1 bytes>
+2026-11-26 20:36:42.140 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:36:42.168 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:36:53.375 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:36:53.398 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:36:53.414 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:36:53.429 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:36:53.486 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:36:53.500 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:36:53.509 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:37:09.323 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:37:24.418 DroidBridge[41816:1434262] p08: EVENT frame ping:4:<1 bytes>
+[p08] EVENT frame ping:4:<1 bytes>
+2026-11-26 20:37:39.676 DroidBridge[41816:1434262] p08: EVENT frame ping:5:<1 bytes>
+[p08] EVENT frame ping:5:<1 bytes>
+2026-11-26 20:37:54.830 DroidBridge[41816:1434262] p08: EVENT frame ping:6:<1 bytes>
+[p08] EVENT frame ping:6:<1 bytes>
+2026-11-26 20:38:10.031 DroidBridge[41816:1434262] p08: EVENT frame ping:7:<1 bytes>
+[p08] EVENT frame ping:7:<1 bytes>
+2026-11-26 20:38:25.085 DroidBridge[41816:1434262] p08: EVENT frame ping:8:<1 bytes>
+[p08] EVENT frame ping:8:<1 bytes>
+2026-11-26 20:38:40.125 DroidBridge[41816:1434262] p08: EVENT frame ping:9:<1 bytes>
+[p08] EVENT frame ping:9:<1 bytes>
+2026-11-26 20:38:55.183 DroidBridge[41816:1434262] p08: EVENT frame ping:10:<1 bytes>
+[p08] EVENT frame ping:10:<1 bytes>
+2026-11-26 20:39:10.222 DroidBridge[41816:1434262] p08: EVENT frame ping:11:<1 bytes>
+[p08] EVENT frame ping:11:<1 bytes>
+2026-11-26 20:39:25.362 DroidBridge[41816:1434262] p08: EVENT frame ping:12:<1 bytes>
+[p08] EVENT frame ping:12:<1 bytes>
+2026-11-26 20:39:40.417 DroidBridge[41816:1434262] p08: EVENT frame ping:13:<1 bytes>
+[p08] EVENT frame ping:13:<1 bytes>
+2026-11-26 20:39:55.510 DroidBridge[41816:1434262] p08: EVENT frame ping:14:<1 bytes>
+[p08] EVENT frame ping:14:<1 bytes>
+2026-11-26 20:40:10.619 DroidBridge[41816:1434262] p08: EVENT frame ping:15:<1 bytes>
+[p08] EVENT frame ping:15:<1 bytes>
+2026-11-26 20:40:25.680 DroidBridge[41816:1434262] p08: EVENT frame ping:16:<1 bytes>
+[p08] EVENT frame ping:16:<1 bytes>
+2026-11-26 20:40:40.741 DroidBridge[41816:1434262] p08: EVENT frame ping:17:<1 bytes>
+[p08] EVENT frame ping:17:<1 bytes>
+2026-11-26 20:40:55.880 DroidBridge[41816:1434262] p08: EVENT frame ping:18:<1 bytes>
+[p08] EVENT frame ping:18:<1 bytes>
+2026-11-26 20:41:10.962 DroidBridge[41816:1434262] p08: EVENT frame ping:19:<1 bytes>
+[p08] EVENT frame ping:19:<1 bytes>
+2026-11-26 20:41:26.024 DroidBridge[41816:1434262] p08: EVENT frame ping:20:<1 bytes>
+[p08] EVENT frame ping:20:<1 bytes>
+2026-11-26 20:41:41.190 DroidBridge[41816:1434262] p08: EVENT frame ping:21:<1 bytes>
+[p08] EVENT frame ping:21:<1 bytes>
+2026-11-26 20:41:57.161 DroidBridge[41816:1434262] p08: EVENT frame ping:22:<1 bytes>
+[p08] EVENT frame ping:22:<1 bytes>
+2026-11-26 20:42:12.260 DroidBridge[41816:1434262] p08: EVENT frame ping:23:<1 bytes>
+[p08] EVENT frame ping:23:<1 bytes>
+2026-11-26 20:42:27.321 DroidBridge[41816:1434262] p08: EVENT frame ping:24:<1 bytes>
+[p08] EVENT frame ping:24:<1 bytes>
+2026-11-26 20:42:30.816 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:42:30.840 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:42:43.040 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:42:43.066 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:42:43.066 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:42:43.066 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:42:43.079 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:42:43.079 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:42:43.098 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:43:00.505 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:43:03.848 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:43:03.872 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:43:16.911 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:43:16.932 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:16.932 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:43:16.932 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:43:16.943 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:16.943 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:43:16.960 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:43:18.103 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:43:18.122 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:43:32.683 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:43:32.706 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:32.706 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:43:32.706 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:43:32.719 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:32.719 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:43:32.740 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:43:36.169 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:43:36.185 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:43:48.448 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:43:48.466 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:48.466 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:43:48.466 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:43:48.476 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:43:48.477 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:43:48.494 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:44:03.559 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:44:15.186 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:44:15.211 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:44:19.384 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:44:19.413 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:44:19.413 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:44:19.413 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:44:19.425 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:44:19.425 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:44:19.444 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:44:21.111 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:44:21.138 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:44:35.201 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:44:35.216 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:44:35.216 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:44:35.216 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:44:35.227 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:44:35.227 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:44:35.244 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:44:50.258 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:45:05.302 DroidBridge[41816:1434262] p08: EVENT frame ping:4:<1 bytes>
+[p08] EVENT frame ping:4:<1 bytes>
+2026-11-26 20:45:20.703 DroidBridge[41816:1434262] p08: EVENT frame ping:5:<1 bytes>
+[p08] EVENT frame ping:5:<1 bytes>
+2026-11-26 20:45:35.771 DroidBridge[41816:1434262] p08: EVENT frame ping:6:<1 bytes>
+[p08] EVENT frame ping:6:<1 bytes>
+2026-11-26 20:45:50.901 DroidBridge[41816:1434262] p08: EVENT frame ping:7:<1 bytes>
+[p08] EVENT frame ping:7:<1 bytes>
+2026-11-26 20:46:05.956 DroidBridge[41816:1434262] p08: EVENT frame ping:8:<1 bytes>
+[p08] EVENT frame ping:8:<1 bytes>
+2026-11-26 20:46:21.001 DroidBridge[41816:1434262] p08: EVENT frame ping:9:<1 bytes>
+[p08] EVENT frame ping:9:<1 bytes>
+2026-11-26 20:46:36.047 DroidBridge[41816:1434262] p08: EVENT frame ping:10:<1 bytes>
+[p08] EVENT frame ping:10:<1 bytes>
+2026-11-26 20:46:51.183 DroidBridge[41816:1434262] p08: EVENT frame ping:11:<1 bytes>
+[p08] EVENT frame ping:11:<1 bytes>
+2026-11-26 20:47:06.241 DroidBridge[41816:1434262] p08: EVENT frame ping:12:<1 bytes>
+[p08] EVENT frame ping:12:<1 bytes>
+2026-11-26 20:47:19.220 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:47:19.239 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:47:21.980 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:47:22.004 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:47:22.004 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:47:22.004 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:47:22.016 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:47:22.016 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:47:22.034 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:47:37.092 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:47:39.282 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:47:39.304 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:47:52.842 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:47:52.867 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:47:52.867 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:47:52.867 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:47:52.878 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:47:52.879 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:47:52.898 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:47:58.515 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:47:58.536 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:48:08.614 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:48:08.642 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:48:08.642 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:48:08.642 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:48:08.656 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:48:08.656 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:48:08.675 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:48:23.786 DroidBridge[41816:1434262] p08: EVENT frame ping:3:<1 bytes>
+[p08] EVENT frame ping:3:<1 bytes>
+2026-11-26 20:48:38.913 DroidBridge[41816:1434262] p08: EVENT frame ping:4:<1 bytes>
+[p08] EVENT frame ping:4:<1 bytes>
+2026-11-26 20:48:53.963 DroidBridge[41816:1434262] p08: EVENT frame ping:5:<1 bytes>
+[p08] EVENT frame ping:5:<1 bytes>
+2026-11-26 20:49:09.073 DroidBridge[41816:1434262] p08: EVENT frame ping:6:<1 bytes>
+[p08] EVENT frame ping:6:<1 bytes>
+2026-11-26 20:49:24.109 DroidBridge[41816:1434262] p08: EVENT frame ping:7:<1 bytes>
+[p08] EVENT frame ping:7:<1 bytes>
+2026-11-26 20:49:24.438 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:49:24.459 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:49:39.883 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:49:39.902 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:49:39.903 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:49:39.903 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:49:39.913 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:49:39.913 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:49:39.929 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:49:45.528 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:49:45.545 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:49:55.935 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:49:55.948 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:49:55.948 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:49:55.948 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:49:55.956 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:49:55.957 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:49:55.971 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:50:04.756 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:50:04.777 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:50:11.667 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:50:11.693 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:11.693 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:50:11.693 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:50:11.706 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:11.706 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:50:11.724 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:50:16.846 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:50:16.874 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:50:27.438 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:50:27.457 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:27.457 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:50:27.457 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:50:27.465 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:27.465 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:50:27.483 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:50:36.330 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:50:36.348 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:50:43.236 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:50:43.257 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:43.258 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:50:43.258 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:50:43.274 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:43.274 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:50:43.288 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:50:48.332 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:50:48.346 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:50:59.035 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:50:59.058 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:59.059 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:50:59.059 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:50:59.066 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:50:59.066 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:50:59.080 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:51:07.555 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:51:07.582 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:51:14.794 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:51:14.824 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:14.824 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:51:14.824 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:51:14.836 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:14.836 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:51:14.856 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:51:19.440 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:51:19.464 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:51:30.727 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:51:30.744 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:30.744 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:51:30.744 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:51:30.754 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:30.754 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:51:30.766 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:51:37.615 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:51:37.642 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:51:46.551 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:51:46.573 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:46.573 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:51:46.573 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:51:46.584 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:51:46.584 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:51:46.601 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:51:52.357 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:51:52.381 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:52:02.255 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:52:02.272 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:02.272 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:52:02.272 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:52:02.284 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:02.284 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:52:02.303 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:52:06.803 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:52:06.825 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:52:18.184 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:52:18.202 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:18.202 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:52:18.202 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:52:18.212 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:18.212 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:52:18.227 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard
+2026-11-26 20:52:24.952 DroidBridge[41816:1434262] p08: EVENT closed: peer closed the connection
+[p08] EVENT closed: peer closed the connection
+2026-11-26 20:52:24.970 DroidBridge[41816:1434262] p08: CLOSED peer closed the connection
+[p08] CLOSED peer closed the connection
+2026-11-26 20:52:33.947 DroidBridge[41816:1434262] p08: EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+[p08] EVENT verify: pin matched 86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6
+2026-11-26 20:52:33.974 DroidBridge[41816:1434262] p08: EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] EVENT connection ready peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:33.974 DroidBridge[41816:1434262] p08: EVENT frame ping:1:<1 bytes>
+[p08] EVENT frame ping:1:<1 bytes>
+2026-11-26 20:52:33.975 DroidBridge[41816:1434262] p08: EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+[p08] EVENT frame device.info:2:{"manufacturer":"OnePlus","model":"AC2001","androidRelease":"12"
+2026-11-26 20:52:33.983 DroidBridge[41816:1434262] p08: READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+[p08] READY peer-pin=86b9306b9b48236186ba4850b0ca9fbae8c1c4e8ccfe8e72c2b2f3ab70e38fa6 authenticated=true code=813 029
+2026-11-26 20:52:33.983 DroidBridge[41816:1434262] p08: DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+[p08] DEVICE_INFO OnePlus AC2001 Android 12 (API 31) - app 0.1.0
+2026-11-26 20:52:33.998 DroidBridge[41816:1434262] p08: CLIPBOARD watching the pasteboard
+[p08] CLIPBOARD watching the pasteboard

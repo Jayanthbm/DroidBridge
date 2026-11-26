@@ -1,3 +1,16 @@
+**2026-11-26 (ADR-062 device-verified on the OnePlus):** installed the fresh APK with the
+`RetryCounter` fix (`adb install -r`, stored pin preserved) and relaunched the Mac listener on fixed
+port 64431 with a 7200 s idle timeout. Drove **12 sequential stored-pin reconnects** via the app's
+own Drop button, each waiting for a fresh handshake. Result: **22 reconnects, every
+`reconnect scheduled attempt=1`, 23 silent `authenticated=true code=none` handshakes, zero
+`giving up after`**. The ADR-061 screen gate worked alongside: every drop logged
+`holding the retry budget until the device can reach the network` then resumed with the budget
+intact. Under the old lifetime counter the 11th drop would have given up. The OnePlus denied shell
+`WRITE_SETTINGS`, so no device settings changed (`screen_off_timeout` 15000, `stay_on` 7); the screen
+was kept interactive with setup-only wake keyevents. USB unplugged, ADB over Wi-Fi, no consent or
+pairing prompt. Evidence: `Docs/evidence/adr062-*.log`, `adr062-drop-cycles.txt`. ADR-062 status is
+now device-verified.
+
 **2026-11-26 (owner waived the P08 device-cost measurement):**
 
 The owner confirmed the device-cost measurement is not needed for a personal app, so it is
