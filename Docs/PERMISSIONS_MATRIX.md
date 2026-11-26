@@ -88,7 +88,7 @@ These are not manifest permissions, but a submission without them is a policy fa
 | Certificate transparency setting | Same file | Leave at the platform default. **Never** disable CT globally or per-domain to work around a TLS failure. |
 | ECH / `domainEncryption` | Same file | Leave at default. ECH only applies where the library and server support it; a local IP connection must not depend on it (R-03). |
 | Trust-all `TrustManager` / hostname-verifier override | Android TLS code | Forbidden. Peer identity comes from pinning, not from disabling verification. |
-| `allowAudioPlaybackCapture` | Android manifest | Not set (no audio). |
+| `allowAudioPlaybackCapture` | Android manifest | Not set, so the platform default applies. It governs whether *other* apps may capture DroidBridge's own audio, and DroidBridge plays no media of its own; the shipped feature captures other apps' playback instead (ADR-057). |
 | `codesign --deep` | macOS signing | Never used for signing. Sign inside-out: Apple documents that `--deep` applies one option set to every item (leaking the app's entitlements onto nested code) and misses code in data locations (R-27). |
 | `com.apple.security.get-task-allow` | macOS entitlements | Must not be `true` in a shipped build — the notary service rejects it. Xcode strips it on export; manual signing must not add it back (R-27). |
 | Signed-build identity for TCC | macOS local network privilege | Local network privacy tracks the program by its **code signature**. Ad-hoc builds can lose the recorded decision when the signature changes; that is expected in development, and a re-prompt is never "fixed" by weakening the prompt or the entitlement (R-27, R-28). |

@@ -126,4 +126,8 @@ Until P16/P17 pass on the target phone, production mirroring remains view-only a
 
 ## 9. Calls/audio
 
-Keep separate from screen mirroring. Audio playback capture and call handling have distinct Android permissions, policies and roles. No call features in the MVP.
+Media playback audio (music, video) is a track of the mirroring session, not a separate feature: the
+phone captures with `AudioPlaybackCaptureConfiguration` (media/game/unknown usages only) and the Mac
+plays AAC-LC on the same authenticated connection (ADR-057). Call audio is a different problem:
+cellular voice is not capturable and `USAGE_VOICE_COMMUNICATION` measures as digital silence (ADR-045),
+so call handling stays out of the MVP and no call controls are advertised.

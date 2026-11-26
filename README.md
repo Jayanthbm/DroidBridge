@@ -10,9 +10,9 @@
 DroidBridge combines two independently useful features in one product:
 
 1. **Clipboard Sync** — transfer text between Android and macOS.
-2. **Screen Mirroring** — stream the Android display to macOS, respecting Android's screen-capture protections.
+2. **Screen Mirroring** — stream the Android display to macOS, respecting Android's screen-capture protections, with optional playback audio (the phone's music and video; never calls or notifications).
 
-Remote input, audio and phone-call integration are research tracks. They must not be advertised as supported until a prototype proves that they work with public, supported APIs and without the prohibited privileges.
+Remote input and phone-call integration are research tracks. They must not be advertised as supported until a prototype proves that they work with public, supported APIs and without the prohibited privileges.
 
 ## Non-negotiable constraints
 

@@ -21,7 +21,7 @@ The first target device is the owner's Samsung Galaxy S24 Ultra running Android 
 - Evaluate whether macOS can control the Android phone as a standard Bluetooth HID keyboard/trackpad, without Accessibility, ADB input, root or privileged/OEM APIs.
 - Test Bluetooth HID in the Mac-to-Android direction.
 - Test whether the Mac can act as a supported Bluetooth HID peripheral.
-- Investigate audio streaming under Android's playback-capture rules.
+- Investigate audio streaming under Android's playback-capture rules. *(Shipped 2026-11-26 for media playback audio, ADR-057; call audio stays out of scope.)*
 
 ### P2 — Future goals
 - Incoming call notifications and call control.

@@ -14,8 +14,13 @@
       POST_NOTIFICATIONS arrive from `:feature:mirroring` (its manifest declares them with the same
       justifications). Mirroring is started by an explicit button, never automatically.
 
-      Deliberately still absent: BLUETOOTH* (ADR-016), every clipboard permission (none exists;
-      clipboard needs foreground focus, R-09), and RECORD_AUDIO (experiment-scoped only, ADR-045).
+      Phase 8 ships playback audio, so RECORD_AUDIO and FOREGROUND_SERVICE_MICROPHONE arrive from
+      `:feature:mirroring` (ADR-057). The microphone is requested only for the audio track, only after
+      the user asks to share with "Send playback audio" enabled, never at launch, and the screen share
+      continues without it if the user declines.
+
+      Deliberately still absent: BLUETOOTH* (ADR-016) and every clipboard permission (none exists;
+      clipboard needs foreground focus, R-09).
     -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />

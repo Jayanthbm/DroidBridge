@@ -421,7 +421,7 @@ Each entry follows the required evidence format. "Checked" is the date the cited
   - https://developer.android.com/reference/android/media/AudioPlaybackCaptureConfiguration
 - **Finding (positive):** capturing other apps' media playback is supported via `AudioRecord` + `AudioPlaybackCaptureConfiguration`, but only when the capturing app has `RECORD_AUDIO`, has an approved MediaProjection consent, is in the same user profile, and the *playing* app allows capture (`USAGE_MEDIA`/`USAGE_GAME`/`USAGE_UNKNOWN` and `ALLOW_CAPTURE_BY_ALL`, with `android:allowAudioPlaybackCapture` and target-SDK rules).
 - **Finding (negative):** all other usages "CAN NOT be captured" — `USAGE_VOICE_COMMUNICATION` (cellular/VoIP call audio) is excluded by design. There is no public path to cellular call audio without privileged or system roles.
-- **Decision:** **NO-GO** for call audio. Playback (media) audio is **CONDITIONAL** and out of MVP scope; it needs `RECORD_AUDIO`, which is not approved for the MVP.
+- **Decision:** **NO-GO** for call audio. Playback (media) audio is **CONDITIONAL** and out of MVP scope; it needs `RECORD_AUDIO`, which is not approved for the MVP. *(Superseded 2026-11-26: the owner approved `RECORD_AUDIO` for media playback audio, which shipped under ADR-057. Call audio remains NO-GO.)*
 - **Prototype:** none in MVP; P12 only if the owner approves an audio research track.
 - **Measured 2026-11-22 (P12, SM-S928B Android 17):** the boundary above was confirmed on the target device rather than left as a documentation claim. Captured bit-exactly (`rms=5791.5 peak=8190`) for `USAGE_MEDIA`/`USAGE_GAME`/`USAGE_UNKNOWN` with `ALLOW_CAPTURE_BY_ALL`; refused (`rms=0.0` with frames still advancing) for `USAGE_VOICE_COMMUNICATION` with `ALLOW_CAPTURE_BY_ALL`, for `USAGE_NOTIFICATION`, and for any usage published with `ALLOW_CAPTURE_BY_NONE`. A real third-party YouTube client's audio was captured, so the positive case is not an artefact of the test signal. Two details the documentation does not state: `USAGE_NOTIFICATION` is also excluded (the docs list the allowed set only), and a capturing app **does** capture its own playback. See `Docs/prototypes/P12-audio-calls.md`.
 
@@ -435,7 +435,7 @@ Each entry follows the required evidence format. "Checked" is the date the cited
   - https://developer.android.com/about/versions/17/behavior-changes-17
   - https://developer.android.com/about/versions/17/changes/bg-audio
 - **Finding:** for apps targeting API 37, background audio interactions (playback, audio-focus requests, volume APIs) require a running foreground service that either has while-in-use capability or is paired with the exact-alarm permission and `USAGE_ALARM` streams.
-- **Implication:** any future audio mirroring must run inside the mirroring foreground service (which already exists) rather than from a background worker; it also strengthens the case to keep audio out of the MVP.
+- **Implication:** any future audio mirroring must run inside the mirroring foreground service (which already exists) rather than from a background worker; it also strengthens the case to keep audio out of the MVP. *(Applied 2026-11-26: playback audio shipped inside the mirroring foreground service with the `microphone` service type, ADR-057.)*
 - **Decision:** **CONDITIONAL** (future track only).
 
 ---
