@@ -99,6 +99,36 @@ The backup OnePlus Nord CE (Android 12 / API 31) is useful for early/regression 
 clipboard, but it cannot substitute for P02 (API 37), P13 (Android 17 TLS defaults), or the One UI 9
 behaviour in P09/P10/P12/P14.
 
+## Personal-use scope review (2026-11-26)
+
+The owner confirmed DroidBridge is a personal app with one developer and one tester. Each remaining
+pending item was reviewed against that scope. "Waived" means explicitly not required, not left
+pending; "conditional" means it matters only if that feature is actually used.
+
+| Item | Needed for a personal app? | Decision |
+|---|---|---|
+| P08 glass-to-glass latency | No | **Waived** (2026-11-26) — camera setup changes no decision |
+| P08 device cost under a mirroring workload | Yes, once | **Keep** — one measurement; needs a changing screen and a longer idle timeout (see note) |
+| P10 private-only notification row | Marginal | **Keep, low priority** — a genuine privacy behaviour, one hands-on S24 sitting |
+| P17 production input surface, mapping, text entry | Only if the keyboard feature is used | **Conditional** — keep if remote keyboard control is part of personal use |
+| Phase 5 pairing prompt on both phones | Only if the keyboard feature is used | **Conditional**, same gate as P17 |
+| Phase 6 full permission/security sweep | No formal sweep | **Reduce** to a lightweight permission audit (Phase 7 already found zero Bluetooth activity) |
+| P05 15/30/60-minute clipboard auto-clear | No | **Waived** — 5-minute row observed; clipboard does not persist by default |
+| P07 forced backpressure false state | No | **Waived** — P07 acceptance complete, real streams run `dropped=0` |
+| P13 same-key certificate re-issue | No, until it happens | **Waived unless a cert is re-issued** |
+| Mac restart re-approval | No | **Accept** as a documented limitation (one picker approval after restart) |
+| Permission revocation not immediate | No | **Accept** as a documented limitation |
+| Phase 9 Release / notarisation | No | **Deferred** by owner (ADR-033) |
+| P15 Developer ID / notarisation | No | **Deferred** by owner (ADR-033) |
+| ADR-062 long-session device verification | Yes | **Keep** — one autonomous OnePlus run, no S24 needed |
+
+**2026-11-26 device-cost run, invalidated:** the first sampler run (19:34:55–19:46:11) was stopped
+because the Mac closed the session at 19:37:51 with `idle timeout after 120s`. The phone screen was
+static, so the encoder froze at frame 632 (~19:35:05) and the Mac reaped a session with no media
+(ADR-051). Samples 1–12 record an idle phone, not a mirroring workload, and must not be used as a
+device-cost result. Redo requires a changing on-screen stimulus and a longer `--p08-idle-timeout`
+on the Mac listener.
+
 ## Phase-level status
 
 | Phase | Status | Gate / remaining work |

@@ -1,3 +1,11 @@
+## Personal-use scope review of remaining pending items (2026-11-26)
+
+- **No behaviour change.** Waived P05 long auto-clear, P07 backpressure false state and P13
+  same-key re-issue; reduced Phase 6 to a lightweight audit; accepted the Mac-restart and
+  permission-revocation limitations. P17/Phase 5 keyboard rows are conditional on whether
+  remote keyboard control is used. The first device-cost sample was invalidated (idle screen,
+  Mac idle-timeout) and will be redone with a changing stimulus.
+
 ## P08 glass-to-glass latency gate waived for personal-use scope (2026-11-26)
 
 - **No behaviour change.** The owner confirmed a one-developer, one-tester personal app, so the

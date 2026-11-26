@@ -1,3 +1,21 @@
+**2026-11-26 (personal-use scope review of all remaining pending items):**
+
+Reviewed every open item against owner-confirmed personal-use scope (one developer, one tester).
+Waived as not required: P08 glass-to-glass latency, P05 15/30/60-minute clipboard auto-clear,
+P07 forced backpressure false state, P13 same-key cert re-issue (unless it happens). Reduced Phase 6
+to a lightweight permission audit. Accepted as documented limitations: Mac restart re-approval and
+non-immediate permission revocation. Kept: one P08 device-cost measurement, the P10 private-only
+notification row (low priority), and ADR-062 long-session verification (autonomous, OnePlus). P17
+production input surface and the Phase 5 pairing-prompt row are **conditional on whether remote
+keyboard control is part of personal use** — owner decision outstanding. Phase 9 and P15
+Developer ID/notarisation remain deferred (ADR-033).
+
+- *Invalidated run:* the first P08 device-cost sample (19:34:55–19:46:11, 12 samples) was stopped
+  because the Mac closed the session at 19:37:51 (`idle timeout after 120s`): the phone screen was
+  static, the encoder froze at frame 632, and the Mac reaped a session with no media (ADR-051).
+  Those samples measure an idle phone, not a mirroring workload, and are not a device-cost result.
+  Redo needs a changing on-screen stimulus and a longer `--p08-idle-timeout` on the Mac listener.
+
 **2026-11-26 (owner waived the P08 glass-to-glass latency gate for personal-use scope):**
 
 The owner confirmed DroidBridge is a personal app with one developer and one tester. A real
