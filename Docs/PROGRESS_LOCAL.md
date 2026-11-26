@@ -13,8 +13,10 @@ Reviewed every open item against owner-confirmed personal-use scope (one develop
 Waived as not required: P08 glass-to-glass latency, P05 15/30/60-minute clipboard auto-clear,
 P07 forced backpressure false state, P13 same-key cert re-issue (unless it happens). Reduced Phase 6
 to a lightweight permission audit. Accepted as documented limitations: Mac restart re-approval and
-non-immediate permission revocation. Kept: one P08 device-cost measurement, the P10 private-only
-notification row (low priority), and ADR-062 long-session verification (autonomous, OnePlus). P17
+non-immediate permission revocation. Kept at review time: one P08 device-cost measurement, the
+P10 private-only notification row, and ADR-062 long-session verification (autonomous, OnePlus). The
+device-cost measurement and the private-only notification row were both waived by the owner later on
+2026-11-26; only ADR-062 verification remains. P17
 production input surface and the Phase 5 pairing-prompt row are **conditional on whether remote
 keyboard control is part of personal use** — owner decision outstanding. Phase 9 and P15
 Developer ID/notarisation remain deferred (ADR-033).
@@ -848,7 +850,7 @@ Developer Options all off; that wireless-only run is P03 evidence, not a P01/P02
 - [x] Run the P07 Mac video receiver prototype.
 - [ ] Run the P08 end-to-end stream prototype. **Live mirroring works (2026-11-12)**; measured stream evidence exists. On 2026-11-17, one physical shade run mirrored normally and the session remained active; historical freeze root cause, rotation UI restoration and debugging-disabled final acceptance remain; latency and device cost waived by the owner 2026-11-26 (personal-use scope).
 - [x] Run P09 initial remote-input checks (historical, scoped NO-GO; not a final verdict on the newly identified Mac Bluetooth HIDP route).
-- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. On 2026-11-17 one shade run mirrored normally; the synthetic OTP with a public version showed its redacted text. The private-only notification content was not visible in the captures, so that outcome remains inconclusive. See P10 evidence; do not generalize these observations.
+- [ ] Run P10 secure-screen/screenshare-protection tests. **In progress:** historical evidence shows synthetic `FLAG_SECURE`, Slice (non-invasive), masked password output and no app-persisted frames. On 2026-11-17 one shade run mirrored normally; the synthetic OTP with a public version showed its redacted text. The private-only notification content was not visible in the captures, so that outcome remains inconclusive; owner waived this row 2026-11-26 (personal-use scope), no further validation planned. See P10 evidence; do not generalize these observations.
 - [ ] Run P11 macOS local-network permission tests. On 2026-11-17, the ad-hoc Release app advertised and `dns-sd` browsed/resolved `_droidbridge-dev._tcp` on macOS 27.2.1. Prompt visibility/wording and denied-state behavior remain unverified because native UI inspection was unavailable; no TCC reset or permission change was made. Added a denied-state Settings recovery affordance; 67 macOS tests and the Release build passed. See [P11](prototypes/P11-local-network-permission.md).
 - [x] Run P13 pinned TLS/CT prototype.
 - [ ] Run P14 background-session persistence prototype (screen-off, Doze, overnight, reboot).

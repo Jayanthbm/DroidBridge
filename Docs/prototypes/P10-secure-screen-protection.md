@@ -1,6 +1,6 @@
 # P10 — Secure screen and screenshare-protection behaviour
 
-**Status: in progress (2026-11-17 live-device follow-up; product-path re-check 2026-11-26).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case has captured mirrored pixels showing mask dots. The 2026-11-12 notification-shade freeze remains historical evidence with no confirmed root cause; in one fresh 2026-11-17 run after receiver hardening, the shade was visible on the Mac and the session remained active. The public-version synthetic OTP rendered its redacted public text on the Mac. The private-only synthetic notification was posted but its content was not visible in the captured shade/mirror, so its privacy result remains **Awaiting Local Validation**. A product-path re-check on 2026-11-26 measured mean luma **219.8 → 1.0** while the stream kept advancing.
+**Status: in progress (2026-11-17 live-device follow-up; product-path re-check 2026-11-26).** Synthetic `FLAG_SECURE` and the Slice banking app are withheld from the mirror as required, and the password-field case has captured mirrored pixels showing mask dots. The 2026-11-12 notification-shade freeze remains historical evidence with no confirmed root cause; in one fresh 2026-11-17 run after receiver hardening, the shade was visible on the Mac and the session remained active. The public-version synthetic OTP rendered its redacted public text on the Mac. The private-only synthetic notification was posted but its content was not visible in the captured shade/mirror, so its privacy result remains **Awaiting Local Validation**. The owner waived this row 2026-11-26 as not required for a personal app; it stays recorded as inconclusive, not passed. A product-path re-check on 2026-11-26 measured mean luma **219.8 → 1.0** while the stream kept advancing.
 
 > This report records evidence only. No attempt is made to bypass `FLAG_SECURE`, DRM, banking-app protections or protected surfaces (prohibited by AGENTS.md / security policy).
 
@@ -170,6 +170,8 @@ active through dismissal.
 
 - **Private-only synthetic OTP visual outcome:** AWAITING LOCAL VALIDATION. The record exists, but
   its content was not visible in the captured shade/mirror; no protection conclusion is made.
+- **Owner decision 2026-11-26:** this row is **waived** for personal-use scope; no further validation
+  is planned. The inconclusive result above is retained as-is and is not a pass.
 - Additional banking/DRM apps by **non-invasive observation only** (no interaction, no bypass).
 - Rotation UI restoration on the target device, and the separate P08 final debugging-disabled
   acceptance/performance measurements remain open in the [P08 report](P08-live-mirroring.md).

@@ -1,3 +1,9 @@
+## P10 private-only notification row waived for personal-use scope (2026-11-26)
+
+- **No behaviour change.** The owner confirmed the private-only notification visual row is not needed
+  for a personal app. The inconclusive result stays recorded as inconclusive, not a pass. The measured
+  `FLAG_SECURE` withholding and public-version redaction are unchanged.
+
 ## P08 device-cost measurement waived for personal-use scope (2026-11-26)
 
 - **No behaviour change.** The owner confirmed the one-hour battery/thermal measurement is not
