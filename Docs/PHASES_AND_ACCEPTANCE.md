@@ -113,6 +113,13 @@ confirmation` -> `AUTHENTICATED`). Evidence: the 2026-11-26 sweep entry in
 Exit: trusted Mac and Android exchange authenticated test messages over Wi-Fi with Bluetooth off and USB disconnected.
 
 ## Phase 3 — Clipboard MVP
+
+**Status (2026-11-26): closed.** Text sync works in both directions, the rules that only work when both
+sides implement them (origin, content hash, sensitive/concealed refusal, no persistence, refuse rather
+than pretend) are measured, and the foreground/background limits are documented in
+`Docs/prototypes/PHASE3-clipboard-sync.md`. The last open condition - a cable-out sweep with both
+debugging modes disabled - was performed on 2026-11-26 as part of the v1 acceptance sweep.
+
 - Mac pasteboard monitoring.
 - Android manual/foreground receive.
 - Android manual send.
@@ -121,6 +128,17 @@ Exit: trusted Mac and Android exchange authenticated test messages over Wi-Fi wi
 - no history by default.
 
 Exit: text sync passes tests with documented foreground/background limits.
+
+**Phase 3 exit measured (2026-11-26).** S24 Ultra (`RZCY81TKBSV`, SM-S928B, Android 17) against the
+Debug Mac app with **USB disconnected, USB debugging off, wireless debugging off and Bluetooth off**
+(verified with `adb devices`: only the OnePlus was listed; Developer options off on the phone). Both
+directions were driven by hand - the owner copied and pasted, no ADB, no `pbcopy`/`pbpaste`, no screen
+capture and no tool access to either clipboard. Phone -> Mac: `droidbridge-clip-test1` copied on the
+phone, `Send phone clipboard`, the Mac's offer applied and pasted back as that exact text. Mac -> phone:
+`droidbridge-clip-test-2` copied on the Mac, sent, `Put it on the clipboard` on the phone, pasted back as
+that exact text. Evidence: the 2026-11-26 sweep entry in `Docs/PROGRESS_LOCAL.md` and the new section in
+`Docs/prototypes/PHASE3-clipboard-sync.md`.
+
 
 ## Phase 4 — Screen capture and streaming
 - MediaProjection lifecycle.

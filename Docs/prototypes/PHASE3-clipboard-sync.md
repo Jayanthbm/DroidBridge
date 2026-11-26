@@ -105,3 +105,32 @@ The send path then logged `SEND_SKIPPED reason=echo`, the loop-prevention rule f
 
 Note: the apply step needed the card's button because Android can only write the clipboard while the app is
 on screen; the offer was held pending foreground state at arrival time.
+
+## 2026-11-26: cable-out, no-debugging rows (Phase 3 close)
+
+The 2026-11-22 matrix ran with USB connected and USB debugging enabled. The one condition left for the
+phase was the same behaviour with the cable out and both debugging modes off, which was performed as
+part of the v1 acceptance sweep.
+
+- **Device/build.** S24 Ultra `RZCY81TKBSV`, SM-S928B, Android 17, `com.droidbridge.app` 0.1.0 debug
+  APK; Debug `DroidBridge.app` from `macos/build`, plainly launched, **Start listening** pressed by the
+  owner.
+- **State.** **USB connected: no · USB debugging: off · wireless debugging: off · Bluetooth: off.**
+  Stated at the row and verified with `adb devices`, which listed only `192.168.31.64:5555` (the
+  OnePlus, untouched); Developer options were switched off on the phone, so no ADB path to it existed.
+- **Method.** Both directions were performed by the owner at the two keyboards. No ADB input, no
+  `pbcopy`/`pbpaste`, no screen capture and no tool access to either clipboard - the point of the row is
+  that the app moves the text, so the harness must not touch it.
+- **Phone → Mac.** `droidbridge-clip-test1` copied on the phone by hand, `Send phone clipboard` tapped,
+  the Mac's offer applied (`Put it on the clipboard`), pasted into TextEdit: exactly
+  `droidbridge-clip-test1`.
+- **Mac → phone.** `droidbridge-clip-test-2` copied on the Mac by hand (⌘C), the Mac's send action
+  used, the phone's offer applied (`Put it on the clipboard`), pasted into a phone text field: exactly
+  `droidbridge-clip-test-2`.
+- **Result: PASS, both directions, cable out and all debugging off.** This closes the phase's remaining
+  condition; the 2026-11-22 rows remain the detailed matrix (echo prevention, UTF-8, pause,
+  sensitive/concealed refusal, size limit) and are unchanged.
+- **Not covered by this row.** The 2026-11-22 limits still stand: no background clipboard read on
+  Android, no write without foreground focus, no `copy`/`cut` interception, text only, no history. Echo
+  prevention and the sensitive/concealed refusals were not re-exercised tonight - the sweep row tested
+  the two sync directions only.
