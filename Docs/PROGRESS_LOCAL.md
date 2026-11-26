@@ -1,3 +1,32 @@
+**2026-11-26 (Mac-initiated stop: the viewer stops the phone's share):**
+Both peers can now stop a share. The phone has always sent `mirror.stop` on its own stop; the Mac had a
+`mirror.stop` type but no sender, so the viewer's stop glyph closed only the local session and the phone kept
+capturing until its 15 s sender grace expired - a documented defect of the shell commit.
+
+- *Android.* `session.onMirrorMessage` handled only `mirror.keyframe_request`; it now also routes inbound
+  `mirror.stop` to `MirroringService.requestStop()`, which posts the same teardown as the in-app Stop button
+  on the main thread (`teardown("mac stop")` + `stopSelf()`) and then sends `mirror.stop` back. Chosen over
+  an `ACTION_STOP` intent because a `startService` from a backgrounded app is refused - which is exactly the
+  case when the user is looking at the Mac's viewer. The notification's Stop action keeps its PendingIntent.
+- *macOS.* `LiveMirrorReceiver.requestStopSharing()` sends `mirror.stop` (reason `mac request`) and logs
+  `STOP_SHARING_REQUESTED` / `STOP_SHARING_FAILED`; the viewer HUD's stop glyph and a new `Stop sharing`
+  button in `Screen` call it. `Stop listening` is still the way to end the session.
+- *Viewer empty state.* A stopped share left the last decoded frame in the video layer, so the 'Waiting for
+  the phone to share' text was drawn over a frozen picture. The layer is now hidden while
+  `!model.state.isSharing`; it keeps its frame for the next share.
+- *Evidence (14:09–14:12, S24 Ultra, wireless, USB disconnected).* `STOP_SHARING_REQUESTED` -> phone
+  `stop requested by the Mac reason=mac request` -> `MIRROR state=stopped: mac stop ... frames=859
+  durationMs=86272 stopReason=mac stop` -> `teardown complete reason=mac stop` -> Mac
+  `MIRROR_STOP reason=mac stop audioFrames=3704`, no `CLOSED`; the viewer returned to its empty state on
+  black, and `Share this screen` started a new share on the same session at 14:12:41 (`mirroring started
+  content=1080x2340`). A user stop from the phone still ends it the old way (`MIRROR_STOP reason=user stop`).
+- *Incidental.* The session was reset once at 14:10:28 (`CLOSED receive error 54 - Connection reset by
+  peer`) while the app was pushed to Recents, and the phone reconnected silently 14 s later on the stored
+  pin with no user confirmation.
+- *ADB actions.* `am start` / wake / `input tap` for the app's own controls and the system share consent
+  (Share entire screen), `uiautomator dump`, `logcat`, and `settings put system screen_off_timeout 30000`
+  restored after the run (it had been raised to 1800000 earlier in the night). USB disconnected,
+  wireless debugging enabled, USB debugging not in use. Not an acceptance run.
 # Local Development Progress
 
 **Status:** Phase 0 complete. Phase 1 in progress: P00, P01, P02 and P04 verified on the target
@@ -41,7 +70,9 @@ reached any control being measured. The 13:53 session was a shell check, not a P
   `MIRROR state=stopped: user stop` + `MIRROR_STOP reason=user stop audioFrames=3680`; reconnects after a
   Mac relaunch were silent (stored pin) with no user confirmation.
 - *Not verified / deferred:* menu-bar-only launch, the menu-bar popover as a screenshot, click-to-control
-  in the viewer (P17), Mac-initiated `mirror.stop`, and any visual polish against a real design review.
+  in the viewer (P17), and any visual polish against a real design review. (Mac-initiated `mirror.stop` was
+  the fourth item; it is implemented and measured, and the menu-bar popover was captured later the same
+  day - see the top entry.)
   Rebuilds need the explicit `codesign` step and the app must be launched from `macos/build` for the
   firewall allowance (now written into `Docs/DEVELOPMENT_WORKFLOW.md`).
 

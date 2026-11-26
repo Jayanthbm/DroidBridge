@@ -255,6 +255,7 @@ private struct ScreenPane: View {
             HStack(spacing: 10) {
                 Button("Open viewer") { openViewer() }
                 Button("Request keyframe") { model.requestKeyframe() }.disabled(!model.state.isSharing)
+                Button("Stop sharing") { model.requestStopSharing() }.disabled(!model.state.isSharing)
                 Button("Stop listening") { model.stop() }.disabled(!model.state.isLive)
             }
 

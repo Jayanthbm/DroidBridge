@@ -36,11 +36,25 @@ class DroidBridgeApplication : Application() {
             // Mirroring writes through the one session, so the binding belongs to the process rather
             // than to whichever activity happens to be on screen.
             MirrorTransportHolder.transport = SessionMirrorTransport(session)
-            session.onMirrorMessage = { type, _ ->
-                // The only mirroring frame the Mac sends mid-stream is a keyframe request, after it
-                // flushed its decoder. Ignoring it leaves the Mac blank until the next scheduled GOP.
-                if (type == com.droidbridge.protocol.session.ControlMessage.Type.MIRROR_KEYFRAME_REQUEST) {
-                    com.droidbridge.feature.mirroring.MirroringService.requestKeyframe()
+            session.onMirrorMessage = { type, payload ->
+                when (type) {
+                    // The Mac flushed its decoder and needs a fresh IDR; ignoring this leaves it blank
+                    // until the next scheduled GOP.
+                    com.droidbridge.protocol.session.ControlMessage.Type.MIRROR_KEYFRAME_REQUEST ->
+                        com.droidbridge.feature.mirroring.MirroringService.requestKeyframe()
+                    // The Mac asked to stop sharing (viewer's stop control). Same path as the in-app
+                    // Stop button: the pipeline tears down, `mirror.stop` goes back, session stays up.
+                    com.droidbridge.protocol.session.ControlMessage.Type.MIRROR_STOP -> {
+                        android.util.Log.i(
+                            "P08Mirroring",
+                            "stop requested by the Mac reason=" +
+                                (payload?.toString(Charsets.UTF_8) ?: "none"),
+                        )
+                        if (com.droidbridge.feature.mirroring.MirroringService.isCapturing()) {
+                            com.droidbridge.feature.mirroring.MirroringService.requestStop()
+                        }
+                    }
+                    else -> Unit
                 }
             }
         }

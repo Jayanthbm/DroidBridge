@@ -224,6 +224,25 @@ public final class LiveMirrorReceiver: ObservableObject {
         }
     }
 
+    /// Asks the phone to stop sharing, without ending the session.
+    ///
+    /// The phone already accepts `mirror.stop` on its own transport; until now only the phone ever
+    /// sent it, so the Mac's only way to stop a share was to close the listener and wait out the
+    /// sender's 15 s grace window. The authenticated session is the same channel in both directions,
+    /// so the Mac asks and the phone's own stop path runs: capture zipped down, `mirror.stop` and
+    /// `mirror.stopped` are exchanged, the TLS session stays up, and the viewer falls back to waiting.
+    public func requestStopSharing() {
+        guard let listener else {
+            emit("STOP_SHARING_FAILED no session")
+            return
+        }
+        do {
+            try listener.sendControl(type: .mirrorStop, payload: Data("mac request".utf8))
+            emit("STOP_SHARING_REQUESTED")
+        } catch {
+            emit("STOP_SHARING_FAILED \(error)")
+        }
+    }
     public func stop() {
         clipboard.stopPolling()
         audio.stop()

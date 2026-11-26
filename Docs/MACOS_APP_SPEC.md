@@ -26,8 +26,9 @@
 - **Menu-bar extra**: `iphone.gen3` when idle, `iphone.gen3.radiowaves.left.and.right` while sharing; its
   popover opens the viewer and mirrors the clipboard line.
 - Not yet: menu-bar-only launch (needs an app-level bootstrap that starts the listener with no window),
-  click-to-control input in the viewer (P17), and a Mac-initiated `mirror.stop` (the viewer's stop glyph
-  currently closes the session locally).
+  click-to-control input in the viewer (P17). The viewer's stop glyph asks the phone to stop sharing
+  (`LiveMirrorReceiver.requestStopSharing()`); `Screen` - `Stop sharing` does the same and `Stop listening`
+  ends the session.
 - The device card says "Android device" because no device-info message exists on the wire; the phone's
   name, model and OS version need a protocol message before the card can show them.
 

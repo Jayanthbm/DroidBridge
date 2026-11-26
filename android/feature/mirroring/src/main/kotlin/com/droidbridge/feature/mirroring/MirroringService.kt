@@ -113,6 +113,22 @@ class MirroringService : Service() {
         }
 
         /**
+         * Set while capture runs; the session owner forwards the Mac's stop request here.
+         *
+         * The request runs in-process rather than as an `ACTION_STOP` intent, because a start-intent
+         * to the service is refused once the app is in the background - exactly when a viewer on the
+         * Mac is the thing the user is looking at. The notification's own Stop action is a
+         * PendingIntent and is exempt, so it keeps using the intent.
+         */
+        @Volatile
+        private var onStopRequested: (() -> Unit)? = null
+
+        /** Called by the session owner when the Mac asks to stop sharing. */
+        fun requestStop() {
+            onStopRequested?.invoke()
+        }
+
+        /**
          * True while capture is running; the UI renders from this rather than from a second flag.
          *
          * The prefix must match the state string written by the pipeline (`"mirroring …"`). It used
@@ -266,6 +282,12 @@ class MirroringService : Service() {
                 // No reader of our own: the session owner reads the socket and calls
                 // [requestKeyframe]. Two readers on one session steal each other's frames.
                 onKeyframeRequested = ::handleKeyframeRequest
+                onStopRequested = {
+                    mainHandler.post {
+                        teardown("mac stop")
+                        stopSelf()
+                    }
+                }
                 startSender(activeTransport)
 
                 val metrics = resources.displayMetrics
@@ -664,6 +686,7 @@ class MirroringService : Service() {
         senderThread?.interrupt()
         senderThread = null
         onKeyframeRequested = null
+        onStopRequested = null
 
         val currentEncoder = encoder
         encoder = null

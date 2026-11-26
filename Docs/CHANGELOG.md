@@ -1,3 +1,26 @@
+## Stopping from the viewer stops the phone's share (2026-11-26)
+
+- **Either side can stop a share.** The phone has always sent `mirror.stop` when its stop control ran; the
+  Mac could not send one, so the viewer's stop glyph only closed the local session and the phone kept
+  capturing until its 15 s sender grace expired. The Mac now asks the phone to stop (`STOP_SHARING_REQUESTED`),
+  the phone runs the same teardown as its own Stop button (`stop requested by the Mac reason=mac request`
+  -> `MIRROR state=stopped: mac stop` -> `teardown complete reason=mac stop` -> `mirror.stop` back); the
+  TLS session and the pairing stay up, and sharing again starts on the same session.
+- **The request runs in-process, not as a service intent.** A `startService(ACTION_STOP)` from the phone app
+  is refused once the app is in the background - exactly when the viewer on the Mac is what the user is
+  looking at - so the request goes through a `MirroringService.requestStop()` hook onto the main thread; the
+  notification's own Stop action keeps using its PendingIntent.
+- **The viewer falls back to waiting instead of showing a frozen picture.** A stopped share leaves the last
+  decoded frame in the video layer, and the 'Waiting for the phone to share' text drawn over it read as both
+  states at once; the layer is now hidden while nothing is being shared (the layer keeps its frame).
+- **Measured on the S24 Ultra** (same session, no re-pairing): share -> click the viewer's stop glyph ->
+  `STOP_SHARING_REQUESTED` at 14:09:03 -> phone `stop requested by the Mac reason=mac request` ->
+  `MIRROR state=stopped: mac stop ... frames=859 durationMs=86272 stopReason=mac stop` ->
+  `teardown complete reason=mac stop` -> Mac `MIRROR_STOP reason=mac stop audioFrames=3704`, no `CLOSED`;
+  'Share this screen' then started a second share on the same session (`mirroring started` at 14:12:41).
+- **The viewer HUD needs a hover before its controls accept a click** - it fades out, and a hidden control
+  should not be clickable, so this is the intended behaviour rather than a defect; noted because it took a
+  second attempt to reproduce during the check.
 ## The app opens as a real two-window shell (2026-11-26)
 
 - **The main window is a sidebar app, not a tab strip.** `Overview`, `Clipboard`, `Screen`, `Audio`,
@@ -13,14 +36,15 @@
   (screenshot: `Docs/design/shell-viewer-live.png`, captured with `--p08-allow-capture` because the
   video layer refuses screen capture by default).
 - **A menu-bar extra** shows the phone glyph while idle and a radiating phone while sharing, with a
-  popover that opens the viewer and mirrors the clipboard line.
+  popover that opens the viewer and mirrors the clipboard line (captured: `Docs/design/shell-menubar.png`;
+  measured later the same day, status item at x=1031 on this display).
 - **Only one SwiftUI window scene survives.** Two window scenes made the system launch the viewer scene
   alone: `MainWindowView` was never constructed, the bootstrap never ran, no listener started and the
   phone could not find the Mac. The viewer is now an AppKit `NSWindow` hosted by `ViewerWindow`
   (ADR-059), and the main window opens on every launch.
 - **Known and unmeasured:** launch is still window-first (menu-bar-only launch needs an app-level
-  bootstrap), the viewer does not capture input yet (click-to-control is P17 work), and the viewer's stop
-  glyph closes the session locally because the Mac still has no `mirror.stop` sender.
+  bootstrap) and the viewer does not capture input yet (click-to-control is P17 work). The viewer's stop
+  glyph now asks the phone to stop sharing instead of closing the session (see the section above).
 
 ## The stop control works, and an open notification shade no longer drops the mirror (2026-11-26)
 

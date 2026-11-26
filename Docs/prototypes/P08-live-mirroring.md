@@ -392,6 +392,26 @@ Measured on the S24, twice (12:05–12:08 and 12:16–12:17):
 | Session survives the stop | phone `sent ping` / `HEARTBEAT` after the teardown; no `CLOSED` on the Mac |
 | Dashboard returns to idle | card text `stopped: user stop`; `Share this screen` `enabled=true`, `Stop sharing` `enabled=false` |
 
+
+### Mac-initiated stop (measured 2026-11-26, 14:09–14:12)
+
+The Mac can now ask the phone to stop sharing, which closes the gap the shell check left open (the viewer's
+stop glyph used to close only the local session). S24 Ultra over wireless debugging, USB disconnected,
+wireless debugging enabled, stored pins on both sides, sharing `Share entire screen`; the stop glyph was
+clicked on the Mac's own viewer window (no ADB input in the functional path; ADB only launched the app and
+accepted the system's share consent, and restored `screen_off_timeout` afterwards):
+
+| Step | Evidence |
+|---|---|
+| Viewer stop glyph | Mac `p08: STOP_SHARING_REQUESTED` 14:09:03 |
+| Phone receives it | `P08Mirroring: stop requested by the Mac reason=mac request` 14:09:03 |
+| Same teardown as the in-app stop | `MIRROR state=stopped: mac stop ... frames=859 bytes=11003281 fps=10.0 durationMs=86272 stopReason=mac stop` then `teardown complete reason=mac stop` |
+| Mac sees the stop | `MIRROR_STOP reason=mac stop audioFrames=3704`; no `CLOSED` line, so the session stayed up |
+| Viewer returns to waiting | capture of the window shows the empty state on black - the last decoded frame is hidden rather than shown under the text |
+| Share again on the same session | `mirroring started content=1080x2340` 14:12:41, new `MIRROR_FORMAT 590x1280`, no re-pairing |
+
+The click only registers once the HUD is visible (it fades out after 2 s of no pointer movement); that is
+the intended behaviour of a hidden control, not a defect.
 The notification `Stop` action is still **unmeasured**: with the shade open `uiautomator dump` fails with
 `ERROR: could not get idle state.` (reproduced with the app foreground, with the app behind HOME, and with
 capture running), and `screencap` is prohibited, so the action's bounds cannot be located without blind

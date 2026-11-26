@@ -182,6 +182,10 @@ Control types: `audio.format` (`AUDIO_FORMAT`, 0x22) and `audio.frame` (`AUDIO`,
   known unmeasured quantity and is not to be presented as fixed.
 - `mirror.stop` ends audio capture and the receiver tears down the audio player; an audio failure never
   stops video.
+- **Either peer may send `mirror.stop`.** From the phone it reports that capture ended and carries the
+  reason; from the Mac it is a request, and the phone runs the same teardown it runs for its own Stop
+  button (reason `mac stop`), then sends its own `mirror.stop` back. Both directions keep the TLS session
+  open: stopping a share is session-scoped, and sharing again needs a fresh consent, not a new pairing.
 
 ### Media channel framing (settled by ADR-027, pending P07/P08)
 

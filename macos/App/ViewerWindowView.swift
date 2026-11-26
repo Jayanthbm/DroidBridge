@@ -15,7 +15,11 @@ struct ViewerWindowView: View {
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            // Hidden rather than left underneath the empty state: a stopped share leaves the last
+            // decoded frame in the layer, and the waiting text over a frozen picture reads as both
+            // at once. The layer keeps its frame; only the picture on screen goes away.
             LiveVideoLayerView(layer: model.layer)
+                .opacity(model.state.isSharing ? 1 : 0)
 
             if !model.state.isSharing {
                 VStack(spacing: 10) {
@@ -65,12 +69,12 @@ struct ViewerWindowView: View {
             .buttonStyle(.plain)
             .help("Full screen")
             Button {
-                model.stop()
+                model.requestStopSharing()
             } label: {
                 Image(systemName: "xmark.circle.fill")
             }
             .buttonStyle(.plain)
-            .help("Stop listening. The phone stops sharing within about 15 seconds.")
+            .help("Stop sharing on the phone. The session stays up; share again from the phone.")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
