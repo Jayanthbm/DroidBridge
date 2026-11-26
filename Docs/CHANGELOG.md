@@ -1,3 +1,16 @@
+## Picking the Mac in the system picker connects (2026-11-26)
+
+- **The picker's answer is the connect.** Choosing the Mac row in Android's system picker used to resolve
+  the service and then leave the dashboard's `Nearby` card waiting for a second, easily-missed `Connect`
+  tap. The app now connects to the peer the picker returns, with no second decision.
+- **Only the picker arms it, and only before a session exists.** Direct browsing (used below Android 17)
+  lists every Mac on the network, so it never auto-connects; and a drop, a `Disconnect`, or a peer from
+  the same list can no longer be overridden, because the arming flag clears on the first peer list.
+- The peer list also renders immediately in every case - the first version returned before publishing it,
+  so a connected app still said "no Mac found yet".
+- **Measured on the S24 Ultra** (wireless, USB disconnected): picker row -> `auto-connecting to the peer the
+  system picker returned: DroidBridge-P08-Mac` -> `CONNECTING` -> `CONNECTED` within 240 ms, then
+  `device.info`; `Disconnect` -> `IDLE` and still `IDLE` 10 s later.
 ## The Mac can name the phone (2026-11-26)
 
 - **The sidebar says `samsung SM-S928B`, not "Android device".** The handshake carried no model name, so the

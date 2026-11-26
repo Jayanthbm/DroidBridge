@@ -1,3 +1,28 @@
+**2026-11-26 (the picker's answer is the connect):**
+The dashboard made the user approve the Mac twice: once in Android's system picker and again on a
+`Connect` button further down the page, after the picker had already resolved the peer. A first-time user
+sees the picker close, the page unchanged at the top, and concludes nothing happened.
+
+- *SessionController.* `startDiscovery()` arms `awaitingPickerPeer` before the picker request (the listener
+  can fire first); `onPeersChanged()` publishes the list, and while armed connects to the first compatible
+  peer via `pickAutoConnectPeer(found, phase)` - allowed only from `IDLE` or `DISCOVERING`, so a live
+  session, a drop or an explicit stop is never replaced by a late entry. `stop()` disarms. The direct-browse
+  path (below API 37) never arms it: that path lists every Mac on the network, not the one the user chose.
+- *First version was wrong twice, and the device caught both.* Requiring `IDLE` never fired, because
+  `startDiscovery()` moves the phase to `DISCOVERING` before the picker opens (`picker returned 1 peer(s),
+  none auto-connectable now`); and the early `return` skipped `peersFlow`, so a connected app still said
+  "no Mac found yet". Both fixed before the evidence run below.
+- *Tests.* `PickerAutoConnectTest` (4 cases: picks the first compatible peer from IDLE and DISCOVERING,
+  refuses while connecting/confirming/connected, skips an incompatible peer, empty list = nothing), plus a
+  routing case pinning that an inbound `device.info` is not delivered to a phone feature.
+- *Evidence (14:31-14:33, S24 Ultra, wireless, USB disconnected, wireless debugging on).* Picker row tap ->
+  `auto-connecting to the peer the system picker returned: DroidBridge-P08-Mac` -> `state=CONNECTING` ->
+  `state=CONNECTED` 240 ms later -> `device info sent=true`; the dashboard then read `state: connected and
+  authenticated` with no `no Mac found yet`. `Disconnect` -> `state=IDLE`, and 10 s later still `IDLE`.
+- *ADB actions (operator-at-owner's-instruction, setup only):* installed the debug APK, force-stopped and
+  relaunched `MainActivity`, `uiautomator dump` to locate the picker row and the app's own buttons, one tap
+  on the picker row and one on `Disconnect`, `logcat`. No capture, no clipboard access, no settings changed.
+  Device state unchanged: sharing stopped, `screen_off_timeout` 30000.
 **2026-11-26 (the Mac can name the phone: `device.info`):**
 The sidebar's device card said "Android device" because the handshake carries no model name, and the app
 refused to invent one. The phone now says what it is, and the card shows it.

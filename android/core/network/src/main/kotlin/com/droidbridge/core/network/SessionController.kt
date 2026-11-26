@@ -92,10 +92,37 @@ class SessionController(
             // Keepalive and lifecycle types are interpreted by the keepalive loop itself.
             else -> null
         }
+
+        /**
+         * The peer a system-picker response should connect to, or null when nothing should.
+         *
+         * Only a compatible peer, and only while discovery is still what is happening: after a drop
+         * or a stop the UI owns the decision, and an in-flight session must never be replaced by a
+         * later entry in the same list. `DISCOVERING` is the normal case - `startDiscovery` moves the
+         * state there before the picker opens. Pure so the guard is testable without a network.
+         */
+        internal fun pickAutoConnectPeer(
+            found: List<ServiceDiscovery.Peer>,
+            phase: Phase,
+        ): ServiceDiscovery.Peer? =
+            if (phase == Phase.IDLE || phase == Phase.DISCOVERING) {
+                found.firstOrNull { it.isCompatible }
+            } else {
+                null
+            }
     }
 
     private val stateFlow = MutableStateFlow(Pairing.State())
     val state: StateFlow<Pairing.State> = stateFlow.asStateFlow()
+
+    /**
+     * True between a system-picker request and the first peer list it delivers.
+     *
+     * Only the picker arms it: direct discovery lists every Mac on the network, so connecting to the
+     * first one there would pick a host the user never chose. Cleared by the first peer list and by
+     * [stop], so an explicit disconnect is not undone by a stale request.
+     */
+    @Volatile private var awaitingPickerPeer = false
 
     private val peersFlow = MutableStateFlow<List<ServiceDiscovery.Peer>>(emptyList())
     val peers: StateFlow<List<ServiceDiscovery.Peer>> = peersFlow.asStateFlow()
@@ -231,23 +258,45 @@ class SessionController(
      */
     fun startDiscovery() {
         update(Event.DiscoveryStarted)
+        // Arm the picker's auto-connect before the request: the listener can fire before
+        // startWithPicker() returns.
+        awaitingPickerPeer = true
         val usedPicker = discovery.startWithPicker { found -> onPeersChanged(found) }
         if (!usedPicker) {
+            awaitingPickerPeer = false
             discovery.start { found -> onPeersChanged(found) }
         }
     }
 
     private fun onPeersChanged(found: List<ServiceDiscovery.Peer>) {
-        run {
-            peersFlow.value = found
-            // A peer disappearing while we believe we are connected is a drop, not a detail.
-            val current = selected
-            if (current != null && found.none { it.key == current.key } && stateFlow.value.phase == Phase.CONNECTED) {
-                Log.i(TAG, "selected peer vanished from discovery; treating as a drop")
-                session?.close("peer lost")
+        // The list is published before anything else happens to it: the dashboard renders from it,
+        // and the first version returned early after connecting, so a connected app still said
+        // "no Mac found yet".
+        peersFlow.value = found
+
+        // The system picker already asked the user which Mac to use; the dashboard then made them
+        // press Connect too. The grant is the decision, so the first compatible peer it returns is
+        // connected to without a second tap - and the arming flag is cleared so a later peer from the
+        // same request can never start a competing session.
+        if (awaitingPickerPeer) {
+            awaitingPickerPeer = false
+            val picked = pickAutoConnectPeer(found, stateFlow.value.phase)
+            if (picked != null) {
+                Log.i(TAG, "auto-connecting to the peer the system picker returned: ${picked.key}")
+                connect(picked)
+                return
             }
+            Log.i(TAG, "picker returned ${found.size} peer(s), none auto-connectable now")
+        }
+
+        // A peer disappearing while we believe we are connected is a drop, not a detail.
+        val current = selected
+        if (current != null && found.none { it.key == current.key } && stateFlow.value.phase == Phase.CONNECTED) {
+            Log.i(TAG, "selected peer vanished from discovery; treating as a drop")
+            session?.close("peer lost")
         }
     }
+
 
     /** Connects to [peer]. On a first pairing this stops at the code comparison. */
     fun connect(peer: ServiceDiscovery.Peer) {
@@ -300,6 +349,8 @@ class SessionController(
 
     /** Stops everything: session, discovery, retries. */
     fun stop() {
+        // A request still in flight must not reconnect after the user said stop.
+        awaitingPickerPeer = false
         worker?.cancel()
         worker = null
         session?.close("stopped by app")

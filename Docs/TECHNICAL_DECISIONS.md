@@ -336,6 +336,11 @@ satisfy.
 - Decision: Primary design — the macOS app advertises `_droidbridge-dev._tcp` via Bonjour and listens; the Android app uses `DiscoveryRequest.FLAG_SHOW_PICKER` (~`FLAG_USER_APPROVED_ONLY` for repeat connections), connects out to the selected peer over TLS, and keeps that single duplex connection for clipboard and mirroring. `ACCESS_LOCAL_NETWORK` is the documented fallback only if `P02` shows the picker path cannot sustain the session (e.g. inbound needs, revocation churn, or One UI 9 behavior).
 - Alternatives: Android advertises and listens (requires the broad runtime permission for every user); manual IP entry (rejected: brittle, DHCP changes, bad UX).
 - Consequences: The Mac must request local-network access and declare its service type; Android must re-resolve addresses through `registerServiceInfoCallback` instead of caching IPs; reconnect UX depends on remembering picker grants and re-showing the picker when a grant is revoked.
+- Implemented (2026-11-26): the picker's response *is* the connect. `SessionController.pickAutoConnectPeer()`
+  connects to the first compatible peer the picker returns, only while the session is still IDLE or
+  DISCOVERING, so a drop, a stop or a competing peer can never be overridden by a late list. Measured:
+  choosing the Mac row produced `state=CONNECTING` then `CONNECTED` within 240 ms with no second tap, and
+  an explicit `Disconnect` stayed `IDLE` for 10 s afterwards.
 
 ## ADR-009 — Media transport not yet selected
 - Date: 2026-11-07

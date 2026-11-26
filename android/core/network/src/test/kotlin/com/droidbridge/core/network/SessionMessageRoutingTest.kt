@@ -49,6 +49,13 @@ class SessionMessageRoutingTest {
     }
 
     @Test
+    fun `device info is sent, not routed to a phone feature`() {
+        // The phone is the sender; the Mac interprets it. An inbound one is dropped rather than
+        // mistaken for clipboard or mirror content.
+        assertNull(SessionController.messageTarget(ControlMessage.Type.DEVICE_INFO))
+    }
+
+    @Test
     fun `keepalive and lifecycle types are not feature-routed`() {
         // The keepalive loop itself interprets PING/PONG/CLOSE; they must not be handed to a
         // feature hook, or a heartbeat would count as content.

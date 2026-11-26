@@ -32,14 +32,16 @@
 6. Settings: Bluetooth optional toggle, clipboard policy, trusted devices, clear pairing, privacy.
 7. Diagnostics: redacted logs and export without clipboard/screen payloads.
 
-**The connect flow has two steps, and the second one is invisible (measured 2026-11-26).** `Find the Mac`
-opens the Android system picker ("Choose a device to connect"), and choosing the Mac row resolves the
-service and grants the local-network discovery permission, but it does **not** connect: the dashboard's
-`Nearby` card then shows the Mac and the user still has to scroll down and press its `Connect` button
-before the session starts (`state=CONNECTED`). A first-time user sees "nothing happened" and stops after
-the picker. The fix is a product change, not a permission one: after a picker grant the dashboard should
-either auto-connect to the resolved peer or surface the `Nearby` card (with the code prompt) at the top of
-the page. Until then, the picker's result is not a connection.
+**Choosing the Mac in the picker is the whole decision (implemented 2026-11-26).** `Find the Mac` opens the
+Android system picker ("Choose a device to connect"), and choosing the Mac row resolves the service and
+grants local-network discovery; `SessionController.pickAutoConnectPeer()` then connects to that peer with no
+second tap, because the earlier flow made the user scroll to the `Nearby` card and press `Connect` for a
+decision they had already made in a system dialog - a first-time user saw "nothing happened" and stopped.
+Auto-connect is armed only by a picker request and only fires while the session is IDLE or DISCOVERING: a
+drop, a `Disconnect` or a peer already chosen is never overridden. Measured 14:31-14:33 on the S24 Ultra:
+picker row -> `auto-connecting to the peer the system picker returned: DroidBridge-P08-Mac` -> `CONNECTING`
+-> `CONNECTED` in 240 ms; `Disconnect` -> `IDLE`, still `IDLE` 10 s later. The direct-browse path below API 37
+does not auto-connect, because it lists every Mac on the network rather than the one the user picked.
 
 ## 4. Clipboard behaviour
 
