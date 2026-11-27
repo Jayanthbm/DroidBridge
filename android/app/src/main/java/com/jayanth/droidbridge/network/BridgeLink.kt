@@ -36,6 +36,12 @@ class BridgeLink(
     context: Context,
     private val onEvent: (LinkEvent) -> Unit,
 ) {
+    companion object {
+        @Volatile
+        var active: BridgeLink? = null
+            private set
+    }
+
     private val appContext = context.applicationContext
     private val trust = TrustStore(appContext)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -59,6 +65,10 @@ class BridgeLink(
     private var currentMac: MacHello? = null
     private var localFingerprint: String? = null
     private var generation = 0
+
+    init {
+        active = this
+    }
 
     fun start(allowNewPairing: Boolean = false, autoPair: Boolean = false) {
         if (started) {
@@ -113,6 +123,28 @@ class BridgeLink(
         discovery = null
         reconnectJob?.cancel()
         scope.cancel()
+        if (active === this) active = null
+    }
+
+    @Synchronized
+    fun sendMirrorStopped() {
+        if (!started) return
+        val stream = output ?: return
+        // A stop notice is best-effort; a failed write must not tear down the
+        // TLS session while the phone is still paired.
+        runCatching { WireProtocol.write(stream, WireProtocol.control("mirror_stopped")) }
+    }
+
+    fun sendVideo(
+        width: Int,
+        height: Int,
+        rotation: Int,
+        keyframe: Boolean,
+        presentationTimeUs: Long,
+        accessUnit: ByteArray,
+    ) {
+        if (!started || output == null) return
+        send(WireProtocol.video(width, height, rotation, keyframe, presentationTimeUs, accessUnit))
     }
 
     private fun ensureIdentity() {
@@ -224,6 +256,13 @@ class BridgeLink(
                                     emit(LinkEvent.Disconnected("Disconnected from Mac", willReconnect = false))
                                     return@launch
                                 }
+
+                                "keyframe" -> com.jayanth.droidbridge.mirror.MirrorService.requestKeyFrame()
+                                "stop_mirror" -> {
+                                    if (com.jayanth.droidbridge.mirror.MirrorService.isRunning) {
+                                        com.jayanth.droidbridge.mirror.MirrorService.stop(appContext)
+                                    }
+                                }
                             }
                         }
 
@@ -290,6 +329,7 @@ class BridgeLink(
         return ssl
     }
 
+    @Synchronized
     private fun send(data: ByteArray) {
         val stream = output ?: return
         try {

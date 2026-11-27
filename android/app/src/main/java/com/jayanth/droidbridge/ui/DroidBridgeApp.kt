@@ -40,6 +40,7 @@ import com.jayanth.droidbridge.ui.screens.PairingScreen
 fun DroidBridgeApp(
     initialScreen: String? = null,
     autoPair: Boolean = false,
+    onToggleMirroring: () -> Unit = {},
     viewModel: AppViewModel = viewModel(),
 ) {
     val state = viewModel.state
@@ -94,7 +95,7 @@ fun DroidBridgeApp(
                     )
                     AppScreen.Home -> HomeScreen(
                         state = state,
-                        onToggleMirroring = viewModel::toggleMirroring,
+                        onToggleMirroring = onToggleMirroring,
                         onToggleClipboard = viewModel::toggleClipboardSync,
                         onSyncClipboard = viewModel::syncClipboardNow,
                         onDisconnect = viewModel::disconnect,

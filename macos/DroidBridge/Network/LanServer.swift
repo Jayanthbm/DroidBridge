@@ -31,6 +31,8 @@ enum LanServerEvent: Sendable {
     case pairingEnded(UUID)
     case connected(ConnectedPeer)
     case disconnected(deviceID: String, reason: String)
+    case video(deviceID: String, payload: Data)
+    case mirrorStopped(deviceID: String)
     case failed(String)
 }
 
@@ -157,6 +159,16 @@ final class LanServer {
         // The laptop is advertised continuously; opening the pairing sheet is UI-only.
     }
 
+    func requestKeyframe(deviceID: String) {
+        guard let session = sessions.values.first(where: { $0.deviceID == deviceID }) else { return }
+        sendControl("keyframe", to: session)
+    }
+
+    func stopMirroring(deviceID: String) {
+        guard let session = sessions.values.first(where: { $0.deviceID == deviceID }) else { return }
+        sendControl("stop_mirror", to: session)
+    }
+
     private func handleListenerState(_ state: NWListener.State) {
         switch state {
         case .ready:
@@ -280,7 +292,10 @@ final class LanServer {
             case .ping:
                 // Echo the heartbeat payload so the peer can measure liveness.
                 send(WireCodec.frame(type: .ping, payload: frame.payload), to: session)
-            case .video, .audio, .clipboard:
+            case .video:
+                guard session.connected, let deviceID = session.deviceID else { return }
+                eventHandler?(.video(deviceID: deviceID, payload: frame.payload))
+            case .audio, .clipboard:
                 break
             }
         } catch {
@@ -349,6 +364,10 @@ final class LanServer {
             drop(session, reason: "Pairing cancelled by phone")
         case "disconnect":
             drop(session, reason: "Disconnected from phone")
+        case "mirror_stopped":
+            if let deviceID = session.deviceID {
+                eventHandler?(.mirrorStopped(deviceID: deviceID))
+            }
         default:
             break
         }

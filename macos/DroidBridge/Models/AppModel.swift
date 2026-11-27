@@ -134,8 +134,11 @@ final class AppModel {
     var isConfirmingPairing = false
     var networkError: String?
 
+    var isDemoMode: Bool { runsDemo }
+
     @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private var lanServer: LanServer?
+    @ObservationIgnored private var streams: [String: MirrorStream] = [:]
     @ObservationIgnored private let runsDemo: Bool
 
     init() {
@@ -189,6 +192,15 @@ final class AppModel {
             networkError = error.localizedDescription
             showToast("LAN server failed: \(error.localizedDescription)", symbol: "wifi.exclamationmark")
         }
+    }
+
+    func mirrorStream(for deviceID: String) -> MirrorStream {
+        if let stream = streams[deviceID] { return stream }
+        let stream = MirrorStream { [weak self] in
+            self?.lanServer?.requestKeyframe(deviceID: deviceID)
+        }
+        streams[deviceID] = stream
+        return stream
     }
 
     private func handle(_ event: LanServerEvent) {
@@ -249,9 +261,28 @@ final class AppModel {
             isConfirmingPairing = false
             showToast("\(peer.name) connected over Wi-Fi", symbol: "wifi")
 
+        case .video(let deviceID, let payload):
+            if let index = devices.firstIndex(where: { $0.id == deviceID }) {
+                devices[index].wiFi = .connected
+            }
+            mirrorStream(for: deviceID).enqueue(payload)
+
+        case .mirrorStopped(let deviceID):
+            streams[deviceID]?.markStopped()
+            if focusedDeviceID == deviceID {
+                focusedDeviceID = nil
+            }
+            if let name = device(withID: deviceID)?.name {
+                showToast("Screen mirroring stopped on \(name)", symbol: "stop.circle")
+            }
+
         case .disconnected(let deviceID, let reason):
             guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
             devices[index].wiFi = .reconnecting
+            streams[deviceID]?.markStopped()
+            if focusedDeviceID == deviceID {
+                focusedDeviceID = nil
+            }
             showToast("Wi-Fi dropped: \(reason)", symbol: "wifi.exclamationmark")
 
         case .failed(let message):
@@ -344,6 +375,7 @@ final class AppModel {
     }
 
     func stopMirroring(deviceID: String) {
+        lanServer?.stopMirroring(deviceID: deviceID)
         if focusedDeviceID == deviceID {
             focusedDeviceID = nil
         }

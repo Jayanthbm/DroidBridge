@@ -70,6 +70,33 @@ object WireProtocol {
 
     fun ping(payload: ByteArray = ByteArray(0)): ByteArray = frame(TYPE_PING, payload)
 
+    fun video(
+        width: Int,
+        height: Int,
+        rotation: Int,
+        keyframe: Boolean,
+        presentationTimeUs: Long,
+        accessUnit: ByteArray,
+    ): ByteArray {
+        val metadata = JSONObject()
+            .put("codec", "avc")
+            .put("w", width)
+            .put("h", height)
+            .put("rotation", rotation)
+            .put("key", keyframe)
+            .put("pts", presentationTimeUs)
+            .toString()
+            .toByteArray(Charsets.UTF_8)
+        val payload = ByteArray(4 + metadata.size + accessUnit.size)
+        payload[0] = (metadata.size ushr 24).toByte()
+        payload[1] = (metadata.size ushr 16).toByte()
+        payload[2] = (metadata.size ushr 8).toByte()
+        payload[3] = metadata.size.toByte()
+        metadata.copyInto(payload, 4)
+        accessUnit.copyInto(payload, 4 + metadata.size)
+        return frame(TYPE_VIDEO, payload)
+    }
+
     fun write(output: DataOutputStream, data: ByteArray) {
         synchronized(output) {
             output.write(data)

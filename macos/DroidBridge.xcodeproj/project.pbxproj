@@ -17,6 +17,7 @@
 		CB2666E2DD7310F5F7219ED3 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */; };
 		CB6143D98B298EECCB61558C /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0192DAF75048E77ED3B0FB0 /* PairingView.swift */; };
 		CC2220A6B0CEFB517C7BB7F0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F6E1877E7BB7820E01DF15 /* RootView.swift */; };
+		DB721042A006EA8543FB4B82 /* MirrorStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C577059A3445328FDBBD23 /* MirrorStream.swift */; };
 		E02EA9FE0B1F73A0E1D6F2F3 /* PeerTrustStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3774EB96B770197031D7574E /* PeerTrustStore.swift */; };
 		FB5FF6934F252829F26AC8C4 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1096A49F87BA852FC5DF006 /* AppModel.swift */; };
 /* End PBXBuildFile section */
@@ -26,6 +27,7 @@
 		2CEBF104514A3E629C42448B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3774EB96B770197031D7574E /* PeerTrustStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerTrustStore.swift; sourceTree = "<group>"; };
+		50C577059A3445328FDBBD23 /* MirrorStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorStream.swift; sourceTree = "<group>"; };
 		5DBD906FAFB852A11D1CB676 /* MirrorWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorWindowView.swift; sourceTree = "<group>"; };
 		74F6E1877E7BB7820E01DF15 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
@@ -48,6 +50,7 @@
 				2CEBF104514A3E629C42448B /* Info.plist */,
 				73EEE0235770EC61AB865C06 /* Models */,
 				4571C37B8B61888DC28CF445 /* Network */,
+				AF8619B7F6B9DA7D1676E252 /* Video */,
 				39E086D1F9DAC5D46EB77B3F /* Views */,
 			);
 			path = DroidBridge;
@@ -83,6 +86,14 @@
 				E1096A49F87BA852FC5DF006 /* AppModel.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		AF8619B7F6B9DA7D1676E252 /* Video */ = {
+			isa = PBXGroup;
+			children = (
+				50C577059A3445328FDBBD23 /* MirrorStream.swift */,
+			);
+			path = Video;
 			sourceTree = "<group>";
 		};
 		CEF9244ED7DC96035E75AEE0 /* Products */ = {
@@ -166,6 +177,7 @@
 				9CF9BD17418F84A2CD0927FB /* HubView.swift in Sources */,
 				2999A01C3A6062B206E622B4 /* LanServer.swift in Sources */,
 				4B3856C03AB5324A559C5414 /* MacIdentity.swift in Sources */,
+				DB721042A006EA8543FB4B82 /* MirrorStream.swift in Sources */,
 				13E743757B4183E3BAE18219 /* MirrorWindowView.swift in Sources */,
 				CB6143D98B298EECCB61558C /* PairingView.swift in Sources */,
 				E02EA9FE0B1F73A0E1D6F2F3 /* PeerTrustStore.swift in Sources */,

@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct MirrorWindowView: View {
     let deviceID: String
@@ -8,6 +9,7 @@ struct MirrorWindowView: View {
     @Environment(\.controlActiveState) private var controlActiveState
 
     private var device: PhoneDevice? { model.device(withID: deviceID) }
+    private var stream: MirrorStream { model.mirrorStream(for: deviceID) }
     private var isFocused: Bool { controlActiveState == .key && model.focusedDeviceID == deviceID }
 
     var body: some View {
@@ -19,7 +21,13 @@ struct MirrorWindowView: View {
                     toolbar(device)
                     stage(device)
                     navigationBar
-                    FooterBar(trailing: "Mock video · Phase 1")
+                    FooterBar(
+                        trailing: stream.hasVideo
+                            ? (stream.isLive
+                                ? "Live H.264 · \(stream.width)×\(stream.height)"
+                                : "Stream paused")
+                            : "Waiting for phone stream"
+                    )
                 }
             } else {
                 ContentUnavailableView(
@@ -35,11 +43,17 @@ struct MirrorWindowView: View {
         .onAppear {
             model.focus(deviceID: deviceID)
         }
+        .onChange(of: stream.isStopped) { _, stopped in
+            if stopped {
+                dismissWindow(id: "mirror", value: deviceID)
+            }
+        }
         .onChange(of: controlActiveState) { _, newValue in
             if newValue == .key {
                 model.focus(deviceID: deviceID)
             }
         }
+        .background(WindowAspectView(aspect: stream.aspectRatio))
         .onDisappear {
             model.stopMirroring(deviceID: deviceID)
         }
@@ -106,8 +120,8 @@ struct MirrorWindowView: View {
 
     private func stage(_ device: PhoneDevice) -> some View {
         VStack(spacing: 14) {
-            PhoneBezelView(device: device, focused: isFocused)
-                .aspectRatio(9.0 / 19.5, contentMode: .fit)
+            PhoneBezelView(device: device, focused: isFocused, stream: stream, mock: model.isDemoMode)
+                .aspectRatio(stream.aspectRatio, contentMode: .fit)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
@@ -152,6 +166,8 @@ struct MirrorWindowView: View {
 struct PhoneBezelView: View {
     let device: PhoneDevice
     let focused: Bool
+    let stream: MirrorStream
+    let mock: Bool
 
     private struct MockApp: Identifiable {
         let id: String
@@ -209,7 +225,31 @@ struct PhoneBezelView: View {
         }
     }
 
+    @ViewBuilder
     private var screen: some View {
+        if stream.hasVideo {
+            VideoSurfaceView(displayLayer: stream.displayLayer)
+                .background(Color.black)
+        } else if mock {
+            mockScreen
+        } else {
+            ZStack {
+                Color.black
+                VStack(spacing: 10) {
+                    Image(systemName: "iphone.gen3")
+                        .font(.system(size: 28, weight: .light))
+                    Text("Waiting for phone stream")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Start Screen Mirroring on your phone.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                .foregroundStyle(.white.opacity(0.8))
+            }
+        }
+    }
+
+    private var mockScreen: some View {
         GeometryReader { geometry in
             let width = geometry.size.width
             let scale = max(width / 300, 0.75)
@@ -349,5 +389,41 @@ struct PhoneBezelView: View {
         }
         .padding(7 * scale)
         .background(.white.opacity(0.10), in: .rect(cornerRadius: 17 * scale))
+    }
+}
+
+// MARK: - Window aspect
+
+private struct WindowAspectView: NSViewRepresentable {
+    let aspect: CGFloat
+
+    final class Coordinator {
+        var lastAspect: CGFloat = 0
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSView {
+        NSView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        guard aspect > 0, abs(context.coordinator.lastAspect - aspect) > 0.001 else { return }
+        context.coordinator.lastAspect = aspect
+        DispatchQueue.main.async {
+            guard let window = nsView.window else { return }
+            window.contentAspectRatio = NSSize(width: aspect, height: 1)
+            var height = max(window.contentLayoutRect.height, 560)
+            var width = height * aspect
+            if width < 360 {
+                width = 360
+                height = width / aspect
+            }
+            if width > 1400 {
+                width = 1400
+                height = width / aspect
+            }
+            window.setContentSize(NSSize(width: width, height: height))
+        }
     }
 }

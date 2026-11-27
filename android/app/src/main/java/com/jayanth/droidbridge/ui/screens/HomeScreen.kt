@@ -102,7 +102,7 @@ fun HomeScreen(
                 text = when {
                     state.isConnecting -> "Reconnecting to your Mac."
                     !session.connected -> "Your Mac is offline."
-                    session.mirroring -> "Mirroring preview."
+                    session.mirroring -> "Your screen is live."
                     else -> "Your Mac is ready."
                 },
                 style = MaterialTheme.typography.headlineLarge,
@@ -113,7 +113,7 @@ fun HomeScreen(
                 text = when {
                     state.isConnecting -> "Looking for ${session.name} on your local network."
                     !session.connected -> "Reconnect when both devices are back on the same local network."
-                    session.mirroring -> "Screen mirroring is running in preview mode. Input routing arrives with the stream."
+                    session.mirroring -> "Your display is streaming over the pinned TLS session."
                     else -> "Mirror your screen, send a clipboard, or keep your phone within reach."
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -289,7 +289,7 @@ private fun MacCard(
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    text = if (session.mirroring) "Preview stream · Phase 1" else "Ready over Wi-Fi",
+                    text = if (session.mirroring) "Streaming securely over Wi-Fi" else "Ready over Wi-Fi",
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                 )

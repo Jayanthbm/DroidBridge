@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import com.jayanth.droidbridge.mirror.MirrorService
 import com.jayanth.droidbridge.network.BridgeLink
 import com.jayanth.droidbridge.network.LinkEvent
 import com.jayanth.droidbridge.network.TrustStore
@@ -14,11 +15,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val trust = TrustStore(application)
     private val link = BridgeLink(application) { event -> handle(event) }
     private var autoPair = false
+    private val mirrorListener: (Boolean) -> Unit = { running ->
+        state = state.copy(
+            session = state.session.copy(mirroring = running),
+            message = if (running) "Screen mirroring started." else null,
+        )
+    }
 
-    var state by mutableStateOf(AppState())
+    var state by mutableStateOf(AppState(session = MacSession(mirroring = MirrorService.isRunning)))
         private set
 
     init {
+        MirrorService.onRunningChanged = mirrorListener
         val saved = trust.load()
         if (saved != null) {
             state = state.copy(
@@ -31,6 +39,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     name = saved.name,
                     detail = "${saved.model} · ${saved.osVersion}",
                     connected = false,
+                    mirroring = MirrorService.isRunning,
                     clipboardSync = false,
                     lastClipboardSync = "Not synced",
                 ),
@@ -120,16 +129,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    fun toggleMirroring() {
-        if (!state.session.connected) return
-        val next = !state.session.mirroring
-        state = state.copy(
-            session = state.session.copy(mirroring = next),
-            message = if (next) "Screen mirroring preview started." else "Screen mirroring stopped.",
-        )
-    }
-
     fun disconnect() {
+        if (MirrorService.isRunning) MirrorService.stop(getApplication())
         link.disconnect()
         state = state.copy(
             session = state.session.copy(connected = false, mirroring = false, clipboardSync = false),
@@ -245,20 +246,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     name = event.mac.name,
                     detail = "${event.mac.model} · ${event.mac.osVersion}",
                     connected = true,
+                    mirroring = state.session.mirroring || MirrorService.isRunning,
                     clipboardSync = state.session.clipboardSync,
                     lastClipboardSync = state.session.lastClipboardSync,
                 ),
                 message = "Connected to ${event.mac.name} over Wi-Fi.",
             )
 
-            is LinkEvent.Disconnected -> state = state.copy(
-                isPairing = false,
-                isConnecting = event.willReconnect,
-                isSearching = event.willReconnect,
-                pairingStatus = event.reason,
-                session = state.session.copy(connected = false, mirroring = false),
-                message = if (event.willReconnect) "Reconnecting to your Mac…" else event.reason,
-            )
+            is LinkEvent.Disconnected -> {
+                if (!event.willReconnect && MirrorService.isRunning) MirrorService.stop(getApplication())
+                state = state.copy(
+                    isPairing = false,
+                    isConnecting = event.willReconnect,
+                    isSearching = event.willReconnect,
+                    pairingStatus = event.reason,
+                    session = state.session.copy(connected = false, mirroring = false),
+                    message = if (event.willReconnect) "Reconnecting to your Mac…" else event.reason,
+                )
+            }
 
             is LinkEvent.Failed -> state = state.copy(
                 isSearching = false,
@@ -270,6 +275,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
+        if (MirrorService.onRunningChanged === mirrorListener) MirrorService.onRunningChanged = null
         link.stop()
         super.onCleared()
     }
