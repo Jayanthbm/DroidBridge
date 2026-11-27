@@ -51,6 +51,7 @@ Reference preview: [macos-ui-preview.html](design/macos-ui-preview.html)
 ---
 
 ## 3. Android App UI & UX Flow
+**Design Language:** Native **Material 3 Expressive** & **Material You** (dynamic color, expressive shapes, and typography).  
 Reference preview: [android-ui-preview.html](design/android-ui-preview.html)
 
 1. **No Mac Connected / Onboarding:**
