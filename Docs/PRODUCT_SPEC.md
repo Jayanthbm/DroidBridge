@@ -39,7 +39,7 @@ Reference preview: [macos-ui-preview.html](design/macos-ui-preview.html)
    - **Step 2:** One-time Bluetooth Classic HID bond with step-by-step instructions and a **Open Bluetooth Settings** link (`x-apple.systempreferences:com.apple.BluetoothSettings`).
 3. **Device Connected (Hub):**
    - **Sidebar:** List of paired phones with Wi-Fi + BT status and **+ Pair New Phone** button.
-   - **Main Pane:** Selected phone details, status pills (`Wi-Fi TLS`, `BT Classic HID`), **Start Mirroring**, **Sync Clipboard**, **⚙️ Settings** (inline panel: Stream Quality, Auto-Sync Clipboard, Auto-Reconnect), and **Disconnect**.
+   - **Main Pane:** Selected phone details, status pills (`Wi-Fi TLS`, `BT Classic HID`), **Start Mirroring**, **Sync Clipboard**, **⚙️ Settings** (inline panel: Stream Quality, Audio On/Off, Auto-Sync Clipboard, Auto-Reconnect), and **Disconnect**.
    - **Reconnect / Error Banner:** Inline banner if Wi-Fi drops (`Reconnecting...`) or Bluetooth HID disconnects.
 4. **Floating Phone Mirroring Window (opens on Start Mirroring):**
    - Phone-bezel window that **auto-rotates/resizes** between Portrait and Landscape.
@@ -65,3 +65,4 @@ Reference preview: [android-ui-preview.html](design/android-ui-preview.html)
    - **Start Screen Mirroring** primary button (triggers `MediaProjection` consent + persistent Foreground Service notification with Stop action).
    - **Clipboard Sync** card with manual **Sync Clipboard Now** fallback button.
    - **Disconnect Mac** button.
+   - *Note:* No separate Settings screen on Android (settings like Audio On/Off and Stream Quality are controlled from macOS).
