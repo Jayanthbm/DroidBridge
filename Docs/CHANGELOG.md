@@ -1,3 +1,14 @@
+## Fresh-bond pairing restored by hand; keyboard input still missing (2026-11-27)
+
+- **No code change.** After the fresh-bond test, the owner paired the phone by hand from the HID panel:
+  the bond exists again and the HID channels open on connect.
+- **Open defect:** a sent arrow did not reach the receiver over the new bond — its counters stayed at
+  zero while the phone reports `HID connection state=2`. The earlier arrow/text-entry evidence used the
+  previous bond and does not transfer.
+- Programmatic pairing still cannot complete on macOS 27 (`replyUserConfirmation no-op` → `0x1F`, from the
+  app and from `blueutil`); a human comparing the codes is what makes pairing work. Transcript:
+  `Docs/evidence/p17/fresh-bond-2026-11-27.md`.
+
 ## Fresh Classic bond blocked by macOS 27's pairing reply (2026-11-27)
 
 - **No code change.** Tested the Phase 5 pairing-prompt row on a genuinely fresh bond. Codes matched on

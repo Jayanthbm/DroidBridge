@@ -243,7 +243,7 @@ neither side was confirmed. That is the correct outcome, not a pairing pass. The
 `pairing-prompt-verification.log`, a name that implied a verification that never happened. The bond used by
 every other Phase 5 row is the pre-existing Classic bond, so those rows are unaffected.
 
-## Fresh-bond attempt 2026-11-27 — macOS 27 cannot reply to the pairing code (row still unmeasured)
+## Fresh-bond attempt 2026-11-27 — macOS 27 cannot reply; bond restored by hand, input still missing
 
 Run conditions: USB connected, `adb_enabled=1`, `adb_wifi=0`. ADB navigated the phone's Bluetooth
 settings and, **after** verifying that the two six-digit values matched, tapped **Pair**; that consent
@@ -270,9 +270,24 @@ What was measured:
   earlier Phase 5 rows remain valid only because they used a bond created on an earlier macOS.
 
 Consequence recorded rather than papered over: the HID keyboard needs a Classic bond, and on macOS 27
-this build cannot create one. Recovery candidates are an Android-initiated bond to a known address (no
-discovery needed, but it requires `BLUETOOTH_CONNECT` in a receive-side experiment module — a permission
-addition that needs owner approval) or a macOS version that still honours the reply.
+this build cannot create one by itself. Recovery candidates are an Android-initiated bond to a known
+address (no discovery needed, but it requires `BLUETOOTH_CONNECT` in a receive-side experiment module —
+a permission addition that needs owner approval) or a macOS version that still honours the reply.
+
+### Outcome after the owner paired by hand (same day)
+
+The owner compared the codes on both screens and paired from the app's HID panel, which completed where
+the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D0:6D` on the phone,
+`c0-d5-e2-f6-d7-c2` on the Mac).
+
+- **Row 2, pairing + channels: pass.** On connect the app logs `SDP published` → `opening ACL` →
+  `control channel open` → `interrupt channel open`, and the phone lists the bond under
+  `HidHostService.mInputDevices` with `HID connection state=2` once its Bluetooth is cycled.
+- **Input over the fresh bond: not observed, and this is an open defect.** With the receiver foreground
+  and its counters zeroed, `harness sent UP` produced no change (`UP: 0`, repeated after a clean quit and
+  relaunch). The earlier arrow and text-entry evidence used the previous bond, so it does not transfer
+  to this one.
+- Full transcript: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md).
 
 ## Production keyboard and text entry measured 2026-11-27 (promoted build, S24 Ultra)
 

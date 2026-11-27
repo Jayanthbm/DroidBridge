@@ -11,11 +11,17 @@ IOBluetooth reply path, not a defect in the app's Accept button.
 
 The phone-initiated route that created the original bond (2026-11-20) is unavailable on this macOS:
 `blueutil --discoverable 1` fails and reads `0` even with the Bluetooth pane frontmost, and the phone's
-scan shows no available devices. **Net state: no Classic bond on either side**, so the HID keyboard is
-offline until a bond is restored. Recovery candidates: an Android-initiated bond to a known address (no
-discovery needed, but it needs `BLUETOOTH_CONNECT` in a receive-side experiment — a permission addition
-that needs owner approval), or a macOS that still honours the reply. Recorded in the P17 report; the row
-stays **unmeasured**, not waived, until the owner chooses a recovery path.
+scan shows no available devices.
+
+**Resolved later the same day, and one new defect found:** the owner compared the codes and paired by hand
+from the HID panel, so the bond exists again on both sides (`XX:XX:XX:XX:D0:6D` / `c0-d5-e2-f6-d7-c2`) and
+the channels open on connect (`control channel open` → `interrupt channel open`, and the phone lists the
+bond under `HidHostService.mInputDevices` with `HID connection state=2` after a Bluetooth cycle). **But a
+sent arrow did not reach the receiver over the new bond**: with the receiver foreground and counters at
+zero, `harness sent UP` left them at `UP: 0`, repeated after a clean quit and relaunch. So the pairing row
+passes for bond + channels, and keyboard delivery in the re-paired state is an open defect — the earlier
+arrow and text-entry evidence used the previous bond and does not transfer. Transcript:
+`Docs/evidence/p17/fresh-bond-2026-11-27.md`.
 
 ADB was used only for setup on the phone (Bluetooth settings navigation) and for the **Pair** tap after the
 codes were verified to match; that consent was granted through automation at the owner's instruction. No
