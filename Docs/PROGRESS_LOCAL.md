@@ -1,3 +1,23 @@
+**2026-11-27 (personal-use scope settled for the remaining rows):**
+
+Asked the owner to decide each remaining row instead of leaving it "conditional":
+
+- **Keyboard/text entry is in personal use** — Mac→phone keyboard and text entry stay in scope, so the
+  P17 production rows remain real gates rather than experimental extras.
+- **Second-device rows waived:** P05's API 33+ sensitive-clipboard row, P12's OnePlus audio path and
+  P08's OnePlus stream. One phone is the product; the existing OnePlus evidence stays in the reports as
+  historical, with a standing note to re-validate if the target phone changes.
+- **Other-machine/fault-injection extras waived:** P01 plan-only extras, P07 corrupt-sample failure, P02
+  router restart and P11's denied Local-Network state. None is reachable on this Mac/router, and none
+  would change a decision for a one-person app.
+- **P12 +276 ms audio offset accepted as a documented limitation** — no video re-timing in the shipping
+  path; the figure and its direction stay in the P12 report.
+- **Phase 5 pairing prompt will be measured once** on a fresh bond (owner chose to try rather than waive
+  outright); if the Mac's single pairing-agent conflict blocks it again, it becomes a recorded waiver.
+
+Also corrected two stale labels: P08 and P10 still read "acceptance pending" although both
+USB-disconnected, debugging-off sweeps were completed on 2026-11-26. They now say what was measured.
+
 **2026-11-27 (review of the P17 text-entry work: report corrected, evidence gap recorded):**
 
 Reviewed the ten commits that landed after ADR-061 (retry-streak counter, P17 production keyboard and

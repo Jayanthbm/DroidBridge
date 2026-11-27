@@ -1,3 +1,14 @@
+## Personal-use scope settled for the remaining rows (2026-11-27)
+
+- **No behaviour change.** The owner confirmed Mac→phone keyboard/text entry is in use, so those rows
+  stay real gates. Second-device rows (P05 API 33+ sensitive clipboard, P12 OnePlus audio, P08 OnePlus
+  stream) and other-machine/fault-injection extras (P01 plan-only extras, P07 corrupt-sample, P02
+  router restart, P11 denied state) are **waived**; existing OnePlus evidence stays as historical.
+- The **+276 ms audio offset is accepted as a documented limitation** — no video re-timing.
+- A fresh-bond **pairing-prompt** row is being measured once; if this Mac's pairing-agent conflict
+  blocks it again, it is recorded as waived rather than chased.
+- P08 and P10 no longer read "acceptance pending": both debuggings-off sweeps were done on 2026-11-26.
+
 ## Phase 6 lightweight permission/security audit measured (2026-11-27)
 
 - **No behaviour change.** Audited the freshly built artifacts: the APK declares exactly the seven

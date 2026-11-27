@@ -8,6 +8,10 @@ with no content preview, and a non-picker local TCP connection is blocked until
 `ACCESS_LOCAL_NETWORK` is granted. The exact "active mirroring FGS" integration variant is deferred
 to P08; the 15/30/60-minute auto-clear observations are not run.
 
+**Scope decision 2026-11-27 (personal-use owner):** the remaining second-device row — the API 33+
+`sensitive` clipboard classification check on the OnePlus — is **waived**; the S24 Ultra (API 37) is the
+only device the app is used on. The 15/30/60-minute auto-clear rows were already waived on 2026-11-26.
+
 | Field | Value |
 |---|---|
 | Date | 2026-11-09 |

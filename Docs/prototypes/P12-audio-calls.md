@@ -225,6 +225,13 @@ presentation offset and the Mac does not delay video. P12's remaining decision i
 first experiment is the capture read size: the 16 KiB read is 93 ms of sound, and cutting it to a few
 AAC frames costs only a higher packet rate.
 
+## Scope decisions 2026-11-27 (personal-use owner)
+
+- **The +276 ms offset is not re-timed.** The owner chose to keep the measured offset as a documented
+  limitation rather than delay video or start audio earlier, so the shipping path is unchanged and the
+  lip-sync figure stands at audio-leads-video. Revisit only if the offset becomes annoying in use.
+- **The OnePlus audio path is waived** as a second-device row; the S24 Ultra is the product device.
+
 ## Not measured / open
 
 - **A live cellular or VoIP call.** Row 6 measures the platform rule that makes call audio
