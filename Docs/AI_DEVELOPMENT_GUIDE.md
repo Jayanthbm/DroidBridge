@@ -58,6 +58,7 @@
 ### Phase 4: Bluetooth Classic HID (Mouse & Keyboard)
 - **Functionality:**
   - macOS Bluetooth Classic HIDP (SDP + L2CAP `0x0011`/`0x0013`) emulating a combined Keyboard + Mouse.
+  - `Cmd` → `Ctrl` shortcut mapping, trackpad scrolling, and right-click → Back.
   - Multi-phone focus routing: HID input routes to the **currently focused** mirroring window (`Input: Active` vs `Click to focus`).
   - Bottom nav bar shortcuts (Back, Home, Recents) mapped to Android HID keycodes.
 - **Acceptance:** With USB unplugged and ADB off, type text, use arrow keys, move mouse cursor, click, and use Back/Home/Recents on the phone from Mac.
@@ -75,5 +76,6 @@
 ### Phase 6: Polish, Menu Bar & Final Acceptance
 - **Functionality:**
   - Optional macOS Menu Bar quick-access extra (open mirror window, sync clipboard, status).
+  - Keep screen awake while mirroring + Drag-and-drop file transfer (Mac → Android `Downloads/`).
   - Final edge-case polish (sleep/wake, Wi-Fi toggle, multi-phone switching).
 - **Acceptance:** Full end-to-end test sweep with **USB disconnected and USB/Wireless debugging OFF** on Android.

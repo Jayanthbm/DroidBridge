@@ -14,7 +14,7 @@ DroidBridge is an **iPhone Mirroring–like experience on macOS for Android phon
 ### Core Capabilities
 1. **Wi-Fi + Bluetooth Connection:**
    - **Wi-Fi (Bonjour/mDNS + Pinned TLS 1.3):** Screen mirroring, optional playback audio, session control, and clipboard sync.
-   - **Bluetooth Classic HIDP (SDP + L2CAP `0x0011`/`0x0013`):** Mac acts as a Bluetooth keyboard and mouse/pointer to control the phone (visible cursor on phone is expected). *Note: BLE HOGP is not supported on Android for dual-mode Mac hosts.*
+   - **Bluetooth Classic HIDP (SDP + L2CAP `0x0011`/`0x0013`):** Mac acts as a Bluetooth keyboard and mouse/pointer to control the phone (visible cursor on phone is expected), including `Cmd` → `Ctrl` shortcut mapping, trackpad scrolling, and right-click → Back. *Note: BLE HOGP is not supported on Android for dual-mode Mac hosts.*
 2. **No Accessibility & No Runtime ADB:**
    - Zero `AccessibilityService` usage.
    - Zero `adb` usage at runtime (USB or Wi-Fi).
@@ -24,6 +24,9 @@ DroidBridge is an **iPhone Mirroring–like experience on macOS for Android phon
 4. **Multi-Device Support:**
    - Mac can connect to **multiple Android phones** simultaneously over Wi-Fi (each in its own mirroring window).
    - **Bluetooth Classic HID** input routes to the **currently focused** mirroring window.
+5. **Quality-of-Life Features:**
+   - **Keep Screen Awake:** Optionally keep the phone screen awake while mirroring.
+   - **Drag-and-Drop File Transfer (Phase 6):** Drag a file onto the mirroring window to send it to Android `Downloads/` over Wi-Fi TLS.
 
 ---
 
