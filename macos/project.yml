@@ -1,0 +1,50 @@
+name: DroidBridge
+options:
+  bundleIdPrefix: com.jayanth
+  deploymentTarget:
+    macOS: "26.0"
+  xcodeVersion: "27.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "2.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+
+targets:
+  DroidBridge:
+    type: application
+    platform: macOS
+    sources:
+      - path: DroidBridge
+    info:
+      path: DroidBridge/Info.plist
+      properties:
+        CFBundleDisplayName: DroidBridge
+        CFBundleName: DroidBridge
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSMinimumSystemVersion: "$(MACOSX_DEPLOYMENT_TARGET)"
+        LSApplicationCategoryType: public.app-category.utilities
+        NSLocalNetworkUsageDescription: "DroidBridge discovers and connects to your Android phones on the local Wi-Fi network for screen mirroring and clipboard sync."
+        NSBluetoothAlwaysUsageDescription: "DroidBridge uses Bluetooth Classic HID to control your Android phone with your Mac keyboard and mouse without Accessibility or ADB."
+        NSBonjourServices:
+          - "_droidbridge._tcp"
+    entitlements:
+      path: DroidBridge/DroidBridge.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.network.client: true
+        com.apple.security.network.server: true
+        com.apple.security.device.bluetooth: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jayanth.droidbridge
+        PRODUCT_NAME: DroidBridge
+        GENERATE_INFOPLIST_FILE: NO
+        COMBINE_HIDPI_IMAGES: YES
