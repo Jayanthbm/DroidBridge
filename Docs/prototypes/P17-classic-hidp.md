@@ -297,6 +297,11 @@ the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D
   event on; a `dispatchKeyEvent` override tripped lint `RestrictedApi`, so that route was dropped. One
   `--harness-send UP` then moved the receiver from `UP: 0` to `UP: 1` with `P16HidReceiver: UP down` /
   `UP up` in logcat, so the arrow counter is a valid instrument again.
+- **All four directions and the pad path measured** (same bond, receiver with a four-button arrow pad
+  that clears the text field's focus): `--harness-send DOWN,LEFT,RIGHT` moved `DOWN`, `LEFT` and `RIGHT`
+  to 1 each with matching down/up logcat lines, and the owner's pad tap bumped `UP` (two logged pad
+  presses, `UP: 2`, counters `UP: 2 / DOWN: 1 / LEFT: 1 / RIGHT: 1`). Full run with USB/debugging
+  state in [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 - Full transcripts: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md),
   [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 

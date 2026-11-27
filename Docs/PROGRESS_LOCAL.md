@@ -28,7 +28,12 @@ not the HID path. The receiver was then fixed to count arrows in the root's Comp
 (runs before the field consumes them, event still passed on; a `dispatchKeyEvent` override tripped lint
 `RestrictedApi`), and a single `--harness-send UP` over the same bond moved it `UP: 0` → `UP: 1` with
 `P16HidReceiver: UP down` / `UP up` in logcat. Test state: USB connected, USB debugging on, wireless
-debugging off; ADB did install/launch/`svc power stayon usb`/shade-collapse/dumps only, never the key. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+debugging off; ADB did install/launch/`svc power stayon usb`/shade-collapse/dumps only, never the key.
+A follow-up run covered every direction: `--harness-send DOWN,LEFT,RIGHT` took `DOWN`, `LEFT` and
+`RIGHT` to 1 each with matching down/up lines, and the receiver gained a four-button arrow pad (clears
+the field's focus, counts locally) whose owner-tapped button bumped `UP` — two logged pad presses gave
+`UP: 2`, so pad and HID share the counters. Recorded with USB connected, USB debugging on, wireless
+debugging off in `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
 no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
 declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
 `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.

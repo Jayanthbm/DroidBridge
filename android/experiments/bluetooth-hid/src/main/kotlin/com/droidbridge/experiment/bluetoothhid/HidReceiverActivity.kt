@@ -7,10 +7,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.getValue
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
@@ -41,6 +44,7 @@ class HidReceiverActivity : ComponentActivity() {
         record("P16 receiver ready; focus this screen before sending a test key")
         setContent {
             MaterialTheme {
+                val focusManager = LocalFocusManager.current
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -78,6 +82,19 @@ class HidReceiverActivity : ComponentActivity() {
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    Text("Arrow pad — tapping a button unfocuses the field and counts one arrow locally")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("UP", "DOWN", "LEFT", "RIGHT").forEach { label ->
+                            OutlinedButton(
+                                onClick = {
+                                    // Unfocus the text field so a later hardware key is not eaten by it.
+                                    focusManager.clearFocus()
+                                    bump(label)
+                                    record("$label pad")
+                                },
+                            ) { Text(label) }
+                        }
+                    }
                     Text(
                         "Test input arrives only over the Bluetooth HID link under test. " +
                             "ADB is used for installation and diagnostics, never to deliver input, " +

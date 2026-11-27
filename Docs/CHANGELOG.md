@@ -1,3 +1,13 @@
+## All four receiver counters measured over the bond, including the arrow pad (2026-11-27)
+
+- `--harness-send DOWN,LEFT,RIGHT` over the existing fresh bond moved the receiver's `DOWN`, `LEFT` and
+  `RIGHT` counters to 1 each (`P16HidReceiver` logged down/up for each), with `UP` left at 0.
+- The receiver gained a four-button arrow pad that unfocuses the text field and counts locally; the
+  owner's taps bumped `UP` (two logged pad presses → `UP: 2`), so the pad and HID paths share the same
+  counters.
+- Recorded with USB connected, USB debugging on and wireless debugging off; ADB did install/launch and
+  observation only, never the keys or the tap.
+
 ## Receiver arrow counters work alongside the text field (2026-11-27)
 
 - `HidReceiverActivity` counts arrow keys in the root's Compose `onPreviewKeyEvent`, so the focused
