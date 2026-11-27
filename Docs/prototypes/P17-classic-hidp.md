@@ -311,7 +311,11 @@ the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D
 - **Arrow pad fully covered** right after that pass, still with USB disconnected and both debuggings
   off (`adb devices` empty, owner-tapped): from `UP: 2 / DOWN: 0 / LEFT: 0 / RIGHT: 0`, the DOWN, LEFT
   and RIGHT buttons each moved their own counter to 1; `UP` gained one extra tap (2 → 3) that was not
-  part of the requested sequence and is recorded as observed.
+  part of the requested sequence and is recorded as observed. A separate ADB-observed run (USB
+  connected, USB debugging on, wireless debugging off) repeated it mechanically: from a fresh `0/0/0/0`
+  receiver, DOWN, LEFT and RIGHT each moved its counter once at 18:12:48 / 18:12:54 / 18:13:00 with
+  matching `P16HidReceiver: … pad` lines, `UP` staying 0; ADB only polled the counter text, the taps were
+  the owner's.
 - Full transcripts: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md),
   [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 

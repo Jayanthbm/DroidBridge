@@ -266,4 +266,41 @@ DOWN/LEFT/RIGHT sequence; it is recorded as observed rather than reinterpreted a
 tap.
 
 Because this run was performed with ADB unavailable, these are owner-reported device values, not
-ADB-collected ones. The next run with ADB attached can confirm them mechanically if needed.
+ADB-collected ones.
+
+## Receiver arrow pad, ADB-observed (2026-11-27, 18:11–18:13) — separate run
+
+Deliberately a different run from the one above, with a different stated state: **USB connected: yes;
+USB debugging: on; wireless debugging: off** (`adb_enabled=1`, `adb_wifi_enabled=0`). Bluetooth played
+no part (`HidHostService` `HID connection state=0`, Mac app not running); the pad is a local control.
+
+Setup through ADB: force-stopped and restarted the receiver so the counters began at zero, and raised
+`svc power stayon usb`. The taps were the owner's finger on the pad — ADB never generated a tap. ADB
+only observed: a poller sampled the counter text from `uiautomator dump` every ~2 s.
+
+Poll transcript (consecutive identical samples collapsed):
+
+```
+18:11:45 text="UP: 0    DOWN: 0" text="LEFT: 0    RIGHT: 0"
+18:12:48 text="UP: 0    DOWN: 1" text="LEFT: 0    RIGHT: 0"
+18:12:53 text="UP: 0    DOWN: 1" text="LEFT: 1    RIGHT: 0"
+18:13:02 text="UP: 0    DOWN: 1" text="LEFT: 1    RIGHT: 1"
+```
+
+Receiver log for the same taps:
+
+```
+18:12:48.290 P16HidReceiver: DOWN pad
+18:12:54.448 P16HidReceiver: LEFT pad
+18:13:00.638 P16HidReceiver: RIGHT pad
+```
+
+| Tap | Counter after | Move | Poll timestamp | Logcat |
+|---|---|---|---|---|
+| DOWN | `DOWN: 1` | 0 → 1 | 18:12:48 | 18:12:48.290 |
+| LEFT | `LEFT: 1` | 0 → 1 | 18:12:53 | 18:12:54.448 |
+| RIGHT | `RIGHT: 1` | 0 → 1 | 18:13:02 | 18:13:00.638 |
+
+`UP` stayed at 0 throughout, so no extra tap occurred in this run. This is the mechanical confirmation
+of the owner-read pad run above, and it matches it: each button moves only its own counter, once per
+tap.

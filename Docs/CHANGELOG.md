@@ -1,3 +1,11 @@
+## Arrow pad confirmed mechanically with ADB observing (2026-11-27)
+
+- Separate run with USB connected, USB debugging on and wireless debugging off: from a freshly reset
+  receiver, the owner's DOWN, LEFT and RIGHT pad taps each moved their own counter to 1 at 18:12:48 /
+  18:12:54 / 18:13:00, with matching `P16HidReceiver: … pad` lines and `UP` staying 0.
+- ADB only polled the counter text; the taps were the owner's. Recorded as its own run so it is not
+  confused with the earlier debug-off owner-read pass.
+
 ## Arrow pad covered button by button (2026-11-27)
 
 - With USB disconnected and both debuggings off (`adb devices` empty), the owner tapped the receiver's

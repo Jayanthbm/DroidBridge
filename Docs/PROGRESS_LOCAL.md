@@ -46,7 +46,14 @@ The receiver's arrow pad was then covered with all four buttons, still with noth
 unused (`adb devices` empty): from `UP: 2 / DOWN: 0 / LEFT: 0 / RIGHT: 0` the owner's DOWN, LEFT and
 RIGHT taps took each counter to 1, and an extra UP tap took it 2 → 3 — recorded as observed, not
 reinterpreted. Pad taps are local controls, so they prove the receiver's counting and UI rather than
-the Bluetooth link, which the acceptance pass covers. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+the Bluetooth link, which the acceptance pass covers.
+
+Because those pad readings were owner-read, they were then confirmed mechanically in a separate run
+with **USB connected, USB debugging on, wireless debugging off**: the receiver was restarted to
+`0/0/0/0`, a poller sampled the counter text every ~2 s, and the owner's DOWN/LEFT/RIGHT taps each moved
+only their own counter once (18:12:48, 18:12:54, 18:13:00 with matching `P16HidReceiver: … pad` lines),
+`UP` staying 0. ADB only observed; it generated no tap. The two runs are kept apart in the evidence so
+their debugging states are not conflated. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
 no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
 declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
 `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.
