@@ -28,6 +28,7 @@ DroidBridge is an **iPhone Mirroring–like experience on macOS for Android phon
 ---
 
 ## 2. macOS App UI & UX Flow
+**Design Language:** Native **Liquid Glass** (SwiftUI translucent glass materials, depth, and vibrancy).  
 Reference preview: [macos-ui-preview.html](design/macos-ui-preview.html)
 
 1. **No Device Connected (Empty State):**

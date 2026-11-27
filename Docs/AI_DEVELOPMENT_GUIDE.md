@@ -8,7 +8,10 @@
    - **NEVER** use `adb` (USB or Wi-Fi) for delivering taps/input, syncing clipboard, or sharing the screen.
    - **Development-only ADB rule:** USB debugging / ADB **may** be enabled during development for installing builds, launching apps, and reading `logcat`/`dumpsys` diagnostics—**never** as a feature transport.
 3. **Reference Archive:** All prior PoCs (P00–P17) are preserved on branch `archive/poc-v1` for reference, but `product/v2` must be built cleanly from scratch.
-4. **No Unrequested Scope:** Build phase by phase; verify each phase before moving to the next.
+4. **Design Principles:**
+   - **macOS:** Follow native **Liquid Glass** design (SwiftUI translucent glass materials, vibrancy, and depth).
+   - **Android:** Follow native **Material 3 Expressive** & **Material You** design (dynamic color, expressive shapes, and typography).
+5. **No Unrequested Scope:** Build phase by phase; verify each phase before moving to the next.
 
 ---
 
