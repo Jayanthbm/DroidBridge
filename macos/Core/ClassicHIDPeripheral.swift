@@ -311,6 +311,9 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         protocolMode = 0x01
         idleRate = 0
         reportsSent = 0
+        // Measurement aid: the negotiated protocol decides whether a report carries a report ID.
+        // Recorded at the moment the channels are ready, before the host sends SET_PROTOCOL.
+        note("channels ready protocol=report (default, host has not set it yet)")
         refreshPairedDevices()
     }
 
@@ -539,6 +542,10 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
             lastError = "Interrupt write failed (\(Self.ioCode(status)))"
             note(lastError ?? "")
         }
+        // Measurement aid: what was actually written, in which protocol, and whether the channel
+        // accepted it. A successful write only means the stack queued it, so a host that rejects the
+        // report looks identical here to one that accepts it; the counter it moves is the phone's.
+        log.info("report written id=\(reportID, privacy: .public) protocol=\(self.protocolMode == 0x01 ? "report" : "boot", privacy: .public) bytes=\(byteCount, privacy: .public) prefix=0x\(String(buffer[0], radix: 16), privacy: .public) status=\(String(status, radix: 16), privacy: .public) total=\(self.reportsSent, privacy: .public)")
     }
 
     // MARK: - HIDP control channel
@@ -546,6 +553,9 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     private func handleHostMessage(_ bytes: Data, on channel: IOBluetoothL2CAPChannel) {
         guard let header = bytes.first else { return }
         let parameter = header & 0x0F
+        // Measurement aid: every control-channel message the host sends, so a missing SET_PROTOCOL
+        // or a rejected report is visible rather than inferred.
+        log.info("host msg opcode=0x\(String(header & 0xF0, radix: 16), privacy: .public) parameter=0x\(String(parameter, radix: 16), privacy: .public) bytes=\(bytes.count, privacy: .public)")
 
         switch header & 0xF0 {
         case Transaction.handshake:

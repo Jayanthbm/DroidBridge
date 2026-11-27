@@ -1,3 +1,14 @@
+## Keyboard input verified over the fresh bond; the arrow counter was the problem (2026-11-27)
+
+- **Corrects the entry below.** The keyboard does work over the re-paired bond. Three log lines (channels
+  ready + protocol, every host control message, every report written) show well-formed reports
+  (`id=2 protocol=report bytes=10 status=0`), the phone's kernel logs `EV_KEY KEY_UP DOWN/UP`, and text
+  entry delivered **14/14** (`DroidBridge123`).
+- The receiver's arrow counters stayed at zero because its newly focused `EditText` consumes arrow keys
+  for cursor movement before `onKeyDown`; the counter is not a valid arrow instrument any more.
+- No behaviour change: instrumentation only. macOS tests 104/104. Evidence:
+  `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.
+
 ## Fresh-bond pairing restored by hand; keyboard input still missing (2026-11-27)
 
 - **No code change.** After the fresh-bond test, the owner paired the phone by hand from the HID panel:

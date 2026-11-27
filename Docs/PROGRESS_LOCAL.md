@@ -16,12 +16,18 @@ scan shows no available devices.
 **Resolved later the same day, and one new defect found:** the owner compared the codes and paired by hand
 from the HID panel, so the bond exists again on both sides (`XX:XX:XX:XX:D0:6D` / `c0-d5-e2-f6-d7-c2`) and
 the channels open on connect (`control channel open` → `interrupt channel open`, and the phone lists the
-bond under `HidHostService.mInputDevices` with `HID connection state=2` after a Bluetooth cycle). **But a
-sent arrow did not reach the receiver over the new bond**: with the receiver foreground and counters at
-zero, `harness sent UP` left them at `UP: 0`, repeated after a clean quit and relaunch. So the pairing row
-passes for bond + channels, and keyboard delivery in the re-paired state is an open defect — the earlier
-arrow and text-entry evidence used the previous bond and does not transfer. Transcript:
-`Docs/evidence/p17/fresh-bond-2026-11-27.md`.
+bond under `HidHostService.mInputDevices` with `HID connection state=2` after a Bluetooth cycle). The first reading was that a sent arrow never reached the receiver (counters at `UP: 0`), so I added
+three log lines — channels-ready protocol, every host control message, every report written — and
+measured the chain instead of inferring it. Result: **the keyboard works over the new bond**. Reports are
+`report written id=2 protocol=report bytes=10 prefix=0xa1 status=0`, the phone's kernel logs
+`EV_KEY KEY_UP DOWN` then `UP` (`getevent -l`), `dumpsys input` lists `23: Jayanth’s MacBook Air` as
+`KEYBOARD | ALPHAKEY | EXTERNAL` and the device disappears when the app quits, and text entry over the same
+bond delivered **14/14** (`DroidBridge123`). The arrow counters read zero because the receiver's focused
+`EditText` consumes arrows for cursor movement before `onKeyDown` — the counter is the wrong instrument,
+not the HID path. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
+declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
+`Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.
 
 ADB was used only for setup on the phone (Bluetooth settings navigation) and for the **Pair** tap after the
 codes were verified to match; that consent was granted through automation at the owner's instruction. No

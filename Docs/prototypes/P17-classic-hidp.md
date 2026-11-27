@@ -283,11 +283,17 @@ the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D
 - **Row 2, pairing + channels: pass.** On connect the app logs `SDP published` → `opening ACL` →
   `control channel open` → `interrupt channel open`, and the phone lists the bond under
   `HidHostService.mInputDevices` with `HID connection state=2` once its Bluetooth is cycled.
-- **Input over the fresh bond: not observed, and this is an open defect.** With the receiver foreground
-  and its counters zeroed, `harness sent UP` produced no change (`UP: 0`, repeated after a clean quit and
-  relaunch). The earlier arrow and text-entry evidence used the previous bond, so it does not transfer
-  to this one.
-- Full transcript: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md).
+- **Input over the fresh bond: works — the first reading was a instrument problem, corrected the same
+  day.** The arrow counters stayed at `UP: 0` after `harness sent UP`, but with the new log lines the
+  reports are well-formed (`report written id=2 protocol=report bytes=10 prefix=0xa1 status=0`), the
+  phone's kernel sees the key (`getevent`: `EV_KEY KEY_UP DOWN` then `UP`), `dumpsys input` lists
+  `23: Jayanth’s MacBook Air` as `KEYBOARD | ALPHAKEY | EXTERNAL`, and the device disappears when the
+  app quits — so it belongs to this session. The counters read zero because the receiver now has a
+  **focused `EditText`** that consumes arrow keys for cursor movement before `onKeyDown`. Text entry over
+  the same fresh bond delivered **14/14** (`DroidBridge123`). Arrow delivery is therefore proven at the
+  kernel, not at the receiver's counter.
+- Full transcripts: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md),
+  [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 
 ## Production keyboard and text entry measured 2026-11-27 (promoted build, S24 Ultra)
 
