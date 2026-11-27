@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DroidBridge — macOS UI/UX Preview</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --window-bg: rgba(28, 30, 36, 0.92);
+      --sidebar-bg: rgba(22, 24, 29, 0.96);
+      --card-bg: rgba(40, 43, 52, 0.72);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: radial-gradient(circle at top left, #1e293b, #0b0d11 65%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 20px;
+    }
+
+    /* Top Preview Switcher */
+    .preview-bar {
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .preview-btn {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .preview-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .preview-btn.active { background: var(--accent); color: #fff; }
+
+    /* macOS Window Chrome */
+    .mac-window {
+      width: 960px;
+      max-width: 100%;
+      min-height: 600px;
+      background: var(--window-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+      overflow: hidden;
+      display: none;
+      flex-direction: column;
+      backdrop-filter: blur(20px);
+    }
+    .mac-window.active { display: flex; }
+
+    .titlebar {
+      height: 44px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .traffic-lights { display: flex; gap: 8px; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot.red { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green { background: #28c840; }
+    .titlebar-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    /* Layout: Hub */
+    .hub-body { display: flex; flex: 1; min-height: 556px; }
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      padding: 0 8px 8px;
+    }
+    .device-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .device-item.selected { background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(59, 130, 246, 0.35); }
+    .device-item:hover:not(.selected) { background: rgba(255, 255, 255, 0.05); }
+    .device-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .device-meta { flex: 1; }
+    .device-name { font-size: 13px; font-weight: 600; }
+    .device-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .main-pane { flex: 1; padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+    .header-row { display: flex; justify-content: space-between; align-items: center; }
+    .pill-group { display: flex; gap: 8px; }
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .status-dot.on { background: var(--green); }
+    .status-dot.warn { background: var(--amber); }
+
+    .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card h4 { font-size: 13px; font-weight: 600; }
+    .card p { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    /* Mirroring Window */
+    .mirror-window { width: 460px; min-height: 760px; }
+    .mirror-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      gap: 8px;
+    }
+    .mirror-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #090b0e;
+      gap: 14px;
+    }
+    .phone-bezel {
+      width: 310px;
+      height: 620px;
+      border-radius: 36px;
+      border: 6px solid #2b2f3a;
+      background: linear-gradient(160deg, #1d4ed8, #0f172a 55%, #111827);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 18px;
+    }
+    .phone-notch {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #090b0e; margin: 0 auto;
+    }
+    .phone-widgets {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: auto; margin-bottom: 24px;
+    }
+    .app-icon {
+      height: 48px; border-radius: 12px;
+      background: rgba(255, 255, 255, 0.16);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .cursor-indicator {
+      position: absolute;
+      top: 46%;
+      left: 54%;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid #000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .nav-pill-bar {
+      display: flex;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+    .nav-btn {
+      background: transparent; border: none; color: var(--text);
+      font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+    }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+    /* Pairing & Settings & Menu Bar */
+    .centered-pane {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+    .sheet-box {
+      width: 460px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .code-box {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-align: center;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .window-footer {
+      padding: 8px 16px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-bar">
+    <button class="preview-btn active" onclick="showView('empty', this)">1. No Device Connected</button>
+    <button class="preview-btn" onclick="showView('pair', this)">2. Connection Flow</button>
+    <button class="preview-btn" onclick="showView('hub', this)">3. Device Connected</button>
+  </div>
+
+  <!-- 1. NO DEVICE CONNECTED -->
+  <div id="view-empty" class="mac-window active">
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+      </div>
+      <div class="titlebar-title">DroidBridge</div>
+      <div style="width: 52px;"></div>
+    </div>
+    <div class="centered-pane">
+      <div class="sheet-box" style="text-align: center; align-items: center;">
+        <div style="font-size: 40px;">📱</div>
+        <h2 style="font-size: 19px;">No Phone Connected</h2>
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.5;">
+          Connect an Android phone over Wi-Fi and Bluetooth to mirror its screen, control it with your Mac keyboard &amp; mouse, and sync your clipboard.
+        </p>
+        <button class="btn btn-primary" style="margin-top: 6px;" onclick="showView('pair', document.querySelectorAll('.preview-btn')[1])">+ Connect a Phone</button>
+      </div>
+    </div>
+    <div class="window-footer"><span>DroidBridge v2.0.0</span></div>
+  </div>
+
+  <!-- 3. DEVICE CONNECTED -->
+  <div id="view-hub" class="mac-window">
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+      </div>
+      <div class="titlebar-title">DroidBridge</div>
+      <div style="width: 52px;"></div>
+    </div>
+    <div class="hub-body">
+      <aside class="sidebar">
+        <div>
+          <div class="sidebar-section-label">Paired Phones</div>
+          <div class="device-item selected">
+            <div class="device-icon">📱</div>
+            <div class="device-meta">
+              <div class="device-name">Galaxy S24 Ultra</div>
+              <div class="device-sub">Wi-Fi + BT Connected</div>
+            </div>
+          </div>
+          <div class="device-item">
+            <div class="device-icon">📱</div>
+            <div class="device-meta">
+              <div class="device-name">OnePlus Nord</div>
+              <div class="device-sub">Wi-Fi Ready · BT Idle</div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="showView('pair', document.querySelectorAll('.preview-btn')[1])">+ Pair New Phone</button>
+      </aside>
+
+      <main class="main-pane">
+        <div class="header-row">
+          <div>
+            <h2 style="font-size: 20px;">Galaxy S24 Ultra</h2>
+            <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">Ready for mirroring, keyboard/mouse control, and clipboard sync</p>
+          </div>
+          <div class="pill-group">
+            <span class="pill"><span class="status-dot on"></span> Wi-Fi TLS</span>
+            <span class="pill"><span class="status-dot on"></span> BT Classic HID</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-primary" onclick="openMirrorWindow()">Start Mirroring</button>
+          <button class="btn btn-secondary">Sync Clipboard</button>
+          <button class="btn btn-secondary" onclick="toggleSettings()">⚙️ Settings</button>
+          <button class="btn btn-danger">Disconnect</button>
+        </div>
+
+        <div id="device-settings-panel" class="card" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h4>Device Settings</h4>
+            <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 11px;" onclick="toggleSettings()">Done</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div style="font-size: 13px; font-weight: 600;">Stream Quality</div>
+              <div style="font-size: 11px; color: var(--muted);">1080p · 60 fps (Recommended)</div>
+            </div>
+            <button class="btn btn-secondary" style="font-size: 12px;">1080p / 60</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div style="font-size: 13px; font-weight: 600;">Auto-Sync Clipboard</div>
+              <div style="font-size: 11px; color: var(--muted);">Sync text between Mac and this phone</div>
+            </div>
+            <button class="btn btn-primary" style="font-size: 12px;">Enabled</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <div style="font-size: 13px; font-weight: 600;">Auto-Reconnect</div>
+              <div style="font-size: 11px; color: var(--muted);">Automatically reconnect on LAN</div>
+            </div>
+            <button class="btn btn-primary" style="font-size: 12px;">Enabled</button>
+          </div>
+        </div>
+
+        <div class="card-grid">
+          <div class="card">
+            <h4>Screen Mirroring (Wi-Fi)</h4>
+            <p>1080p @ 60fps H.264 stream with automatic orientation &amp; FLAG_SECURE privacy blackout.</p>
+          </div>
+          <div class="card">
+            <h4>Keyboard &amp; Mouse (Bluetooth HID)</h4>
+            <p>No Accessibility or ADB required. Mouse cursor &amp; full keyboard active when mirror window is focused.</p>
+          </div>
+          <div class="card">
+            <h4>Clipboard Sync</h4>
+            <p>Mac ↔ Phone sync over encrypted Wi-Fi. Includes foreground tap fallback if Android is backgrounded.</p>
+          </div>
+          <div class="card">
+            <h4>Multi-Device Ready</h4>
+            <p>Connect multiple phones over Wi-Fi in separate mirror windows; Bluetooth HID routes to the focused window.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+    <div class="window-footer"><span>DroidBridge v2.0.0</span></div>
+  </div>
+
+  <!-- 2. PAIRING FLOW -->
+  <div id="view-pair" class="mac-window">
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+      </div>
+      <div class="titlebar-title">Pair New Phone</div>
+      <div style="width: 52px;"></div>
+    </div>
+    <div class="centered-pane">
+      <div class="sheet-box">
+        <h3 style="font-size: 17px;">Step 1: Verify Wi-Fi Pairing Code</h3>
+        <p style="font-size: 12px; color: var(--muted);">Confirm this 6-digit code matches the DroidBridge app on your phone:</p>
+        <div class="code-box">537 797</div>
+        <h3 style="font-size: 15px; margin-top: 6px;">Step 2: One-Time Bluetooth HID Bond</h3>
+        <p style="font-size: 12px; color: var(--muted); line-height: 1.5;">
+          To control your phone with your Mac keyboard &amp; mouse (without Accessibility or ADB):
+        </p>
+        <ol style="font-size: 12px; color: var(--muted); line-height: 1.6; padding-left: 18px;">
+          <li>Click <strong>Open Bluetooth Settings</strong> below.</li>
+          <li>Make your Android phone discoverable in its Bluetooth settings.</li>
+          <li>Select your phone in macOS Bluetooth Settings and click <strong>Connect</strong>.</li>
+          <li>Confirm the pairing prompt on both devices. Once bonded, it reconnects automatically.</li>
+        </ol>
+        <div>
+          <a href="x-apple.systempreferences:com.apple.BluetoothSettings" class="btn btn-secondary" style="text-decoration: none; font-size: 12px;">🔗 Open Bluetooth Settings</a>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;">
+          <button class="btn btn-secondary" onclick="showView('empty', document.querySelectorAll('.preview-btn')[0])">Cancel</button>
+          <button class="btn btn-primary" onclick="showView('hub', document.querySelectorAll('.preview-btn')[2])">Confirm &amp; Connect</button>
+        </div>
+      </div>
+    </div>
+    <div class="window-footer"><span>DroidBridge v2.0.0</span></div>
+  </div>
+
+  <!-- FLOATING PHONE MIRRORING WINDOW -->
+  <div id="mirror-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); align-items: center; justify-content: center; z-index: 100;">
+    <div class="mac-window mirror-window active" style="display: flex;">
+      <div class="titlebar">
+        <div class="traffic-lights">
+          <div class="dot red" style="cursor: pointer;" onclick="closeMirrorWindow()" title="Close"></div>
+          <div class="dot yellow"></div>
+          <div class="dot green"></div>
+        </div>
+        <div class="titlebar-title">Galaxy S24 Ultra</div>
+        <div class="pill"><span class="status-dot on"></span> Live</div>
+      </div>
+      <div class="mirror-toolbar">
+        <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px;">⌨️ Input: ON</button>
+        <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px;">🔊 Audio</button>
+        <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 11px;">📋 Clip</button>
+        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 11px;" onclick="closeMirrorWindow()">Stop</button>
+      </div>
+      <div class="mirror-stage">
+        <div class="phone-bezel">
+          <div class="phone-notch"></div>
+          <div class="cursor-indicator" title="Bluetooth HID Mouse Cursor"></div>
+          <div class="phone-widgets">
+            <div class="app-icon">💬</div>
+            <div class="app-icon">📷</div>
+            <div class="app-icon">🌐</div>
+            <div class="app-icon">⚙️</div>
+          </div>
+        </div>
+        <div class="nav-pill-bar">
+          <button class="nav-btn">◀ Back</button>
+          <button class="nav-btn">● Home</button>
+          <button class="nav-btn">■ Recents</button>
+        </div>
+      </div>
+    </div>
+    <div class="window-footer"><span>DroidBridge v2.0.0</span></div>
+  </div>
+
+  <script>
+    function showView(id, btn) {
+      document.querySelectorAll('.mac-window:not(.mirror-window)').forEach(w => w.classList.remove('active'));
+      document.getElementById('view-' + id).classList.add('active');
+      document.querySelectorAll('.preview-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+    function openMirrorWindow() {
+      document.getElementById('mirror-overlay').style.display = 'flex';
+    }
+    function closeMirrorWindow() {
+      document.getElementById('mirror-overlay').style.display = 'none';
+    }
+    function toggleSettings() {
+      const panel = document.getElementById('device-settings-panel');
+      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    }
+  </script>
+</body>
+</html>

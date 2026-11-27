@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DroidBridge — Android UI/UX Preview</title>
+  <style>
+    :root {
+      --bg: #0b0d11;
+      --phone-bg: #12151c;
+      --card-bg: #1c202b;
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --green: #22c55e;
+      --red: #ef4444;
+      --font: -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: radial-gradient(circle at top left, #1e293b, #0b0d11 65%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      gap: 20px;
+    }
+
+    .preview-bar {
+      display: flex;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .preview-btn {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .preview-btn:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .preview-btn.active { background: var(--accent); color: #fff; }
+
+    .android-frame {
+      width: 370px;
+      height: 740px;
+      background: var(--phone-bg);
+      border: 8px solid #262a35;
+      border-radius: 38px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .android-frame.active { display: flex; }
+
+    .status-bar {
+      height: 28px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .app-bar {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+    .app-bar h1 { font-size: 18px; font-weight: 600; }
+
+    .content {
+      flex: 1;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card h3 { font-size: 14px; font-weight: 600; }
+    .card p { font-size: 12px; color: var(--muted); line-height: 1.45; }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text); border: 1px solid var(--border); }
+    .btn-danger { background: rgba(239, 68, 68, 0.18); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    .pill {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+
+    .perm-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .perm-row:last-child { border-bottom: none; }
+
+    .code-box {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-align: center;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .footer {
+      padding: 10px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="preview-bar">
+    <button class="preview-btn active" onclick="showView('empty', this)">1. No Mac Connected</button>
+    <button class="preview-btn" onclick="showView('pair', this)">2. Connection Flow</button>
+    <button class="preview-btn" onclick="showView('connected', this)">3. Mac Connected</button>
+  </div>
+
+  <!-- 1. NO MAC CONNECTED -->
+  <div id="view-empty" class="android-frame active">
+    <div class="status-bar"><span>9:41</span><span>5G · 88%</span></div>
+    <div class="app-bar"><h1>DroidBridge</h1></div>
+    <div class="content">
+      <div class="card" style="text-align: center; align-items: center; padding: 24px 16px;">
+        <div style="font-size: 36px;">💻</div>
+        <h3>No Mac Connected</h3>
+        <p>Pair with your Mac over Wi-Fi and Bluetooth to mirror your screen, type &amp; click from Mac, and sync your clipboard.</p>
+        <button class="btn btn-primary" style="margin-top: 8px;" onclick="showView('pair', document.querySelectorAll('.preview-btn')[1])">Pair with Mac</button>
+      </div>
+
+      <div class="card">
+        <h3>Required Permissions</h3>
+        <div class="perm-row"><span>Local Network (Wi-Fi)</span><span class="pill"><span class="dot"></span> Granted</span></div>
+        <div class="perm-row"><span>Bluetooth</span><span class="pill"><span class="dot"></span> Granted</span></div>
+        <div class="perm-row"><span>Notifications</span><span class="pill"><span class="dot"></span> Granted</span></div>
+      </div>
+    </div>
+    <div class="footer">DroidBridge v2.0.0</div>
+  </div>
+
+  <!-- 2. CONNECTION FLOW -->
+  <div id="view-pair" class="android-frame">
+    <div class="status-bar"><span>9:41</span><span>5G · 88%</span></div>
+    <div class="app-bar"><h1>Pair with Mac</h1></div>
+    <div class="content">
+      <div class="card">
+        <h3>Step 1: Confirm Wi-Fi Code</h3>
+        <p>Verify this 6-digit code matches the DroidBridge app on your Mac:</p>
+        <div class="code-box">537 797</div>
+      </div>
+
+      <div class="card">
+        <h3>Step 2: Bluetooth HID Bond</h3>
+        <p>Accept the Bluetooth pairing request from your Mac when prompted. This one-time bond enables Mac keyboard &amp; mouse control without Accessibility or ADB.</p>
+      </div>
+
+      <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+        <button class="btn btn-primary" onclick="showView('connected', document.querySelectorAll('.preview-btn')[2])">Confirm &amp; Connect</button>
+        <button class="btn btn-secondary" onclick="showView('empty', document.querySelectorAll('.preview-btn')[0])">Cancel</button>
+      </div>
+    </div>
+    <div class="footer">DroidBridge v2.0.0</div>
+  </div>
+
+  <!-- 3. MAC CONNECTED -->
+  <div id="view-connected" class="android-frame">
+    <div class="status-bar"><span>9:41</span><span>5G · 88%</span></div>
+    <div class="app-bar">
+      <h1>DroidBridge</h1>
+      <span class="pill"><span class="dot"></span> Connected</span>
+    </div>
+    <div class="content">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3>Jayanth's MacBook Pro</h3>
+          <span class="pill"><span class="dot"></span> Wi-Fi + BT</span>
+        </div>
+        <p>Ready for screen mirroring, Bluetooth HID input, and clipboard sync.</p>
+      </div>
+
+      <button class="btn btn-primary">Start Screen Mirroring</button>
+
+      <div class="card">
+        <h3>Clipboard Sync</h3>
+        <p>Auto-syncs when DroidBridge is active. If backgrounded, tap below to sync.</p>
+        <button class="btn btn-secondary">📋 Sync Clipboard Now</button>
+      </div>
+
+      <button class="btn btn-danger" style="margin-top: auto;">Disconnect Mac</button>
+    </div>
+    <div class="footer">DroidBridge v2.0.0</div>
+  </div>
+
+  <script>
+    function showView(id, btn) {
+      document.querySelectorAll('.android-frame').forEach(w => w.classList.remove('active'));
+      document.getElementById('view-' + id).classList.add('active');
+      document.querySelectorAll('.preview-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>
