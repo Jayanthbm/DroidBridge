@@ -83,10 +83,33 @@ struct PhoneDevice: Identifiable, Hashable {
 }
 
 struct PairingSession: Identifiable, Hashable {
-    let id = UUID()
+    let id: UUID
+    let sessionID: UUID?
     let deviceID: String
     let deviceName: String
+    let phoneModel: String
+    let androidVersion: String
+    let batteryLevel: Int
     let code: String
+
+    init(
+        sessionID: UUID? = nil,
+        deviceID: String,
+        deviceName: String,
+        phoneModel: String = "",
+        androidVersion: String = "",
+        batteryLevel: Int = 0,
+        code: String
+    ) {
+        self.id = sessionID ?? UUID()
+        self.sessionID = sessionID
+        self.deviceID = deviceID
+        self.deviceName = deviceName
+        self.phoneModel = phoneModel
+        self.androidVersion = androidVersion
+        self.batteryLevel = batteryLevel
+        self.code = code
+    }
 }
 
 struct ToastMessage: Identifiable, Equatable {
@@ -106,13 +129,24 @@ final class AppModel {
     var pairing: PairingSession?
     var focusedDeviceID: String?
     var toast: ToastMessage?
+    var isNetworkReady = false
+    var isWaitingForPhone = false
+    var isConfirmingPairing = false
+    var networkError: String?
 
     @ObservationIgnored private var toastTask: Task<Void, Never>?
-    @ObservationIgnored private var pairingsCompleted = 0
+    @ObservationIgnored private var lanServer: LanServer?
+    @ObservationIgnored private let runsDemo: Bool
 
     init() {
-        #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
+        #if DEBUG
+        runsDemo = arguments.contains("--demo-hub")
+            || arguments.contains("--demo-settings")
+            || arguments.contains("--demo-pairing")
+            || arguments.contains("--demo-error")
+            || arguments.contains("--demo-mirror")
+
         if arguments.contains("--demo-hub") || arguments.contains("--demo-settings") {
             devices = Self.catalogue.map { device in
                 var connected = device
@@ -130,7 +164,101 @@ final class AppModel {
             devices = [device]
             selectedDeviceID = device.id
         }
+        #else
+        runsDemo = false
         #endif
+
+        if !runsDemo {
+            startNetwork()
+        }
+    }
+
+    // MARK: Network
+
+    private func startNetwork() {
+        do {
+            let server = try LanServer()
+            server.eventHandler = { [weak self] event in
+                Task { @MainActor [weak self] in
+                    self?.handle(event)
+                }
+            }
+            lanServer = server
+            server.start()
+        } catch {
+            networkError = error.localizedDescription
+            showToast("LAN server failed: \(error.localizedDescription)", symbol: "wifi.exclamationmark")
+        }
+    }
+
+    private func handle(_ event: LanServerEvent) {
+        switch event {
+        case .ready(let port):
+            isNetworkReady = true
+            networkError = nil
+            print("DroidBridge LAN ready on port \(port)")
+
+        case .pairing(let request):
+            let formatted = SHA256Fingerprint.displayDigits(request.code)
+            let session = PairingSession(
+                sessionID: request.id,
+                deviceID: request.deviceID,
+                deviceName: request.name,
+                phoneModel: request.model,
+                androidVersion: request.osVersion,
+                batteryLevel: request.battery,
+                code: formatted
+            )
+            pairing = session
+            isWaitingForPhone = false
+            isConfirmingPairing = false
+            isPairingPresented = true
+
+        case .pairingEnded(let sessionID):
+            guard pairing?.sessionID == sessionID else { return }
+            pairing = nil
+            isWaitingForPhone = false
+            isConfirmingPairing = false
+            isPairingPresented = false
+
+        case .connected(let peer):
+            var device = PhoneDevice(
+                id: peer.deviceID,
+                name: peer.name,
+                modelName: peer.model,
+                androidVersion: peer.osVersion,
+                batteryLevel: peer.battery > 0 ? peer.battery : 100,
+                wiFi: .connected,
+                bluetooth: .idle
+            )
+            if let index = devices.firstIndex(where: { $0.id == peer.deviceID }) {
+                device.settings = devices[index].settings
+                if devices[index].bluetooth == .connected {
+                    device.bluetooth = .connected
+                }
+                devices[index] = device
+            } else {
+                devices.append(device)
+            }
+            selectedDeviceID = peer.deviceID
+            if pairing?.sessionID == peer.sessionID {
+                pairing = nil
+                isPairingPresented = false
+            }
+            isWaitingForPhone = false
+            isConfirmingPairing = false
+            showToast("\(peer.name) connected over Wi-Fi", symbol: "wifi")
+
+        case .disconnected(let deviceID, let reason):
+            guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
+            devices[index].wiFi = .reconnecting
+            showToast("Wi-Fi dropped: \(reason)", symbol: "wifi.exclamationmark")
+
+        case .failed(let message):
+            networkError = message
+            isNetworkReady = false
+            showToast("LAN server error: \(message)", symbol: "wifi.exclamationmark")
+        }
     }
 
     var selectedDevice: PhoneDevice? {
@@ -145,6 +273,17 @@ final class AppModel {
     // MARK: Pairing
 
     func beginPairing() {
+        if runsDemo {
+            beginDemoPairing()
+            return
+        }
+        isWaitingForPhone = true
+        isConfirmingPairing = false
+        pairing = nil
+        isPairingPresented = true
+    }
+
+    private func beginDemoPairing() {
         let pairedIDs = Set(devices.map(\.id))
         let candidate = Self.catalogue.first { !pairedIDs.contains($0.id) }
             ?? Self.catalogue[0]
@@ -153,18 +292,34 @@ final class AppModel {
         pairing = PairingSession(
             deviceID: candidate.id,
             deviceName: candidate.name,
+            phoneModel: candidate.modelName,
+            androidVersion: candidate.androidVersion,
+            batteryLevel: candidate.batteryLevel,
             code: formatted
         )
+        isWaitingForPhone = false
+        isConfirmingPairing = false
         isPairingPresented = true
     }
 
     func cancelPairing() {
+        if let sessionID = pairing?.sessionID {
+            lanServer?.cancelPairing(sessionID: sessionID)
+        }
         isPairingPresented = false
         pairing = nil
+        isWaitingForPhone = false
+        isConfirmingPairing = false
     }
 
     func confirmPairing() {
         guard let pairing else { return }
+        if let sessionID = pairing.sessionID {
+            isConfirmingPairing = true
+            lanServer?.confirmPairing(sessionID: sessionID)
+            return
+        }
+
         var newDevice = Self.catalogue.first { $0.id == pairing.deviceID } ?? Self.catalogue[0]
         newDevice.wiFi = .connected
         newDevice.bluetooth = .connected
@@ -174,7 +329,6 @@ final class AppModel {
         } else {
             devices.append(newDevice)
         }
-        pairingsCompleted += 1
         selectedDeviceID = newDevice.id
         self.pairing = nil
         isPairingPresented = false
@@ -232,14 +386,20 @@ final class AppModel {
     }
 
     func reconnect(deviceID: String) {
-        update(deviceID) {
-            $0.wiFi = .connected
-            $0.bluetooth = .connected
+        if runsDemo {
+            update(deviceID) {
+                $0.wiFi = .connected
+                $0.bluetooth = .connected
+            }
+            showToast("Reconnected securely", symbol: "wifi")
+            return
         }
-        showToast("Reconnected securely", symbol: "wifi")
+        guard let device = device(withID: deviceID) else { return }
+        showToast("Waiting for \(device.name) to reconnect over Wi-Fi", symbol: "arrow.clockwise")
     }
 
     func disconnect(deviceID: String) {
+        lanServer?.disconnect(deviceID: deviceID)
         guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
         let removed = devices.remove(at: index)
         if selectedDeviceID == deviceID {

@@ -94,7 +94,7 @@ fun PairingScreen(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Enter this six-digit code on ${state.session.name} to pair.",
+                text = "Confirm this six-digit code matches ${state.session.name}.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -128,13 +128,13 @@ fun PairingScreen(
                 Spacer(Modifier.height(12.dp))
                 PairingStep(1, "Open DroidBridge on your Mac.")
                 Spacer(Modifier.height(10.dp))
-                PairingStep(2, "Choose this phone from the device list.")
+                PairingStep(2, "Keep both devices on the same Wi-Fi network.")
                 Spacer(Modifier.height(10.dp))
                 PairingStep(3, "Confirm the same code shown above.")
             }
 
             Spacer(Modifier.height(18.dp))
-            if (state.isPairing) {
+            if (state.isPairing || !state.isPairingCodeReady) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(9.dp),
@@ -144,14 +144,15 @@ fun PairingScreen(
                         color = MaterialTheme.colorScheme.secondary,
                     )
                     Text(
-                        text = "Pairing with your Mac…",
+                        text = state.pairingStatus,
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.secondary,
+                        textAlign = TextAlign.Center,
                     )
                 }
             } else {
                 StatusPill(
-                    text = "Waiting for your Mac",
+                    text = "Code ready · compare on both devices",
                     icon = Icons.Rounded.Link,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -160,7 +161,7 @@ fun PairingScreen(
             Spacer(Modifier.height(16.dp))
             Button(
                 onClick = onPair,
-                enabled = !state.isPairing,
+                enabled = state.isPairingCodeReady && !state.isPairing,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
@@ -184,14 +185,17 @@ fun PairingScreen(
                         modifier = Modifier.size(19.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text("Pair with Mac", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = if (state.isPairingCodeReady) "Pair with Mac" else "Looking for Mac…",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
                 }
             }
             TextButton(onClick = onBack, enabled = !state.isPairing) {
                 Text("Cancel")
             }
             Text(
-                text = "Preview build · Pairing is simulated in Phase 1.",
+                text = "Secure TLS 1.3 · code verified on both devices",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,

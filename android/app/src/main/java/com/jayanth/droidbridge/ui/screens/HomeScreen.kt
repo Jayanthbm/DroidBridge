@@ -17,12 +17,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ScreenShare
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.LaptopMac
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.ScreenShare
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.Button
@@ -78,11 +78,15 @@ fun HomeScreen(
                 )
             }
             StatusPill(
-                text = if (session.connected) "Connected" else "Offline",
-                color = if (session.connected) {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.error
+                text = when {
+                    state.isConnecting -> "Connecting"
+                    session.connected -> "Connected"
+                    else -> "Offline"
+                },
+                color = when {
+                    state.isConnecting -> MaterialTheme.colorScheme.tertiary
+                    session.connected -> MaterialTheme.colorScheme.secondary
+                    else -> MaterialTheme.colorScheme.error
                 },
             )
         }
@@ -96,6 +100,7 @@ fun HomeScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = when {
+                    state.isConnecting -> "Reconnecting to your Mac."
                     !session.connected -> "Your Mac is offline."
                     session.mirroring -> "Mirroring preview."
                     else -> "Your Mac is ready."
@@ -106,6 +111,7 @@ fun HomeScreen(
             Spacer(Modifier.height(4.dp))
             Text(
                 text = when {
+                    state.isConnecting -> "Looking for ${session.name} on your local network."
                     !session.connected -> "Reconnect when both devices are back on the same local network."
                     session.mirroring -> "Screen mirroring is running in preview mode. Input routing arrives with the stream."
                     else -> "Mirror your screen, send a clipboard, or keep your phone within reach."
@@ -122,6 +128,7 @@ fun HomeScreen(
 
             MacCard(
                 session = session,
+                isConnecting = state.isConnecting,
                 onToggleMirroring = onToggleMirroring,
                 onReconnect = onReconnect,
             )
@@ -189,6 +196,7 @@ fun HomeScreen(
 @Composable
 private fun MacCard(
     session: MacSession,
+    isConnecting: Boolean,
     onToggleMirroring: () -> Unit,
     onReconnect: () -> Unit,
 ) {
@@ -221,11 +229,13 @@ private fun MacCard(
             }
             StatusPill(
                 text = when {
+                    isConnecting -> "Reconnecting"
                     !session.connected -> "Offline"
                     session.mirroring -> "Mirroring"
                     else -> "Ready"
                 },
                 color = when {
+                    isConnecting -> colors.tertiary
                     !session.connected -> colors.error
                     session.mirroring -> colors.tertiary
                     else -> colors.secondary
@@ -255,7 +265,7 @@ private fun MacCard(
                 },
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.ScreenShare,
+                    imageVector = Icons.AutoMirrored.Rounded.ScreenShare,
                     contentDescription = null,
                     modifier = Modifier.size(19.dp),
                 )
@@ -279,7 +289,7 @@ private fun MacCard(
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    text = if (session.mirroring) "Preview stream · Phase 1" else "Ready over Wi-Fi + Bluetooth",
+                    text = if (session.mirroring) "Preview stream · Phase 1" else "Ready over Wi-Fi",
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -287,6 +297,7 @@ private fun MacCard(
         } else {
             Button(
                 onClick = onReconnect,
+                enabled = !isConnecting,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -298,7 +309,10 @@ private fun MacCard(
                     modifier = Modifier.size(19.dp),
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Reconnect", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = if (isConnecting) "Reconnecting…" else "Reconnect",
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
         }
     }

@@ -8,12 +8,16 @@
 
 /* Begin PBXBuildFile section */
 		13E743757B4183E3BAE18219 /* MirrorWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBD906FAFB852A11D1CB676 /* MirrorWindowView.swift */; };
+		2999A01C3A6062B206E622B4 /* LanServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B4E25F718E08D772888239 /* LanServer.swift */; };
+		4B3856C03AB5324A559C5414 /* MacIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0C2857ACAE120CECF091DED /* MacIdentity.swift */; };
 		71362F2B3D5564A4F0FA08E4 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C185732F0552DF1FFD487E8A /* EmptyStateView.swift */; };
+		9682965CC602A3FAF25FD86F /* WireProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4B22D010B448B0D7EEFDBF /* WireProtocol.swift */; };
 		9CF9BD17418F84A2CD0927FB /* HubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB00066DA330BAD04235F40B /* HubView.swift */; };
 		AF29E1D6D777CA8EE05B6A3C /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE0EC3773E05116251CC0A7E /* Theme.swift */; };
 		CB2666E2DD7310F5F7219ED3 /* DroidBridgeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */; };
 		CB6143D98B298EECCB61558C /* PairingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0192DAF75048E77ED3B0FB0 /* PairingView.swift */; };
 		CC2220A6B0CEFB517C7BB7F0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F6E1877E7BB7820E01DF15 /* RootView.swift */; };
+		E02EA9FE0B1F73A0E1D6F2F3 /* PeerTrustStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3774EB96B770197031D7574E /* PeerTrustStore.swift */; };
 		FB5FF6934F252829F26AC8C4 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1096A49F87BA852FC5DF006 /* AppModel.swift */; };
 /* End PBXBuildFile section */
 
@@ -21,13 +25,17 @@
 		25E631C19E44A543080F575C /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
 		2CEBF104514A3E629C42448B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3774EB96B770197031D7574E /* PeerTrustStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerTrustStore.swift; sourceTree = "<group>"; };
 		5DBD906FAFB852A11D1CB676 /* MirrorWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorWindowView.swift; sourceTree = "<group>"; };
 		74F6E1877E7BB7820E01DF15 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
+		99B4E25F718E08D772888239 /* LanServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanServer.swift; sourceTree = "<group>"; };
+		9A4B22D010B448B0D7EEFDBF /* WireProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireProtocol.swift; sourceTree = "<group>"; };
 		A0192DAF75048E77ED3B0FB0 /* PairingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingView.swift; sourceTree = "<group>"; };
 		BB00066DA330BAD04235F40B /* HubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HubView.swift; sourceTree = "<group>"; };
 		C185732F0552DF1FFD487E8A /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		CE0EC3773E05116251CC0A7E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		E0C2857ACAE120CECF091DED /* MacIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacIdentity.swift; sourceTree = "<group>"; };
 		E1096A49F87BA852FC5DF006 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -39,6 +47,7 @@
 				753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */,
 				2CEBF104514A3E629C42448B /* Info.plist */,
 				73EEE0235770EC61AB865C06 /* Models */,
+				4571C37B8B61888DC28CF445 /* Network */,
 				39E086D1F9DAC5D46EB77B3F /* Views */,
 			);
 			path = DroidBridge;
@@ -55,6 +64,17 @@
 				CE0EC3773E05116251CC0A7E /* Theme.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		4571C37B8B61888DC28CF445 /* Network */ = {
+			isa = PBXGroup;
+			children = (
+				99B4E25F718E08D772888239 /* LanServer.swift */,
+				E0C2857ACAE120CECF091DED /* MacIdentity.swift */,
+				3774EB96B770197031D7574E /* PeerTrustStore.swift */,
+				9A4B22D010B448B0D7EEFDBF /* WireProtocol.swift */,
+			);
+			path = Network;
 			sourceTree = "<group>";
 		};
 		73EEE0235770EC61AB865C06 /* Models */ = {
@@ -144,10 +164,14 @@
 				CB2666E2DD7310F5F7219ED3 /* DroidBridgeApp.swift in Sources */,
 				71362F2B3D5564A4F0FA08E4 /* EmptyStateView.swift in Sources */,
 				9CF9BD17418F84A2CD0927FB /* HubView.swift in Sources */,
+				2999A01C3A6062B206E622B4 /* LanServer.swift in Sources */,
+				4B3856C03AB5324A559C5414 /* MacIdentity.swift in Sources */,
 				13E743757B4183E3BAE18219 /* MirrorWindowView.swift in Sources */,
 				CB6143D98B298EECCB61558C /* PairingView.swift in Sources */,
+				E02EA9FE0B1F73A0E1D6F2F3 /* PeerTrustStore.swift in Sources */,
 				CC2220A6B0CEFB517C7BB7F0 /* RootView.swift in Sources */,
 				AF29E1D6D777CA8EE05B6A3C /* Theme.swift in Sources */,
+				9682965CC602A3FAF25FD86F /* WireProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

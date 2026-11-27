@@ -39,12 +39,14 @@ import com.jayanth.droidbridge.ui.screens.PairingScreen
 @Composable
 fun DroidBridgeApp(
     initialScreen: String? = null,
+    autoPair: Boolean = false,
     viewModel: AppViewModel = viewModel(),
 ) {
     val state = viewModel.state
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(initialScreen) {
+    LaunchedEffect(initialScreen, autoPair) {
+        viewModel.setAutoPair(autoPair)
         viewModel.applyDebugScreen(initialScreen)
     }
 

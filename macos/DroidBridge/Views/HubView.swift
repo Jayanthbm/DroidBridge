@@ -254,7 +254,7 @@ struct DeviceDetailView: View {
                         color: device.bluetooth == .connected ? AppTheme.green : AppTheme.amber
                     )
                 }
-                Text("Pinned TLS 1.3 · mock session")
+                Text("Pinned TLS 1.3 · secure session")
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
             }

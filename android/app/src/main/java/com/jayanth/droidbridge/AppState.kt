@@ -32,10 +32,19 @@ data class MacSession(
 data class AppState(
     val screen: AppScreen = AppScreen.Onboarding,
     val permissions: List<PermissionItem> = defaultPermissions,
-    val pairingCode: String = "392641",
-    val session: MacSession = MacSession(),
+    val pairingCode: String = "------",
+    val session: MacSession = MacSession(
+        detail = "Waiting for a secure connection",
+        connected = false,
+        clipboardSync = false,
+        lastClipboardSync = "Not synced",
+    ),
     val hasPaired: Boolean = false,
     val isPairing: Boolean = false,
+    val isPairingCodeReady: Boolean = false,
+    val isSearching: Boolean = true,
+    val isConnecting: Boolean = false,
+    val pairingStatus: String = "Searching for your Mac…",
     val message: String? = null,
 ) {
     val grantedCount: Int get() = permissions.count { it.granted }

@@ -12,9 +12,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val initialScreen = intent.getStringExtra("screen")
+        val autoPair = intent.getBooleanExtra("autoPair", false)
         setContent {
             DroidBridgeTheme {
-                DroidBridgeApp(initialScreen = initialScreen)
+                DroidBridgeApp(initialScreen = initialScreen, autoPair = autoPair)
             }
         }
     }
