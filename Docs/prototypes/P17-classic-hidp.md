@@ -243,6 +243,37 @@ neither side was confirmed. That is the correct outcome, not a pairing pass. The
 `pairing-prompt-verification.log`, a name that implied a verification that never happened. The bond used by
 every other Phase 5 row is the pre-existing Classic bond, so those rows are unaffected.
 
+## Fresh-bond attempt 2026-11-27 — macOS 27 cannot reply to the pairing code (row still unmeasured)
+
+Run conditions: USB connected, `adb_enabled=1`, `adb_wifi=0`. ADB navigated the phone's Bluetooth
+settings and, **after** verifying that the two six-digit values matched, tapped **Pair**; that consent
+was granted through automation at the owner's instruction. Nothing else on the phone was touched.
+
+What was measured:
+
+- The existing Classic bond was removed on both sides (phone Settings, Mac `blueutil --unpair`) to test
+  the row on a genuinely fresh bond.
+- Mac-initiated pairing reached the phone reliably. **Five separate attempts** produced matching codes
+  on both screens: `111169`, `160297`, `821954`, `820963`, `482504`.
+- Answering the prompt through the app produced:
+  `pairing confirmation: accept` →
+  `IOBluetoothDevicePair BluetoothHCIUserConfirmationRequestReply no-op. Should be done at CB Layer` →
+  `Pairing failed (0x0000001F)`. On macOS 27 the public `IOBluetoothDevicePair.replyUserConfirmation`
+  path no longer delivers the numeric-comparison reply, so **the app's own Accept button cannot complete
+  a fresh bond on this OS**, even though the codes matched.
+- `blueutil --pair` failed identically (`0x1f`) with the code answered yes on the Mac and Pair tapped on
+  the phone, so this is not specific to the app's implementation.
+- The phone-initiated path used in 2026-11-20 is unavailable on macOS 27: `blueutil --discoverable 1`
+  fails (`Failed to switch bluetooth discoverable on in 10 seconds`) and reads `0` even with the
+  Bluetooth settings pane frontmost, and the phone's scan lists no available devices.
+- Net result: **no bond exists on either side** after these attempts. The row is still unmeasured, and the
+  earlier Phase 5 rows remain valid only because they used a bond created on an earlier macOS.
+
+Consequence recorded rather than papered over: the HID keyboard needs a Classic bond, and on macOS 27
+this build cannot create one. Recovery candidates are an Android-initiated bond to a known address (no
+discovery needed, but it requires `BLUETOOTH_CONNECT` in a receive-side experiment module — a permission
+addition that needs owner approval) or a macOS version that still honours the reply.
+
 ## Production keyboard and text entry measured 2026-11-27 (promoted build, S24 Ultra)
 
 Run conditions: USB connected, `adb_enabled=1`, `adb_wifi=0`, screen held on. ADB was used for install,

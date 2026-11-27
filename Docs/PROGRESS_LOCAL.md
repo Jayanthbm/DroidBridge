@@ -1,3 +1,26 @@
+**2026-11-27 (fresh-bond attempt: macOS 27 cannot answer the pairing code):**
+
+Ran the Phase 5 pairing-prompt row on a genuinely fresh bond, as the owner directed: removed the Classic
+bond on the phone (Bluetooth settings) and the Mac (`blueutil --unpair`). Five Mac-initiated attempts
+produced matching codes on both screens (`111169`, `160297`, `821954`, `820963`, `482504`), but the reply
+never landed: `pairing confirmation: accept` →
+`IOBluetoothDevicePair BluetoothHCIUserConfirmationRequestReply no-op. Should be done at CB Layer` →
+`Pairing failed (0x0000001F)`. `blueutil --pair`, with the same code answered yes on the Mac and Pair
+tapped on the phone, failed the same way (`0x1f`), so this is a macOS 27 platform regression in the public
+IOBluetooth reply path, not a defect in the app's Accept button.
+
+The phone-initiated route that created the original bond (2026-11-20) is unavailable on this macOS:
+`blueutil --discoverable 1` fails and reads `0` even with the Bluetooth pane frontmost, and the phone's
+scan shows no available devices. **Net state: no Classic bond on either side**, so the HID keyboard is
+offline until a bond is restored. Recovery candidates: an Android-initiated bond to a known address (no
+discovery needed, but it needs `BLUETOOTH_CONNECT` in a receive-side experiment — a permission addition
+that needs owner approval), or a macOS that still honours the reply. Recorded in the P17 report; the row
+stays **unmeasured**, not waived, until the owner chooses a recovery path.
+
+ADB was used only for setup on the phone (Bluetooth settings navigation) and for the **Pair** tap after the
+codes were verified to match; that consent was granted through automation at the owner's instruction. No
+ADB input entered the HID path.
+
 **2026-11-27 (personal-use scope settled for the remaining rows):**
 
 Asked the owner to decide each remaining row instead of leaving it "conditional":

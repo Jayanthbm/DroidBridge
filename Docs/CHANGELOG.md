@@ -1,3 +1,13 @@
+## Fresh Classic bond blocked by macOS 27's pairing reply (2026-11-27)
+
+- **No code change.** Tested the Phase 5 pairing-prompt row on a genuinely fresh bond. Codes matched on
+  five separate attempts, but macOS 27 reports
+  `BluetoothHCIUserConfirmationRequestReply no-op. Should be done at CB Layer` and the pairing fails with
+  `0x0000001F`, from both the app and `blueutil`. The Mac also cannot be made discoverable
+  programmatically, so the phone-initiated path is unavailable.
+- **Impact:** the HID keyboard has no bond until one is restored; recovery needs an Android-initiated
+  bond or a macOS that honours the reply. Details in the P17 report.
+
 ## Personal-use scope settled for the remaining rows (2026-11-27)
 
 - **No behaviour change.** The owner confirmed Mac→phone keyboard/text entry is in use, so those rows
