@@ -40,7 +40,13 @@ Then the acceptance pass itself, with **USB disconnected and both USB and wirele
 DOWN,LEFT,RIGHT` gave `DOWN: 1 / LEFT: 1 / RIGHT: 1` with `UP: 0`, and `--harness-type "Accept2026"`
 put `Accept2026` in the field, 10/10 characters. The first type attempt failed by auto-repeating
 `666666…`: the neutral release went out back to back with the press and the phone dropped it, so the
-key stayed down. `sendKeyReport` now schedules the release 60 ms after the press; macOS tests 104/104. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+key stayed down. `sendKeyReport` now schedules the release 60 ms after the press; macOS tests 104/104.
+
+The receiver's arrow pad was then covered with all four buttons, still with nothing attached and ADB
+unused (`adb devices` empty): from `UP: 2 / DOWN: 0 / LEFT: 0 / RIGHT: 0` the owner's DOWN, LEFT and
+RIGHT taps took each counter to 1, and an extra UP tap took it 2 → 3 — recorded as observed, not
+reinterpreted. Pad taps are local controls, so they prove the receiver's counting and UI rather than
+the Bluetooth link, which the acceptance pass covers. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
 no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
 declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
 `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.

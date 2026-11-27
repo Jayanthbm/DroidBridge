@@ -240,5 +240,30 @@ Owner's reading: the field contained exactly **`Accept2026`**, with no auto-repe
 
 Arrow input and text input both pass over the fresh Classic bond with **USB disconnected and USB and
 wireless debugging off**. The device-side readings are the owner's; the sending side is the Mac log.
-Not covered by this pass: the arrow pad's DOWN/LEFT/RIGHT buttons (only UP was tapped, in the earlier
-ADB-connected run), pointer/gesture control, and any second phone.
+Not covered by this pass: pointer/gesture control and any second phone. (The pad's DOWN/LEFT/RIGHT
+buttons were covered separately straight afterwards — see the next section.)
+
+## Receiver arrow pad, all four buttons (2026-11-27, after the acceptance pass)
+
+State: **USB disconnected: yes; USB debugging: off; wireless debugging: off.** `adb devices` listed 0
+devices at the start of this run, so nothing was read by ADB — the readings below are the owner's
+screen observations, and the taps were the owner's finger on the phone. The Mac app was not running
+and Bluetooth was not involved: a pad tap is a local control on the receiver, not HID input, so this
+covers the receiver's own counting and UI rather than the link.
+
+Baseline when the pad was tapped: `UP: 2    DOWN: 0 / LEFT: 0    RIGHT: 0`.
+
+| Tap | Counter after | Move |
+|---|---|---|
+| DOWN | `DOWN: 1` | 0 → 1 |
+| LEFT | `LEFT: 1` | 0 → 1 |
+| RIGHT | `RIGHT: 1` | 0 → 1 |
+| UP (unrequested extra tap) | `UP: 3` | 2 → 3 |
+
+Owner's reading after the pass: `UP: 3`, `DOWN: 1`, `LEFT: 1`, `RIGHT: 1`. Each of DOWN, LEFT and
+RIGHT moved exactly once. `UP` also gained one (2 → 3) from a tap that was not part of the requested
+DOWN/LEFT/RIGHT sequence; it is recorded as observed rather than reinterpreted as a fourth intended
+tap.
+
+Because this run was performed with ADB unavailable, these are owner-reported device values, not
+ADB-collected ones. The next run with ADB attached can confirm them mechanically if needed.

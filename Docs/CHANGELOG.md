@@ -1,3 +1,11 @@
+## Arrow pad covered button by button (2026-11-27)
+
+- With USB disconnected and both debuggings off (`adb devices` empty), the owner tapped the receiver's
+  arrow pad: DOWN, LEFT and RIGHT each moved its counter 0 → 1 from `UP: 2 / DOWN: 0 / LEFT: 0 /
+  RIGHT: 0`; an extra UP tap (2 → 3) is recorded as observed.
+- A pad tap is a local control, not HID input, so this covers the receiver's own counting and UI; the
+  Bluetooth send path is covered by the acceptance pass above.
+
 ## P17 acceptance pass with debugging off; key release now paced (2026-11-27)
 
 - Acceptance run with **USB disconnected and USB and wireless debugging off**: the Mac sent `DOWN`,

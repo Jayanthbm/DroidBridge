@@ -308,6 +308,10 @@ the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D
   `666666…` because the neutral release was sent back to back with the press and dropped; the release
   is now scheduled 60 ms later, and macOS tests stay 104/104. Device-side values in that pass are the
   owner's screen readings, not ADB.
+- **Arrow pad fully covered** right after that pass, still with USB disconnected and both debuggings
+  off (`adb devices` empty, owner-tapped): from `UP: 2 / DOWN: 0 / LEFT: 0 / RIGHT: 0`, the DOWN, LEFT
+  and RIGHT buttons each moved their own counter to 1; `UP` gained one extra tap (2 → 3) that was not
+  part of the requested sequence and is recorded as observed.
 - Full transcripts: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md),
   [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 
