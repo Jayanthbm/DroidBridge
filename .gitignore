@@ -1,0 +1,21 @@
+# Local tooling
+.perch/
+.DS_Store
+
+# Android / Gradle / Kotlin
+.gradle/
+.kotlin/
+build/
+**/build/
+local.properties
+*.apk
+*.aab
+*.iml
+.idea/
+
+# macOS / Xcode
+DerivedData/
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+.swiftpm/
