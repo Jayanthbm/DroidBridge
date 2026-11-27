@@ -14,6 +14,14 @@
 - A pad tap is a local control, not HID input, so this covers the receiver's own counting and UI; the
   Bluetooth send path is covered by the acceptance pass above.
 
+## Bluetooth pairing is manual on macOS 27 (2026-11-27)
+
+- macOS 27 cannot complete programmatic pairing from the app or from `blueutil` (`0x1F`) and cannot be
+  made discoverable, so the pairing-prompt row is waived (ADR-063). Pair the phone once by hand, then
+  connect from the app: the bond persists across app restarts and rebuilds.
+- Phase 1 and Phase 5 are closed for personal use; the P17 text-entry logs are archived, and Phase 6's
+  accessibility/permission-UX pass stays reduced by the owner while Phase 8 call control is out of scope.
+
 ## P17 acceptance pass with debugging off; key release now paced (2026-11-27)
 
 - Acceptance run with **USB disconnected and USB and wireless debugging off**: the Mac sent `DOWN`,

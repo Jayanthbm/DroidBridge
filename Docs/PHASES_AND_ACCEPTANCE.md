@@ -158,6 +158,14 @@ Exit: 30-minute stable same-Wi-Fi session; protected content remains protected; 
 
 Exit: evidence-based GO/CONDITIONAL/NO-GO for the exact supported input scope. Until then, mirroring remains view-only; do not relax constraints to obtain a passing result.
 
+Status: **closed 2026-11-27.** GO for Classic HIDP keyboard input (ADR-041), implemented in the product
+app (ADR-050) and measured on the S24 Ultra with USB disconnected and both USB and wireless debugging
+off: arrows, paced US-ASCII text (`DroidBridge123` 14/14, `Accept2026` 10/10) and the receiver's own
+arrow pad. Pairing is a **manual, one-time action on macOS 27** and the programmatic pairing-prompt row
+is waived (ADR-063) because the OS cannot complete it with or without the app in the path, and the Mac
+cannot be made discoverable. Pointer/touch-equivalent control is not claimed. Evidence:
+`Docs/evidence/p17/`.
+
 ## Phase 6 — Hardening and UX
 - permission explanations.
 - pairing revocation.
@@ -184,8 +192,10 @@ Status: **media audio shipped** (owner-approved 2026-11-26, ADR-057: AAC-LC over
 measured 2026-11-26 on the S24 Ultra with matching phone/Mac RMS and measured silence for opted-out apps
 and for `ALLOW_CAPTURE_BY_NONE`). **Call audio stays NO-GO**: cellular voice is not capturable and
 `USAGE_VOICE_COMMUNICATION` measures as digital silence (ADR-045); no dialer role was requested and no
-call recording exists. Open for this phase: the A/V offset is unmeasured and the OnePlus path is
-untested. The `RECORD_AUDIO` denial path was measured on the S24 (prompt shown, `granted=false`, switch
+call recording exists. Closed for personal use 2026-11-27: the A/V offset was measured at **+276 ms** (audio later than
+video) and is **accepted as a documented limitation** with no re-timing work (owner decision
+2026-11-27); the OnePlus audio path is waived with the other second-device rows. Call control is not
+used and is closed as out of scope rather than deferred work. The `RECORD_AUDIO` denial path was measured on the S24 (prompt shown, `granted=false`, switch
 turns itself off, screen-only share continues), and switching the audio toggle off sends no audio at all.
 
 Exit: documented feasibility decision.

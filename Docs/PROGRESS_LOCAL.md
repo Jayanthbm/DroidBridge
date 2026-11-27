@@ -1,3 +1,28 @@
+**2026-11-27 (Phase 1 and Phase 5 closed for personal use):**
+
+Went through the remaining open items against the personal-use scope and closed the ones that could not
+change a decision, rather than leaving them to age as "pending":
+
+- **P17 pairing prompt → waived (ADR-063).** macOS 27 cannot complete programmatic pairing from the app
+  or from `blueutil` (`0x1F`), and the Mac cannot be made discoverable, so no code change can satisfy
+  that row. Pairing is a manual, one-time action per peer; the bond then persists across restarts and
+  rebuilds (P15). The app's confirmation panel stays as the place to compare codes.
+- **Captured P17 logs → now archived.** `Docs/evidence/p17/fresh-bond-input-2026-11-27.md` holds the
+  protocol/report lines, `getevent` and `dumpsys input` output, receiver logcat, the debug-off
+  acceptance pass (`DOWN`/`LEFT`/`RIGHT` = 1 each, `Accept2026` 10/10) and full arrow-pad coverage, so
+  the "summary only, raw log pending" wording is retired.
+- **P08 shade-freeze root cause → closed as not pursued.** Behaviour is measured as fixed (ADR-058); the
+  historical cause stays unidentified by decision, recorded in the P08 report as behavioural closure.
+- **Phase 8 → closed.** Call audio is a platform NO-GO, call control is not used, and the +276 ms A/V
+  offset is an accepted documented limitation.
+- **Phase 6 accessibility/permission-UX pass → stays reduced, not passed**, as the owner directed on
+  2026-11-26; the lightweight permission audit from earlier today is the part that carries weight.
+- **Phase 9 release → stays deferred** (ADR-033); the only habit kept is signing local Release builds
+  with the stable Apple Development identity so the Keychain ACL survives.
+- Status files updated in the same pass: `PHASE_STATUS.md` (Phase 1, Phase 4, Phase 5 and Phase 8 rows,
+  current position and limitations), `Docs/PHASES_AND_ACCEPTANCE.md` (Phase 5 and Phase 8 status text),
+  `Docs/TECHNICAL_DECISIONS.md` (ADR-063) and the P08 report.
+
 **2026-11-27 (fresh-bond attempt: macOS 27 cannot answer the pairing code):**
 
 Ran the Phase 5 pairing-prompt row on a genuinely fresh bond, as the owner directed: removed the Classic
