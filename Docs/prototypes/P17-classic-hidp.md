@@ -1,6 +1,6 @@
 # P17 — macOS Bluetooth Classic HIDP feasibility
 
-**Status:** **GO on both the OnePlus Nord (Android 12 / API 31) and the target S24 Ultra (Android 17 / API 37)** with DroidBridge's own independent implementation. `P17ClassicHIDP`, authored from the HID Profile transaction set and Apple's public `IOBluetooth` surface, publishes the HID SDP record, opens the L2CAP control (`0x0011`) and interrupt (`0x0013`) channels, and delivers arrow press/release reports that Android routes to a focused app. On the S24 the counters went `0/0/0/0 → 1/1/1/1`, Android reported `BTHH_CONN_STATE_CONNECTED` over `BT_TRANSPORT_BR_EDR`, and a 48-press burst landed `+12` per direction with no drops. **Acceptance run passed on the S24 Ultra with USB unplugged, USB debugging off and wireless debugging off**: 48 presses in one session took the receiver from `14/14/14/14` to `26/26/26/26` — 48 of 48 delivered, no drops, driven entirely from the Mac with no ADB channel available (`adb devices` returned zero entries). This is a GO for the Classic HIDP input route on both Android versions tested. It is not a production-input approval: the experiment sends one key per explicit user action, and open mapping, text entry and the rest of the input matrix remain unproven.
+**Status:** **GO on both the OnePlus Nord (Android 12 / API 31) and the target S24 Ultra (Android 17 / API 37)** with DroidBridge's own independent implementation. `P17ClassicHIDP`, authored from the HID Profile transaction set and Apple's public `IOBluetooth` surface, publishes the HID SDP record, opens the L2CAP control (`0x0011`) and interrupt (`0x0013`) channels, and delivers arrow press/release reports that Android routes to a focused app. On the S24 the counters went `0/0/0/0 → 1/1/1/1`, Android reported `BTHH_CONN_STATE_CONNECTED` over `BT_TRANSPORT_BR_EDR`, and a 48-press burst landed `+12` per direction with no drops. **Acceptance run passed on the S24 Ultra with USB unplugged, USB debugging off and wireless debugging off**: 48 presses in one session took the receiver from `14/14/14/14` to `26/26/26/26` — 48 of 48 delivered, no drops, driven entirely from the Mac with no ADB channel available (`adb devices` returned zero entries). This is a GO for the Classic HIDP input route on both Android versions tested. It is **not** a production-input approval. The promoted product app now implements a US keyboard mapping and paced ASCII text entry (`HIDKeyboardMap`, ADR-050), and one paced run on this device delivered `DroidBridge123` 14/14 characters (2026-11-27, below); that run is a recorded summary without an archived raw log, and pointer/touch-equivalent control, gestures and an input matrix remain unproven.
 
 **Related:** [P16 BLE HID](P16-ble-hid.md) (NO-GO on Android for BLE), [evidence](evidence/p17/README.md), ADR-041, ADR-042, R-35, R-36.
 
@@ -152,21 +152,21 @@ macOS **automatic termination** killed the upstream probe 16 seconds after the c
 
 ## Limitations — what this does not prove
 
-- **No S24 Ultra evidence.** The target device is untested; OnePlus Android 12 behaviour is preliminary and One UI may differ.
-- Keyboard arrows only. Pointer, consumer/system controls, text entry, drag, scroll, gestures and arbitrary touch-equivalent control are unproven. The receiver counts arrow keys; it does not show that a text field received characters.
+- **No S24 Ultra evidence (historical, for the 2026-11-20 run).** The target device rows follow in the Phase 5 sections; the OnePlus Android 12 result remains preliminary for One UI differences.
+- **Keyboard usages only.** Arrows, and on the promoted build US-ASCII characters typed into a focused `EditText`. Pointer, consumer/system controls, drag, scroll, gestures and arbitrary touch-equivalent control are unproven. Text entry is proven for one 14-character string in a Debug build with ADB attached; it is not a password-entry path (R-19).
 - Arrow presses are measured at 48 in one session (12 per direction, zero drops or duplicates) plus the earlier runs. Modifier handling, rollover, key repeat, simultaneous multi-key chords and long-session stability beyond one minute are untested.
 - Force-quit or crash recovery still requires cycling the phone's Bluetooth adapter.
 - Android 17 / One UI 9 masks password characters from physical keyboards (R-19), so HID typing is not a password-entry path.
 - No claim about secure/`FLAG_SECURE` apps, banking apps, or protected surfaces.
 - **Debugging was enabled** (`adb_enabled=1`) with ADB over Wi-Fi; final acceptance requires both debugging modes disabled. Out-of-range behaviour, supervision-timeout recovery and bond revocation were not measured.
-- Pairing had to be phone-initiated. Programmatic pairing from this app could not be completed on this Mac while another app held the single Classic pairing agent, so the app's own `IOBluetoothDevicePair` flow is implemented but **not proven end-to-end** here.
+- Pairing had to be phone-initiated. Programmatic pairing from this app could not be completed on this Mac while another app held the single Classic pairing agent, so the app's own `IOBluetoothDevicePair` flow is implemented but **not proven end-to-end** here; the 2026-11-26 attempt that compared codes refused a mismatch rather than confirming an unverified pair.
 - The AGPL test vehicle from the earlier feasibility pass cannot be shipped; nothing from it is in the repository.
 
 ## Conclusion
 
-**GO** for the Classic HIDP route on Android using DroidBridge's own implementation, demonstrated on one OnePlus Nord AC2001 / Android 12 device with USB disconnected. **BLE HOGP from this Mac to Android is NO-GO** (see [P16](P16-ble-hid.md) and ADR-041). What remains before any production input claim: reproduce on the **S24 Ultra**, repeat with **both debugging modes disabled**, and extend beyond arrow keys only if a requirement demands it. Treat the macOS Bluetooth privacy grant, the single pairing-agent slot and the one-session-per-connection rule as known environment constraints (ADR-042).
+**GO** for the Classic HIDP route on Android using DroidBridge's own implementation, demonstrated on one OnePlus Nord AC2001 / Android 12 device with USB disconnected. **BLE HOGP from this Mac to Android is NO-GO** (see [P16](P16-ble-hid.md) and ADR-041). The S24 Ultra reproduction and the both-debugging-modes-disabled run have since passed (Phase 5 rows below), and keyboard mapping plus paced text entry were added on 2026-11-27. What remains before a production input claim: the **pairing-prompt row** (a fresh bond answered and verified on both screens) and a **captured raw log** for the text-entry row. Treat the macOS Bluetooth privacy grant, the single pairing-agent slot and the one-session-per-connection rule as known environment constraints (ADR-042).
 
-## Phase 5 device-acceptance checklist (promoted build, pending 2026-11-25)
+## Phase 5 device-acceptance checklist (promoted build, opened 2026-11-25)
 
 The peripheral now lives in `DroidBridge.app` (ADR-050). The P17 evidence does not transfer to the
 promoted build without at least one verification run, so the next device session measures:
@@ -181,8 +181,14 @@ promoted build without at least one verification run, so the next device session
 | 6 | Cross-device | Repeat 2–4 on the OnePlus Nord (Android 12) and the S24 Ultra (Android 17) | Both PASS |
 
 Run conditions to record per row: USB connected yes/no, USB debugging, wireless debugging. The one-key-per-
-confirmation rule is unchanged; mapping, text entry and an input matrix remain out of scope until separately
-approved.
+confirmation rule is unchanged for single keys; the US keyboard mapping and paced text entry described below
+were added to the promoted build on 2026-11-27 under the owner's remote-keyboard scope. An input matrix
+(chords, key repeat, rollover) and pointer control remain out of scope until separately approved.
+
+**Row status at 2026-11-27:** rows 1 (publish), 3 (negotiation), 4 (arrows), 5 (clean shutdown) and 6
+(cross-device) pass on both devices — S24 Ultra 2026-11-24 and OnePlus Nord 2026-11-24. Row 4 also passes
+with USB unplugged and both debugging modes off from the P17 acceptance run (48/48 presses). **Row 2, the
+pairing prompt, is still unmeasured**, and the one attempt at it ended in a correct refusal (see below).
 
 Outstanding from 2026-11-24 (same session or next): the Mac→phone clipboard ack needs one reconnect; the P10
 cable-out variant wants the password dialog open while unplugged.
@@ -226,6 +232,35 @@ Both devices of record have now verified the promoted build end to end (publish 
 four confirmed arrows). What remains open for Phase 5: the **pairing-prompt row**, which needs a device
 whose HID bond is removed first (unpair on one side, reconnect, answer the SSP prompt), and that row is
 shared with the Android-side acceptance evidence for pairing UX.
+
+### Pairing-prompt attempt 2026-11-26 — refused, row still unmeasured
+
+A fresh bond could not be established: the Mac's programmatic numeric-comparison callback never fired (the
+documented single Classic pairing-agent conflict, above), and the harness compared the two six-digit values
+instead of guessing. They did **not** match (Mac `108952`, phone `456266` — the phone dialog was stale), so
+neither side was confirmed. That is the correct outcome, not a pairing pass. The transcript is
+`Docs/evidence/p17/pairing-mismatch-refused.log`; it was previously stored as
+`pairing-prompt-verification.log`, a name that implied a verification that never happened. The bond used by
+every other Phase 5 row is the pre-existing Classic bond, so those rows are unaffected.
+
+## Production keyboard and text entry measured 2026-11-27 (promoted build, S24 Ultra)
+
+Run conditions: USB connected, `adb_enabled=1`, `adb_wifi=0`, screen held on. ADB was used for install,
+diagnostics, screen wake and focusing the receiver field only; every functional keystroke travelled over the
+Classic HID link under test.
+
+- Receiver: `:experiments:bluetooth-hid` `HidReceiverActivity` with a focused `EditText`.
+- Harness: `--p17-hid --harness-publish --harness-connect c0-d5-e2-f6-d7-c2 --harness-type "DroidBridge123"`,
+  reports paced at 120 ms/character.
+- Result: the receiver field contained exactly `DroidBridge123` — **14/14 characters**, including
+  shift-uppercase and digits.
+- First, unpaced run delivered only `Droi` (4/14): Android's HID host drops back-to-back interrupt reports.
+  `typeText` is now async and paces each character; a Bluetooth cycle cleared the stale link before the
+  passing run.
+- **Evidence limitation:** the passing result is recorded from the harness and receiver as a summary. The
+  Mac unified log for that run was not archived, so this row is not yet a captured-evidence row; the next
+  run repeats it with the log saved under `Docs/evidence/p17/`.
+- Note: [text-entry-s24.md](../evidence/p17/text-entry-s24.md).
 
 ## SIGTERM teardown — measured 2026-11-24, four variants, still open (ADR-052)
 

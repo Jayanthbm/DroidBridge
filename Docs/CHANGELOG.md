@@ -1,3 +1,24 @@
+## Phase 6 lightweight permission/security audit measured (2026-11-27)
+
+- **No behaviour change.** Audited the freshly built artifacts: the APK declares exactly the seven
+  expected permissions (no Bluetooth, SMS, contacts, storage or Accessibility), the macOS bundle
+  carries exactly the audited four entitlements, no analytics or crash SDK is present on either
+  platform, and clipboard content or the stored pin never reaches a log line. No permission diff
+  since the Phase 6 audit. Recorded in `Docs/PERMISSIONS_MATRIX.md` §6.7.
+
+## P17 report and evidence corrected after review (2026-11-27)
+
+- **No behaviour change.** The P17 report had contradicted the status dashboard: it still called text
+  entry unproven after the 2026-11-27 run. It now records that run, the pacing finding and what the run
+  does not prove.
+- The text-entry row is recorded as **measured with a summary only** — no raw Mac log was archived for
+  it, so it is not yet captured evidence. A repeat run will save the log.
+- `Docs/evidence/p17/pairing-prompt-verification.log` is renamed to
+  `pairing-mismatch-refused.log`: it records a **refusal** (Mac `108952` vs phone `456266`), and the
+  pairing-prompt row remains unmeasured.
+- `DroidBridgeApp` now attaches the HID peripheral to the app delegate once, so a re-initialised SwiftUI
+  app cannot leave the delegate holding an instance the UI never shows.
+
 ## P17 production text entry device-verified on S24 Ultra (2026-11-27)
 
 - `DroidBridge123` typed over Classic HID into the focused receiver `EditText`: **14/14

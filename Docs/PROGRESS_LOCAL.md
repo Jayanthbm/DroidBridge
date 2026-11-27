@@ -1,3 +1,49 @@
+**2026-11-27 (review of the P17 text-entry work: report corrected, evidence gap recorded):**
+
+Reviewed the ten commits that landed after ADR-061 (retry-streak counter, P17 production keyboard and
+text entry, and the personal-use waivers) and re-ran the whole gate: `scripts/verify-all.sh` exits 0,
+with Android assemble + unit tests + lint across `:app` and every experiment module, and **104 macOS
+unit tests with 0 failures**.
+
+The code is sound, but the P17 report contradicted the dashboard: `Docs/prototypes/P17-classic-hidp.md`
+still said text entry was unproven after the 2026-11-27 run, had no section for that run, and its Phase 5
+checklist still read "pending 2026-11-25". Corrected: the status paragraph, the limitations bullet, the
+conclusion, the checklist header and row-status paragraph now match PHASE_STATUS, and a
+"Production keyboard and text entry measured 2026-11-27" section records the run, the 120 ms pacing
+finding (the unpaced run delivered 4/14) and what remains.
+
+**Evidence gap, recorded rather than papered over:** the 14/14 result exists only as a written summary.
+The Mac's unified log for that run was not archived (`/tmp` holds only the verify-all logs), so the row
+is "measured, captured evidence pending". A repeat paced run with the log saved under
+`Docs/evidence/p17/` is queued. Relatedly, `Docs/evidence/p17/pairing-prompt-verification.log` was a
+**refusal** transcript (Mac `108952` vs phone `456266`, neither side confirmed) with a Python
+`BrokenPipeError` traceback; it is now `pairing-mismatch-refused.log`, the P17 report says the
+pairing-prompt row is unmeasured, and the refusal is recorded as the correct behaviour it was.
+
+Also fixed: `DroidBridgeApp.init()` assigned the HID peripheral to the app delegate on every App
+initialisation while `@StateObject` keeps only the first instance, so a re-initialised SwiftUI app could
+leave the delegate holding an object the UI never shows and termination cleanup would withdraw the wrong
+peripheral. The delegate is now attached once.
+
+Still open from this review: the owner's scope decision on remote keyboard/text entry (PROGRESS_LOCAL
+still calls it conditional while the feature now ships), and confirmation that the three 2026-11-26
+waivers were actually given.
+
+**Phase 6 lightweight audit (same day, the owner-reduced scope):** measured against fresh artifacts from
+the passing `verify-all.sh` run rather than prose. `aapt2 dump permissions` on `app-debug.apk` (build-tools
+37.0.0, targetSdk 37) returns exactly `INTERNET`, `ACCESS_LOCAL_NETWORK`, `FOREGROUND_SERVICE`,
+`FOREGROUND_SERVICE_MEDIA_PROJECTION`, `FOREGROUND_SERVICE_MICROPHONE`, `POST_NOTIFICATIONS`,
+`RECORD_AUDIO` plus the AndroidX-injected app-private receiver permission — **no permission diff since
+Phase 6**, and no Bluetooth, SMS, contacts, storage, notification-listener or Accessibility permission.
+`codesign -d --entitlements :-` on the plain Debug build (not the `test` product, which injects XCTest
+exceptions) shows exactly the audited four entitlements plus `get-task-allow`, expected in Debug and
+stripped in Release. The three privacy strings are present in the built `Info.plist`. Dependency scan:
+AndroidX/Compose/coroutines/JUnit only, and Apple's swift-crypto/swift-certificates on macOS — **no
+analytics, crash-reporting or telemetry SDK**. Log scan: clipboard lines carry an 8-character hash and byte
+counts, never text; the stored pin is never logged; the only code-shaped value logged is the six-digit
+pairing code, which is displayed for comparison during pairing. Recorded in `Docs/PERMISSIONS_MATRIX.md`
+§6.7. The full permission-UX and app-UI accessibility pass stays reduced by the owner, not passed.
+
 **2026-11-26 (ADR-062 device-verified on the OnePlus):** installed the fresh APK with the
 `RetryCounter` fix (`adb install -r`, stored pin preserved) and relaunched the Mac listener on fixed
 port 64431 with a 7200 s idle timeout. Drove **12 sequential stored-pin reconnects** via the app's

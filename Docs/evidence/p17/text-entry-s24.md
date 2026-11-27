@@ -16,3 +16,6 @@
 - Run conditions: USB connected, `adb_enabled=1`, `adb_wifi=0`, screen held on during the run.
   This is a production-input-surface check, not the final debuggings-off acceptance run
   (that acceptance already passed for arrow keys on this device).
+- **Evidence status: summary, not raw capture.** This file records what the harness and the receiver
+  showed during the run; the Mac's unified log for it was not archived. Treat the row as "measured,
+  captured evidence pending" until a repeat run saves the harness log here.

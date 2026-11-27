@@ -33,10 +33,15 @@ struct DroidBridgeApp: App {
     @StateObject private var hidPeripheral: ClassicHIDPeripheral
 
     init() {
-        // One peripheral instance shared by the SwiftUI tree and the AppKit delegate.
+        // One peripheral instance shared by the SwiftUI tree and the AppKit delegate. SwiftUI may
+        // re-initialise this struct (a StateObject keeps only the first value), so the delegate is
+        // attached once: otherwise it could hold an instance the UI never shows and termination
+        // cleanup would withdraw the wrong peripheral.
         let hid = ClassicHIDPeripheral()
         _hidPeripheral = StateObject(wrappedValue: hid)
-        appDelegate.hidPeripheral = hid
+        if appDelegate.hidPeripheral == nil {
+            appDelegate.hidPeripheral = hid
+        }
 
         // P03 headless harness. Handled before SwiftUI starts so a scripted run gets a listener
         // without a window, and exits with the harness's status rather than the app's.

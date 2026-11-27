@@ -229,3 +229,47 @@ ADR-057; + the injected app-private
 So the rows for `FOREGROUND_SERVICE_CONNECTED_DEVICE`, `CHANGE_NETWORK_STATE` and
 `RECEIVE_BOOT_COMPLETED` above describe the *experiment* manifests, not the product APK; the product
 diff vs Phase 5 is the single owner-approved audio addition recorded in ADR-057.
+
+### 6.7 Measured audit — Phase 6 lightweight sweep (2026-11-27)
+
+The owner reduced Phase 6 (personal-use scope, 2026-11-26) to a lightweight permission audit plus the
+security checks already measured; this is that audit. Method, all against fresh artifacts built by
+`scripts/verify-all.sh` (`EXIT=0`):
+
+- `aapt2 dump permissions` / `dump badging` on `android/app/build/outputs/apk/debug/app-debug.apk`
+  (build-tools 37.0.0, `targetSdkVersion 37`).
+- `codesign -d --entitlements :-` on the freshly built `Debug/DroidBridge.app` (plain `build`, not `test`,
+  so no test-harness entitlements are injected).
+- `PlistBuddy` on that bundle's `Info.plist` for the three privacy strings.
+- Dependency scan of `gradle/libs.versions.toml` and `macos/project.yml` for analytics/crash SDKs.
+- Source scan of the clipboard, mirroring, security and network modules for logged payloads.
+
+Android — the built APK declares exactly:
+
+`INTERNET`, `ACCESS_LOCAL_NETWORK`, `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PROJECTION`,
+`FOREGROUND_SERVICE_MICROPHONE`, `POST_NOTIFICATIONS`, `RECORD_AUDIO`, plus the AndroidX-injected
+app-private `com.droidbridge.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. **No BLUETOOTH\*, SMS,
+contacts, call-log, storage, notification-listener or Accessibility permission is present.** This
+matches §6.6 exactly: **no permission diff since the Phase 6 audit.**
+
+macOS — the production bundle carries the audited four-key set (`app-sandbox`, `network.client`,
+`network.server`, `device.bluetooth`) plus `get-task-allow`, which is expected in Debug and stripped in
+Release (`CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO`, §6.3). No `com.apple.security.cs.*` exception and no
+`temporary-exception.*` appears in the plain build; the read-only `/` and `mach-lookup` exceptions seen
+in the `test` product are injected by XCTest for the test runner only and are not part of the app.
+
+Privacy strings are present in the built bundle: `NSLocalNetworkUsageDescription`,
+`NSBonjourServices` = `_droidbridge-dev._tcp`, and `NSBluetoothAlwaysUsageDescription`.
+
+Telemetry: the dependency set is AndroidX, Compose, kotlinx-coroutines, JUnit plus the project's own
+protocol module, and on macOS only Apple's swift-crypto and swift-certificates. **No analytics,
+crash-reporting or telemetry SDK is declared on either platform.**
+
+Logging: clipboard logs carry `hash=<8 chars>` and byte counts only — never the text; the stored peer
+pin is never logged; the only code-shaped value in the logs is the short-lived six-digit pairing code
+(`PAIRING_CONFIRMED code=…`, `state=… code=…`), which is on screen for comparison during pairing and is
+not a persistent secret. Redaction of clipboard payloads is therefore verified in source, not assumed.
+
+**Verdict:** zero unapproved permissions, zero entitlements beyond the audited set, zero telemetry, no
+plaintext clipboard or pin in logs. Phase 6's remaining items (full permission UX review, app-UI
+accessibility pass, broad regression sweep) are **reduced by the owner, not passed**.
