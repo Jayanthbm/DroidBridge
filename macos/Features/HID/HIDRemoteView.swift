@@ -181,7 +181,7 @@ struct HIDRemoteView: View {
                     HStack {
                         TextField("Text to type", text: $textToType)
                         Button("Type") {
-                            peripheral.typeText(textToType)
+                            Task { await peripheral.typeText(textToType) }
                             textConfirmed = false
                         }
                         .disabled(!peripheral.isReady || !textConfirmed || textToType.isEmpty)

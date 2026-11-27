@@ -373,6 +373,7 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
     ///   --harness-publish                  publish the HID SDP record
     ///   --harness-connect <address>        publish, then connect to the paired peer
     ///   --harness-send <UP|DOWN|LEFT|RIGHT> send one press/release once channels are ready
+    ///   --harness-type <text>               type a US-layout ASCII string once channels are ready
     func runHarnessIfRequested() {
         guard !harnessRan else { return }
         harnessRan = true
@@ -380,7 +381,8 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         let wantsPublish = HarnessFlags.isOn("--harness-publish")
         let connectionIndex = HarnessFlags.isOn("--harness-connect")
             ? arguments.firstIndex(of: "--harness-connect") : nil
-        guard wantsPublish || connectionIndex != nil || HarnessFlags.isOn("--harness-send") else { return }
+        let wantsType = HarnessFlags.isOn("--harness-type")
+        guard wantsPublish || connectionIndex != nil || HarnessFlags.isOn("--harness-send") || wantsType else { return }
 
         publishService()
         if let connectionIndex, arguments.indices.contains(connectionIndex + 1) {
@@ -394,6 +396,24 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
         if let sendIndex = (HarnessFlags.isOn("--harness-send") ? arguments.firstIndex(of: "--harness-send") : nil),
            arguments.indices.contains(sendIndex + 1) {
             sendHarnessArrow(named: arguments[sendIndex + 1].uppercased())
+        }
+
+        if let typeIndex = (wantsType ? arguments.firstIndex(of: "--harness-type") : nil),
+           arguments.indices.contains(typeIndex + 1) {
+            sendHarnessText(arguments[typeIndex + 1])
+        }
+    }
+
+    /// Types one string over the HID link after the host finishes discovery. Debug harness only.
+    private func sendHarnessText(_ text: String) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            guard self.isReady else {
+                self.lastError = "Harness type skipped: channels not ready"
+                self.note("harness type skipped (not ready)")
+                return
+            }
+            await self.typeText(text)
         }
     }
 
@@ -451,24 +471,31 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
 
     /// Types a string as a sequence of key press/release pairs using the US HID keyboard map.
     /// Characters outside the map are reported and skipped; nothing is read from the clipboard.
-    func typeText(_ text: String) {
+    ///
+    /// Android's HID stack drops reports sent back-to-back on the interrupt channel (the same
+    /// reason the arrow harness paces presses). Each character is therefore paced so the peer can
+    /// consume one press/release pair before the next arrives.
+    func typeText(_ text: String, interKeyDelay: Duration = .milliseconds(120)) async {
         guard isReady else {
             lastError = "Not connected: no HID channels"
             return
         }
         var skipped: [String] = []
+        var sent = 0
         for character in text {
             guard let press = HIDKeyboardMap.press(for: character) else {
                 skipped.append(String(character))
                 continue
             }
             sendKeyReport(modifiers: press.modifiers, keys: [press.usage])
+            sent += 1
+            try? await Task.sleep(for: interKeyDelay)
         }
         if skipped.isEmpty {
-            note("typed \(text.count) characters")
+            note("typed \(sent) characters")
         } else {
             lastError = "Skipped unmappable characters: \(skipped.joined())"
-            note("typed \(text.count - skipped.count) characters; skipped \(skipped.count)")
+            note("typed \(sent) characters; skipped \(skipped.count)")
         }
     }
 

@@ -1,3 +1,13 @@
+## P17 production text entry device-verified on S24 Ultra (2026-11-27)
+
+- `DroidBridge123` typed over Classic HID into the focused receiver `EditText`: **14/14
+  characters** (uppercase via shift, digits) on SM-S928B / Android 17 using the pre-existing
+  Classic bond. Evidence: `Docs/evidence/p17/text-entry-s24.md`.
+- Real-device finding: Android's HID stack drops back-to-back interrupt reports. `typeText` is now
+  async and paced at 120 ms/character; the unpaced version delivered only 4/14. A Bluetooth cycle
+  clears the stale HID link between harness runs.
+- No pairing code was confirmed; no new bond was created. ADB was setup/diagnostics only.
+
 ## P17 production keyboard + text entry implemented (2026-11-27)
 
 - The promoted HID peripheral now sends arbitrary key usages, modifier chords and US-layout ASCII
