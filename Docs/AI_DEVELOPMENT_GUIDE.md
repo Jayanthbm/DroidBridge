@@ -6,7 +6,7 @@
 2. **No Accessibility / No Runtime ADB:**
    - **NEVER** use `AccessibilityService` on Android.
    - **NEVER** use `adb` (USB or Wi-Fi) for delivering taps/input, syncing clipboard, or sharing the screen.
-   - **Development-only ADB rule:** USB debugging / ADB **may** be enabled during development for installing builds, launching apps, and reading `logcat`/`dumpsys` diagnostics—**never** as a feature transport.
+   - **Development-only ADB rule (Phases 1–5):** USB debugging / ADB **is allowed** during Phases 1–5 for installing APKs, launching apps, and reading `logcat`/`dumpsys` logs—**never** as a feature transport. **Phase 6** final acceptance must pass with USB disconnected and debugging **OFF**.
 3. **Reference Archive:** All prior PoCs (P00–P17) are preserved on branch `archive/poc-v1` for reference, but `product/v2` must be built cleanly from scratch.
 4. **Design Principles:**
    - **macOS:** Follow native **Liquid Glass** design (SwiftUI translucent glass materials, vibrancy, and depth).
