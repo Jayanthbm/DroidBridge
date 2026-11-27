@@ -175,3 +175,70 @@ apart, and each incremented the counter once. No counter was reset or hand-edite
 `dumpsys window` kept the receiver as `mCurrentFocus` throughout; `dumpsys input` listed
 `Jayanth’s MacBook Air — KEYBOARD | ALPHAKEY | EXTERNAL` (`/dev/input/event12`, `HID connection
 state=2`) while the harness was connected.
+
+## Acceptance pass — USB disconnected, both debuggings off (2026-11-27, 17:55–18:05)
+
+Device: Samsung SM-S928B (S24 Ultra), Android 17 / API 37, serial `RZCY81TKBSV`. Build under test: the
+Debug macOS app at `…/DerivedData/DroidBridge-apoynhmetcirryculquzvqnykwet/Build/Products/Debug/` and the
+`bluetooth-hid-debug.apk` installed earlier the same day.
+
+### Stated state
+
+| Item | Value | How it was established |
+|---|---|---|
+| USB connected | **no** | Owner unplugged the cable and confirmed; `adb devices` then listed **0** devices at 17:55 |
+| USB debugging | **off** | Owner turned it off in Developer options before unplugging |
+| Wireless debugging | **off** | `adb_wifi_enabled=0` read while ADB was still available (17:49); no wireless ADB session existed |
+| ADB during the measurement | **not used** | `adb devices` empty; every phone-side value below is the owner's reading of the screen |
+
+Setup performed while ADB was still available, then disconnected from the measurement: installed the
+rebuilt experiment APK, force-stopped/started the receiver, `svc power stayon true`, screen timeout
+raised to 30 min, notification shade collapsed, counters confirmed at zero. Nothing was read from the
+phone by ADB after the cable was pulled.
+
+### Arrow input
+
+Mac log, `--harness-send DOWN,LEFT,RIGHT`:
+
+```
+17:56:51.238 channels ready protocol=report (default, host has not set it yet)
+17:56:57.476 report written id=2 protocol=report bytes=10 prefix=0xa1 status=0 total=1 / total=2
+17:56:57.476 harness sent DOWN
+17:56:58.423 report written … total=3 / total=4
+17:56:58.423 harness sent LEFT
+17:56:59.359 report written … total=5 / total=6
+17:56:59.359 harness sent RIGHT
+```
+
+Owner's reading of the receiver: **`UP: 0`, `DOWN: 1`, `LEFT: 1`, `RIGHT: 1`** — reported as
+“Up - 0, down - 1, left - 1, right - 1”.
+
+### Text input — first attempt failed, root cause found
+
+The first `--harness-type "Accept2026"` run logged `typed 10 characters` (20 reports, all `status=0`),
+but the phone showed a repeating `666666666666…` that kept growing.
+
+Cause: `sendKeyReport` sent the press and the neutral release **back to back**. The phone's HID stack
+drops a report that follows the previous one immediately on the interrupt channel (the same behaviour
+that forces pacing between arrow presses), so when the dropped report was the release the key stayed
+down and Android auto-repeated it. Fixed by scheduling the release 60 ms after the press; typed
+characters already had 120 ms between them. macOS `xcodebuild build` and 104/104 tests pass after the
+change.
+
+### Text input — repeated after the fix
+
+`--harness-type "Accept2026"` on a freshly reopened receiver (counters and field reset):
+
+```
+18:04:18.652 typed 10 characters
+reports=20 (10 press + 10 release, each release ~60–140 ms after its press)
+```
+
+Owner's reading: the field contained exactly **`Accept2026`**, with no auto-repeat.
+
+### Result
+
+Arrow input and text input both pass over the fresh Classic bond with **USB disconnected and USB and
+wireless debugging off**. The device-side readings are the owner's; the sending side is the Mac log.
+Not covered by this pass: the arrow pad's DOWN/LEFT/RIGHT buttons (only UP was tapped, in the earlier
+ADB-connected run), pointer/gesture control, and any second phone.

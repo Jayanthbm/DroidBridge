@@ -1,3 +1,13 @@
+## P17 acceptance pass with debugging off; key release now paced (2026-11-27)
+
+- Acceptance run with **USB disconnected and USB and wireless debugging off**: the Mac sent `DOWN`,
+  `LEFT`, `RIGHT` (receiver read `DOWN: 1 / LEFT: 1 / RIGHT: 1`, `UP: 0`) and typed `Accept2026`, which
+  arrived as 10/10 characters in the field. Phone-side readings are the owner's screen observations;
+  no ADB was used during the measurement.
+- Fixed auto-repeating keys: the neutral release was sent immediately after the press and the phone's
+  HID stack dropped it, leaving the key held (`666666…` on the first attempt). The release now follows
+  the press by 60 ms. macOS tests 104/104.
+
 ## All four receiver counters measured over the bond, including the arrow pad (2026-11-27)
 
 - `--harness-send DOWN,LEFT,RIGHT` over the existing fresh bond moved the receiver's `DOWN`, `LEFT` and

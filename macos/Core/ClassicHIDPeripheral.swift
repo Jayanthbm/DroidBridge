@@ -514,7 +514,12 @@ final class ClassicHIDPeripheral: NSObject, ObservableObject {
             return
         }
         sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: pressed)
-        sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: HIDIdentity.neutralReport)
+        // Hold before releasing. Android's HID stack drops a report that follows the previous one
+        // immediately on the interrupt channel; when that dropped report is the release, the key
+        // stays down and the phone auto-repeats it (seen on 2026-11-27: "666666…").
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(60)) { [weak self] in
+            self?.sendInputReport(HIDIdentity.ReportID.keyboard.rawValue, payload: HIDIdentity.neutralReport)
+        }
     }
 
     private func sendInputReport(_ reportID: UInt8, payload: Data) {

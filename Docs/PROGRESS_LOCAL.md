@@ -33,7 +33,14 @@ A follow-up run covered every direction: `--harness-send DOWN,LEFT,RIGHT` took `
 `RIGHT` to 1 each with matching down/up lines, and the receiver gained a four-button arrow pad (clears
 the field's focus, counts locally) whose owner-tapped button bumped `UP` — two logged pad presses gave
 `UP: 2`, so pad and HID share the counters. Recorded with USB connected, USB debugging on, wireless
-debugging off in `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+debugging off in `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.
+
+Then the acceptance pass itself, with **USB disconnected and both USB and wireless debugging off**
+(`adb devices` empty; phone-side values are the owner's screen readings): `--harness-send
+DOWN,LEFT,RIGHT` gave `DOWN: 1 / LEFT: 1 / RIGHT: 1` with `UP: 0`, and `--harness-type "Accept2026"`
+put `Accept2026` in the field, 10/10 characters. The first type attempt failed by auto-repeating
+`666666…`: the neutral release went out back to back with the press and the phone dropped it, so the
+key stayed down. `sendKeyReport` now schedules the release 60 ms after the press; macOS tests 104/104. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
 no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
 declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
 `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.
