@@ -13,7 +13,7 @@
    - **Android:** Follow native **Material 3 Expressive** & **Material You** design (dynamic color, expressive shapes, and typography).
 5. **Personal-Use Scope (No Store Distribution):** This is a personal app with **no Apple Developer account** and **no App Store / Play Store publishing**. Use local signing for macOS and local APK builds for Android; do not add Developer ID notarization or store-release gates.
 6. **Backlog-First on Blockers:** If an item cannot be achieved right away, log it in `Docs/BACKLOG.md` with the reason/blocker and move on to the next item so progress isn't stalled.
-7. **No Unrequested Scope:** Build phase by phase; verify each phase before moving to the next.
+7. **Autonomous Phase Progression:** After completing and verifying a phase, commit and push your changes, then immediately start the next phase without waiting—unless human interaction is required (e.g., physical device pairing/testing or a blocking decision).
 
 ---
 
