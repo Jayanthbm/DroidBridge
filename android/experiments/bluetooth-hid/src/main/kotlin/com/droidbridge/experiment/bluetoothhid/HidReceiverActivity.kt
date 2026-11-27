@@ -19,6 +19,9 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 
 /**
@@ -39,7 +42,27 @@ class HidReceiverActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(24.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp)
+                        // Preview runs from the root towards the focused view, so arrows are counted
+                        // before the text field consumes them for cursor movement. Returning false
+                        // leaves the field's normal behaviour untouched.
+                        .onPreviewKeyEvent { event ->
+                            val native = event.nativeKeyEvent
+                            when (event.type) {
+                                KeyEventType.KeyDown -> arrowLabel(native.keyCode)?.let { label ->
+                                    if (native.repeatCount == 0) {
+                                        bump(label)
+                                        record("$label down")
+                                    }
+                                }
+
+                                KeyEventType.KeyUp -> arrowLabel(native.keyCode)?.let { record("$it up") }
+                                else -> Unit
+                            }
+                            false
+                        },
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text("Arrow-key receiver — P16 BLE / P17 Classic", style = MaterialTheme.typography.headlineSmall)
@@ -67,24 +90,18 @@ class HidReceiverActivity : ComponentActivity() {
         }
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        val label = arrowLabel(keyCode) ?: return super.onKeyDown(keyCode, event)
-        if (event.repeatCount == 0) {
-            when (label) {
-                "UP" -> upCount += 1
-                "DOWN" -> downCount += 1
-                "LEFT" -> leftCount += 1
-                "RIGHT" -> rightCount += 1
-            }
-            record("$label down")
+    /**
+     * Counts one arrow press. The counters used to be bumped in `onKeyDown`, which never ran while
+     * the text-entry field held focus: the field consumes arrow keys for cursor movement. Counting
+     * in the root's `onPreviewKeyEvent` keeps the counters honest whatever holds focus.
+     */
+    private fun bump(label: String) {
+        when (label) {
+            "UP" -> upCount += 1
+            "DOWN" -> downCount += 1
+            "LEFT" -> leftCount += 1
+            "RIGHT" -> rightCount += 1
         }
-        return true
-    }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
-        val label = arrowLabel(keyCode) ?: return super.onKeyUp(keyCode, event)
-        record("$label up")
-        return true
     }
 
     private fun arrowLabel(keyCode: Int): String? = when (keyCode) {

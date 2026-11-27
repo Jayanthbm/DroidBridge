@@ -23,8 +23,12 @@ measured the chain instead of inferring it. Result: **the keyboard works over th
 `EV_KEY KEY_UP DOWN` then `UP` (`getevent -l`), `dumpsys input` lists `23: Jayanth’s MacBook Air` as
 `KEYBOARD | ALPHAKEY | EXTERNAL` and the device disappears when the app quits, and text entry over the same
 bond delivered **14/14** (`DroidBridge123`). The arrow counters read zero because the receiver's focused
-`EditText` consumes arrows for cursor movement before `onKeyDown` — the counter is the wrong instrument,
-not the HID path. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
+`EditText` consumes arrows for cursor movement before `onKeyDown` — the counter was the wrong instrument,
+not the HID path. The receiver was then fixed to count arrows in the root's Compose `onPreviewKeyEvent`
+(runs before the field consumes them, event still passed on; a `dispatchKeyEvent` override tripped lint
+`RestrictedApi`), and a single `--harness-send UP` over the same bond moved it `UP: 0` → `UP: 1` with
+`P16HidReceiver: UP down` / `UP up` in logcat. Test state: USB connected, USB debugging on, wireless
+debugging off; ADB did install/launch/`svc power stayon usb`/shade-collapse/dumps only, never the key. Also logged: the phone sends **no** control-channel message at all (no `SET_PROTOCOL`,
 no handshake), so the peripheral stays on the HID default Report protocol, which is what the descriptor
 declares. Transcripts: `Docs/evidence/p17/fresh-bond-2026-11-27.md`,
 `Docs/evidence/p17/fresh-bond-input-2026-11-27.md`.

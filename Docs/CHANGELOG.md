@@ -1,3 +1,12 @@
+## Receiver arrow counters work alongside the text field (2026-11-27)
+
+- `HidReceiverActivity` counts arrow keys in the root's Compose `onPreviewKeyEvent`, so the focused
+  text-entry field no longer hides them from the counters; the key is still passed on and the field's
+  typing and cursor behaviour are unchanged.
+- Re-measured over the existing fresh bond: one Mac `--harness-send UP` moved the receiver `UP: 0` →
+  `UP: 1`, with `P16HidReceiver: UP down` / `UP up` in logcat. USB connected, USB debugging on, wireless
+  debugging off; ADB did setup and observation only.
+
 ## Keyboard input verified over the fresh bond; the arrow counter was the problem (2026-11-27)
 
 - **Corrects the entry below.** The keyboard does work over the re-paired bond. Three log lines (channels

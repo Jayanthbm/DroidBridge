@@ -290,8 +290,13 @@ the programmatic reply cannot. The bond now exists on both sides (`XX:XX:XX:XX:D
   `23: Jayanth’s MacBook Air` as `KEYBOARD | ALPHAKEY | EXTERNAL`, and the device disappears when the
   app quits — so it belongs to this session. The counters read zero because the receiver now has a
   **focused `EditText`** that consumes arrow keys for cursor movement before `onKeyDown`. Text entry over
-  the same fresh bond delivered **14/14** (`DroidBridge123`). Arrow delivery is therefore proven at the
-  kernel, not at the receiver's counter.
+  the same fresh bond delivered **14/14** (`DroidBridge123`). Arrow delivery was proven at the kernel
+  (`getevent`) while the counter was masked.
+- **Counter fixed and re-measured the same day.** `HidReceiverActivity` now counts arrows in the root's
+  Compose `onPreviewKeyEvent`, which runs before the focused field consumes them and still passes the
+  event on; a `dispatchKeyEvent` override tripped lint `RestrictedApi`, so that route was dropped. One
+  `--harness-send UP` then moved the receiver from `UP: 0` to `UP: 1` with `P16HidReceiver: UP down` /
+  `UP up` in logcat, so the arrow counter is a valid instrument again.
 - Full transcripts: [fresh-bond-2026-11-27.md](../evidence/p17/fresh-bond-2026-11-27.md),
   [fresh-bond-input-2026-11-27.md](../evidence/p17/fresh-bond-input-2026-11-27.md).
 
