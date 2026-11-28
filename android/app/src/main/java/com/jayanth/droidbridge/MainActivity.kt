@@ -1,7 +1,9 @@
 package com.jayanth.droidbridge
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.provider.Settings
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Bundle
@@ -44,11 +46,18 @@ class MainActivity : ComponentActivity() {
                     initialScreen = initialScreen,
                     autoPair = autoPair,
                     onToggleMirroring = ::toggleMirroring,
+                    onOpenBluetoothSettings = ::openBluetoothSettings,
                 )
             }
         }
         if (intent.getBooleanExtra("autoMirror", false)) {
             window.decorView.post { toggleMirroring() }
+        }
+    }
+
+    private fun openBluetoothSettings() {
+        runCatching {
+            startActivity(Intent(Settings.ACTION_BLUETOOTH_SETTINGS))
         }
     }
 

@@ -48,3 +48,5 @@ targets:
         PRODUCT_NAME: DroidBridge
         GENERATE_INFOPLIST_FILE: NO
         COMBINE_HIDPI_IMAGES: YES
+        SWIFT_OBJC_BRIDGING_HEADER: DroidBridge/DroidBridge-Bridging-Header.h
+        OTHER_LDFLAGS: "-framework IOBluetooth"

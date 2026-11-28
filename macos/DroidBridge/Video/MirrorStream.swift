@@ -308,6 +308,7 @@ struct VideoSurfaceView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
+        view.identifier = NSUserInterfaceItemIdentifier("DroidBridgeVideoStage")
         view.wantsLayer = true
         displayLayer.frame = view.bounds
         displayLayer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]

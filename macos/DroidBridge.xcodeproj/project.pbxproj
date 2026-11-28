@@ -7,8 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0E91E0849B8C7DFE7CCB68E6 /* MacKeyMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55175DA00A8113D571766B26 /* MacKeyMap.swift */; };
 		13E743757B4183E3BAE18219 /* MirrorWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DBD906FAFB852A11D1CB676 /* MirrorWindowView.swift */; };
+		26C5C5A6F749616738E03339 /* BluetoothHIDController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F2FDC40B30DDE366A14DDF /* BluetoothHIDController.swift */; };
 		2999A01C3A6062B206E622B4 /* LanServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B4E25F718E08D772888239 /* LanServer.swift */; };
+		2B0785D7EDE6D270A37A84D6 /* DBBluetoothHIDService.m in Sources */ = {isa = PBXBuildFile; fileRef = 59B3C9A8CA43C469B0876BE5 /* DBBluetoothHIDService.m */; };
 		4B3856C03AB5324A559C5414 /* MacIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0C2857ACAE120CECF091DED /* MacIdentity.swift */; };
 		71362F2B3D5564A4F0FA08E4 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C185732F0552DF1FFD487E8A /* EmptyStateView.swift */; };
 		9682965CC602A3FAF25FD86F /* WireProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A4B22D010B448B0D7EEFDBF /* WireProtocol.swift */; };
@@ -19,15 +22,21 @@
 		CC2220A6B0CEFB517C7BB7F0 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F6E1877E7BB7820E01DF15 /* RootView.swift */; };
 		DB721042A006EA8543FB4B82 /* MirrorStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C577059A3445328FDBBD23 /* MirrorStream.swift */; };
 		E02EA9FE0B1F73A0E1D6F2F3 /* PeerTrustStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3774EB96B770197031D7574E /* PeerTrustStore.swift */; };
+		F792D6D50D50832DD5DF8890 /* BluetoothInputRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 556A7A7E02C46A6D9C78CCB3 /* BluetoothInputRouter.swift */; };
 		FB5FF6934F252829F26AC8C4 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1096A49F87BA852FC5DF006 /* AppModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		25E631C19E44A543080F575C /* DroidBridge.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DroidBridge.entitlements; sourceTree = "<group>"; };
+		264E90F151E9E06615F3C1FD /* DBBluetoothHIDService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DBBluetoothHIDService.h; sourceTree = "<group>"; };
 		2CEBF104514A3E629C42448B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		354600CB636FE443A976DF92 /* DroidBridge.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DroidBridge.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3774EB96B770197031D7574E /* PeerTrustStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeerTrustStore.swift; sourceTree = "<group>"; };
 		50C577059A3445328FDBBD23 /* MirrorStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorStream.swift; sourceTree = "<group>"; };
+		55175DA00A8113D571766B26 /* MacKeyMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacKeyMap.swift; sourceTree = "<group>"; };
+		556A7A7E02C46A6D9C78CCB3 /* BluetoothInputRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothInputRouter.swift; sourceTree = "<group>"; };
+		55F2FDC40B30DDE366A14DDF /* BluetoothHIDController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothHIDController.swift; sourceTree = "<group>"; };
+		59B3C9A8CA43C469B0876BE5 /* DBBluetoothHIDService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = DBBluetoothHIDService.m; sourceTree = "<group>"; };
 		5DBD906FAFB852A11D1CB676 /* MirrorWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorWindowView.swift; sourceTree = "<group>"; };
 		74F6E1877E7BB7820E01DF15 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DroidBridgeApp.swift; sourceTree = "<group>"; };
@@ -39,15 +48,18 @@
 		CE0EC3773E05116251CC0A7E /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		E0C2857ACAE120CECF091DED /* MacIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacIdentity.swift; sourceTree = "<group>"; };
 		E1096A49F87BA852FC5DF006 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		FE9D7F91682E5B6BB0AEFB68 /* DroidBridge-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "DroidBridge-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		13B35E5D5298C038FE8054DC /* DroidBridge */ = {
 			isa = PBXGroup;
 			children = (
+				FE9D7F91682E5B6BB0AEFB68 /* DroidBridge-Bridging-Header.h */,
 				25E631C19E44A543080F575C /* DroidBridge.entitlements */,
 				753C03F4A4D954D650F6B277 /* DroidBridgeApp.swift */,
 				2CEBF104514A3E629C42448B /* Info.plist */,
+				3F204C05A7200F114B050C4D /* Bluetooth */,
 				73EEE0235770EC61AB865C06 /* Models */,
 				4571C37B8B61888DC28CF445 /* Network */,
 				AF8619B7F6B9DA7D1676E252 /* Video */,
@@ -67,6 +79,18 @@
 				CE0EC3773E05116251CC0A7E /* Theme.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		3F204C05A7200F114B050C4D /* Bluetooth */ = {
+			isa = PBXGroup;
+			children = (
+				55F2FDC40B30DDE366A14DDF /* BluetoothHIDController.swift */,
+				556A7A7E02C46A6D9C78CCB3 /* BluetoothInputRouter.swift */,
+				264E90F151E9E06615F3C1FD /* DBBluetoothHIDService.h */,
+				59B3C9A8CA43C469B0876BE5 /* DBBluetoothHIDService.m */,
+				55175DA00A8113D571766B26 /* MacKeyMap.swift */,
+			);
+			path = Bluetooth;
 			sourceTree = "<group>";
 		};
 		4571C37B8B61888DC28CF445 /* Network */ = {
@@ -172,11 +196,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB5FF6934F252829F26AC8C4 /* AppModel.swift in Sources */,
+				26C5C5A6F749616738E03339 /* BluetoothHIDController.swift in Sources */,
+				F792D6D50D50832DD5DF8890 /* BluetoothInputRouter.swift in Sources */,
+				2B0785D7EDE6D270A37A84D6 /* DBBluetoothHIDService.m in Sources */,
 				CB2666E2DD7310F5F7219ED3 /* DroidBridgeApp.swift in Sources */,
 				71362F2B3D5564A4F0FA08E4 /* EmptyStateView.swift in Sources */,
 				9CF9BD17418F84A2CD0927FB /* HubView.swift in Sources */,
 				2999A01C3A6062B206E622B4 /* LanServer.swift in Sources */,
 				4B3856C03AB5324A559C5414 /* MacIdentity.swift in Sources */,
+				0E91E0849B8C7DFE7CCB68E6 /* MacKeyMap.swift in Sources */,
 				DB721042A006EA8543FB4B82 /* MirrorStream.swift in Sources */,
 				13E743757B4183E3BAE18219 /* MirrorWindowView.swift in Sources */,
 				CB6143D98B298EECCB61558C /* PairingView.swift in Sources */,
@@ -202,9 +230,11 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_LDFLAGS = "-framework IOBluetooth";
 				PRODUCT_BUNDLE_IDENTIFIER = com.jayanth.droidbridge;
 				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "DroidBridge/DroidBridge-Bridging-Header.h";
 			};
 			name = Release;
 		};
@@ -282,9 +312,11 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_LDFLAGS = "-framework IOBluetooth";
 				PRODUCT_BUNDLE_IDENTIFIER = com.jayanth.droidbridge;
 				PRODUCT_NAME = DroidBridge;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "DroidBridge/DroidBridge-Bridging-Header.h";
 			};
 			name = Debug;
 		};

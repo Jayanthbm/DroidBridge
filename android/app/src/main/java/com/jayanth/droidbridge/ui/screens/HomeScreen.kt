@@ -18,7 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ScreenShare
+import androidx.compose.material.icons.rounded.Bluetooth
 import androidx.compose.material.icons.rounded.ContentPaste
+import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.LaptopMac
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Lock
@@ -55,6 +57,7 @@ fun HomeScreen(
     onDisconnect: () -> Unit,
     onReconnect: () -> Unit,
     onPairAnotherMac: () -> Unit,
+    onOpenBluetoothSettings: () -> Unit,
 ) {
     val session = state.session
     Column(Modifier.fillMaxSize()) {
@@ -181,6 +184,10 @@ fun HomeScreen(
                 onToggleClipboard = onToggleClipboard,
                 onSyncClipboard = onSyncClipboard,
             )
+
+            Spacer(Modifier.height(12.dp))
+
+            BluetoothKeyboardCard(onOpenBluetoothSettings = onOpenBluetoothSettings)
 
             Spacer(Modifier.height(12.dp))
             Text(
@@ -397,6 +404,74 @@ private fun ClipboardCard(
                 Spacer(Modifier.width(6.dp))
                 Text(
                     text = "Sync Clipboard Now",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BluetoothKeyboardCard(onOpenBluetoothSettings: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    GlowCard(contentPadding = PaddingValues(18.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            IconTile(
+                icon = Icons.Rounded.Keyboard,
+                size = 46.dp,
+                container = colors.tertiaryContainer.copy(alpha = 0.55f),
+                tint = colors.onTertiaryContainer,
+            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Keyboard & Mouse",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Text(
+                    text = "Pair your Mac as a Bluetooth keyboard and mouse. No Accessibility Service and no ADB.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+        }
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 14.dp),
+            color = colors.outlineVariant.copy(alpha = 0.4f),
+        )
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = "Pair once in Android Bluetooth settings.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                )
+            }
+            OutlinedButton(
+                onClick = onOpenBluetoothSettings,
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = colors.outlineVariant.copy(alpha = 0.7f),
+                ),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Bluetooth,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Bluetooth Settings",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
                 )

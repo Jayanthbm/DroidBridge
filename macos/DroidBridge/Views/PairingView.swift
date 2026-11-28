@@ -46,16 +46,28 @@ struct PairingView: View {
                                 )
 
                                 VStack(alignment: .leading, spacing: 10) {
-                                    instruction(1, "Open Bluetooth Settings on this Mac.")
-                                    instruction(2, "Make your Android phone discoverable in its Bluetooth settings.")
-                                    instruction(3, "Select your phone in macOS Bluetooth Settings, then click Connect.")
-                                    instruction(4, "Confirm the pairing prompt on both devices. It reconnects automatically after this.")
+                                    instruction(1, "Open Settings → Bluetooth on your Android phone.")
+                                    instruction(2, "Under Available devices, tap \(model.macBluetoothName).")
+                                    instruction(3, "Confirm the pairing code on the phone and on this Mac.")
+                                    instruction(4, "Keep this window open. Keyboard and mouse control connects automatically.")
+                                }
+
+                                HStack(spacing: 7) {
+                                    StatusPill(
+                                        label: bluetoothStatusLabel,
+                                        color: model.bluetoothPairingStatus == .connected ? AppTheme.green : AppTheme.amber
+                                    )
+                                    Text(model.bluetoothPairingStatus == .connected
+                                         ? "Your Mac is bonded as a Bluetooth keyboard and mouse."
+                                         : "This Mac is discoverable while this sheet is open.")
+                                        .font(.system(size: 10.5))
+                                        .foregroundStyle(.secondary)
                                 }
 
                                 Button {
                                     openURL(bluetoothSettingsURL)
                                 } label: {
-                                    Label("Open Bluetooth Settings", systemImage: "arrow.up.forward.app")
+                                    Label("Open Mac Bluetooth Settings", systemImage: "arrow.up.forward.app")
                                         .font(.system(size: 12.5, weight: .semibold))
                                 }
                                 .buttonStyle(.glass)
@@ -253,6 +265,15 @@ struct PairingView: View {
             }
 
             Spacer()
+        }
+    }
+
+    private var bluetoothStatusLabel: String {
+        switch model.bluetoothPairingStatus {
+        case .connected: "Bluetooth HID bonded"
+        case .reconnecting: "Waiting for phone"
+        case .disconnected: "Bluetooth unavailable"
+        case .idle: "Not started"
         }
     }
 

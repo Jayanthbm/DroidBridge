@@ -63,6 +63,7 @@ struct PhoneDevice: Identifiable, Hashable {
     var batteryLevel: Int
     var wiFi: LinkState
     var bluetooth: LinkState
+    var bluetoothAddress: String? = nil
     var settings: DeviceSettings = DeviceSettings()
 
     var connectionSummary: String {
@@ -133,13 +134,21 @@ final class AppModel {
     var isWaitingForPhone = false
     var isConfirmingPairing = false
     var networkError: String?
+    var bluetoothPairingStatus: LinkState = .idle
 
     var isDemoMode: Bool { runsDemo }
+    var macBluetoothName: String { bluetoothHID.localDeviceName }
 
     @ObservationIgnored private var toastTask: Task<Void, Never>?
     @ObservationIgnored private var lanServer: LanServer?
     @ObservationIgnored private var streams: [String: MirrorStream] = [:]
     @ObservationIgnored private let runsDemo: Bool
+    @ObservationIgnored private let bluetoothHID = BluetoothHIDController()
+    @ObservationIgnored private lazy var inputRouter = BluetoothInputRouter(
+        hid: bluetoothHID,
+        focusedDeviceID: { [weak self] in self?.focusedDeviceID },
+        phoneWidth: { [weak self] deviceID in self?.streams[deviceID]?.width ?? 1080 }
+    )
 
     init() {
         let arguments = ProcessInfo.processInfo.arguments
@@ -174,6 +183,7 @@ final class AppModel {
         if !runsDemo {
             startNetwork()
         }
+        configureBluetooth()
     }
 
     // MARK: Network
@@ -191,6 +201,67 @@ final class AppModel {
         } catch {
             networkError = error.localizedDescription
             showToast("LAN server failed: \(error.localizedDescription)", symbol: "wifi.exclamationmark")
+        }
+    }
+
+    private func configureBluetooth() {
+        bluetoothHID.onConnectionChanged = { [weak self] deviceID, connected in
+            Task { @MainActor [weak self] in
+                self?.handleHIDConnection(deviceID: deviceID, connected: connected)
+            }
+        }
+        bluetoothHID.onAddressBound = { [weak self] deviceID, address in
+            Task { @MainActor [weak self] in
+                self?.handleHIDBinding(deviceID: deviceID, address: address)
+            }
+        }
+        bluetoothHID.onAvailabilityChanged = { [weak self] available, message in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if !available {
+                    self.bluetoothPairingStatus = .disconnected
+                    if let message { self.showToast(message, symbol: "keyboard.badge.exclamationmark") }
+                }
+            }
+        }
+        if !runsDemo { inputRouter.install() }
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Termination will not wait for an async hop; unpublish the HID
+            // service synchronously so bluetoothd releases the L2CAP PSMs.
+            MainActor.assumeIsolated {
+                self?.inputRouter.uninstall()
+                self?.bluetoothHID.shutdown()
+            }
+        }
+    }
+
+    private func handleHIDConnection(deviceID: String, connected: Bool) {
+        guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
+        let name = devices[index].name
+        if connected {
+            devices[index].bluetooth = .connected
+            devices[index].bluetoothAddress = bluetoothHID.address(for: deviceID)
+            bluetoothPairingStatus = .connected
+            showToast("Keyboard & mouse connected to \(name)", symbol: "keyboard.fill")
+        } else {
+            devices[index].bluetooth = .reconnecting
+            inputRouter.release(deviceID: deviceID)
+            showToast("Bluetooth HID disconnected from \(name)", symbol: "keyboard.badge.exclamationmark")
+        }
+    }
+
+    private func handleHIDBinding(deviceID: String, address: String) {
+        if let index = devices.firstIndex(where: { $0.id == deviceID }) {
+            devices[index].bluetoothAddress = address
+            devices[index].bluetooth = .connected
+            bluetoothPairingStatus = .connected
+            showToast("\(devices[index].name) bonded for keyboard & mouse", symbol: "checkmark.seal.fill")
+        } else {
+            bluetoothPairingStatus = .connected
         }
     }
 
@@ -225,6 +296,8 @@ final class AppModel {
             isWaitingForPhone = false
             isConfirmingPairing = false
             isPairingPresented = true
+            bluetoothPairingStatus = .reconnecting
+            bluetoothHID.beginPairing(deviceID: request.deviceID)
 
         case .pairingEnded(let sessionID):
             guard pairing?.sessionID == sessionID else { return }
@@ -232,6 +305,8 @@ final class AppModel {
             isWaitingForPhone = false
             isConfirmingPairing = false
             isPairingPresented = false
+            bluetoothHID.endPairing()
+            bluetoothPairingStatus = .idle
 
         case .connected(let peer):
             var device = PhoneDevice(
@@ -241,12 +316,13 @@ final class AppModel {
                 androidVersion: peer.osVersion,
                 batteryLevel: peer.battery > 0 ? peer.battery : 100,
                 wiFi: .connected,
-                bluetooth: .idle
+                bluetooth: bluetoothHID.isConnected(deviceID: peer.deviceID) ? .connected : .idle,
+                bluetoothAddress: bluetoothHID.address(for: peer.deviceID)
             )
             if let index = devices.firstIndex(where: { $0.id == peer.deviceID }) {
                 device.settings = devices[index].settings
-                if devices[index].bluetooth == .connected {
-                    device.bluetooth = .connected
+                if devices[index].bluetooth == .connected && device.bluetooth != .connected {
+                    device.bluetooth = .reconnecting
                 }
                 devices[index] = device
             } else {
@@ -256,6 +332,7 @@ final class AppModel {
             if pairing?.sessionID == peer.sessionID {
                 pairing = nil
                 isPairingPresented = false
+                bluetoothHID.endPairing()
             }
             isWaitingForPhone = false
             isConfirmingPairing = false
@@ -269,6 +346,7 @@ final class AppModel {
 
         case .mirrorStopped(let deviceID):
             streams[deviceID]?.markStopped()
+            inputRouter.release(deviceID: deviceID)
             if focusedDeviceID == deviceID {
                 focusedDeviceID = nil
             }
@@ -280,6 +358,7 @@ final class AppModel {
             guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
             devices[index].wiFi = .reconnecting
             streams[deviceID]?.markStopped()
+            inputRouter.release(deviceID: deviceID)
             if focusedDeviceID == deviceID {
                 focusedDeviceID = nil
             }
@@ -337,6 +416,8 @@ final class AppModel {
         if let sessionID = pairing?.sessionID {
             lanServer?.cancelPairing(sessionID: sessionID)
         }
+        bluetoothHID.endPairing()
+        bluetoothPairingStatus = .idle
         isPairingPresented = false
         pairing = nil
         isWaitingForPhone = false
@@ -370,19 +451,48 @@ final class AppModel {
 
     func startMirroring(deviceID: String) {
         guard let device = device(withID: deviceID) else { return }
+        bluetoothHID.start()
+        if focusedDeviceID != deviceID { inputRouter.release() }
         focusedDeviceID = deviceID
         showToast("Mirroring session opened for \(device.name)", symbol: "play.rectangle.fill")
     }
 
     func stopMirroring(deviceID: String) {
         lanServer?.stopMirroring(deviceID: deviceID)
+        inputRouter.release(deviceID: deviceID)
         if focusedDeviceID == deviceID {
             focusedDeviceID = nil
         }
     }
 
     func focus(deviceID: String) {
+        guard focusedDeviceID != deviceID else { return }
+        inputRouter.release()
         focusedDeviceID = deviceID
+    }
+
+    func clearFocus(deviceID: String) {
+        guard focusedDeviceID == deviceID else { return }
+        inputRouter.release(deviceID: deviceID)
+        focusedDeviceID = nil
+    }
+
+    func beginBluetoothSetup(deviceID: String) {
+        guard let device = device(withID: deviceID) else { return }
+        bluetoothPairingStatus = .reconnecting
+        bluetoothHID.beginPairing(deviceID: deviceID)
+        showToast("Pair \(macBluetoothName) in Android Bluetooth Settings", symbol: "keyboard")
+        if device.bluetoothAddress != nil {
+            update(deviceID) { $0.bluetooth = .reconnecting }
+        }
+    }
+
+    func sendNavigation(_ navigation: HIDNavigation, to deviceID: String) {
+        guard bluetoothHID.isConnected(deviceID: deviceID) else {
+            showToast("Pair Bluetooth HID to use phone navigation", symbol: "keyboard.badge.exclamationmark")
+            return
+        }
+        bluetoothHID.sendNavigation(navigation, to: deviceID)
     }
 
     func setStreamQuality(deviceID: String, quality: StreamQuality) {
@@ -427,11 +537,20 @@ final class AppModel {
             return
         }
         guard let device = device(withID: deviceID) else { return }
-        showToast("Waiting for \(device.name) to reconnect over Wi-Fi", symbol: "arrow.clockwise")
+        bluetoothHID.start()
+        if device.bluetoothAddress != nil {
+            update(deviceID) { $0.bluetooth = .reconnecting }
+        }
+        showToast("Waiting for \(device.name) to reconnect", symbol: "arrow.clockwise")
     }
 
     func disconnect(deviceID: String) {
         lanServer?.disconnect(deviceID: deviceID)
+        inputRouter.release(deviceID: deviceID)
+        if bluetoothHID.pairingDeviceID == deviceID {
+            bluetoothHID.endPairing()
+            bluetoothPairingStatus = .idle
+        }
         guard let index = devices.firstIndex(where: { $0.id == deviceID }) else { return }
         let removed = devices.remove(at: index)
         if selectedDeviceID == deviceID {

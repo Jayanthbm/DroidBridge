@@ -11,6 +11,7 @@ struct MirrorWindowView: View {
     private var device: PhoneDevice? { model.device(withID: deviceID) }
     private var stream: MirrorStream { model.mirrorStream(for: deviceID) }
     private var isFocused: Bool { controlActiveState == .key && model.focusedDeviceID == deviceID }
+    private var isInputActive: Bool { isFocused && device?.bluetooth == .connected }
 
     var body: some View {
         ZStack {
@@ -51,6 +52,8 @@ struct MirrorWindowView: View {
         .onChange(of: controlActiveState) { _, newValue in
             if newValue == .key {
                 model.focus(deviceID: deviceID)
+            } else {
+                model.clearFocus(deviceID: deviceID)
             }
         }
         .background(WindowAspectView(aspect: stream.aspectRatio))
@@ -64,12 +67,12 @@ struct MirrorWindowView: View {
     private func toolbar(_ device: PhoneDevice) -> some View {
         HStack(spacing: 8) {
             HStack(spacing: 6) {
-                Image(systemName: isFocused ? "keyboard.fill" : "keyboard")
+                Image(systemName: isInputActive ? "keyboard.fill" : "keyboard")
                     .font(.system(size: 10, weight: .semibold))
-                Text(isFocused ? "Input: Active" : "Click to focus")
+                Text(isInputActive ? "Keyboard & Mouse" : (isFocused ? "Pair Bluetooth HID" : "Click to focus"))
                     .font(.system(size: 10.5, weight: .semibold))
             }
-            .foregroundStyle(isFocused ? AppTheme.green : .secondary)
+            .foregroundStyle(isInputActive ? AppTheme.green : (isFocused ? AppTheme.amber : .secondary))
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .glassEffect(.regular, in: .capsule)
@@ -126,7 +129,9 @@ struct MirrorWindowView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 14)
 
-            Text(isFocused ? "Keyboard and pointer input is routed to this phone." : "Click the window to route Bluetooth input here.")
+            Text(isInputActive
+                 ? "Keyboard and pointer input is routed to this phone."
+                 : (isFocused ? "Pair Bluetooth HID from the DroidBridge hub to send input." : "Click the window to route Bluetooth input here."))
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
                 .padding(.bottom, 4)
@@ -138,18 +143,18 @@ struct MirrorWindowView: View {
 
     private var navigationBar: some View {
         HStack(spacing: 6) {
-            navButton(title: "Back", symbol: "chevron.backward", key: "Back")
-            navButton(title: "Home", symbol: "circle", key: "Home")
-            navButton(title: "Recents", symbol: "square", key: "Recents")
+            navButton(.back, title: "Back", symbol: "chevron.backward")
+            navButton(.home, title: "Home", symbol: "circle")
+            navButton(.recents, title: "Recents", symbol: "square")
         }
         .padding(6)
         .glassEffect(.regular, in: .capsule)
         .padding(.bottom, 12)
     }
 
-    private func navButton(title: String, symbol: String, key: String) -> some View {
+    private func navButton(_ navigation: HIDNavigation, title: String, symbol: String) -> some View {
         Button {
-            model.showToast("\(key) sent over Bluetooth HID", symbol: "keyboard")
+            model.sendNavigation(navigation, to: deviceID)
         } label: {
             Label(title, systemImage: symbol)
                 .font(.system(size: 11, weight: .medium))
@@ -157,7 +162,10 @@ struct MirrorWindowView: View {
                 .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
-        .help("Send \(key) to the phone")
+        .disabled(device?.bluetooth != .connected)
+        .help(device?.bluetooth == .connected
+              ? "Send \(title) to the phone"
+              : "Pair Bluetooth HID to send \(title)")
     }
 }
 
@@ -222,6 +230,7 @@ struct PhoneBezelView: View {
                             .glassEffect(.regular, in: .capsule)
                     }
             }
+
         }
     }
 

@@ -41,6 +41,7 @@ fun DroidBridgeApp(
     initialScreen: String? = null,
     autoPair: Boolean = false,
     onToggleMirroring: () -> Unit = {},
+    onOpenBluetoothSettings: () -> Unit = {},
     viewModel: AppViewModel = viewModel(),
 ) {
     val state = viewModel.state
@@ -101,6 +102,7 @@ fun DroidBridgeApp(
                         onDisconnect = viewModel::disconnect,
                         onReconnect = viewModel::reconnect,
                         onPairAnotherMac = viewModel::pairAnotherMac,
+                        onOpenBluetoothSettings = onOpenBluetoothSettings,
                     )
                 }
             }

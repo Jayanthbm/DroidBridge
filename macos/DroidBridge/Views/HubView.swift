@@ -254,7 +254,7 @@ struct DeviceDetailView: View {
                         color: device.bluetooth == .connected ? AppTheme.green : AppTheme.amber
                     )
                 }
-                Text("Pinned TLS 1.3 · secure session")
+                Text(device.bluetoothAddress.map { "HID \($0) · pinned TLS 1.3" } ?? "Pinned TLS 1.3 · secure session")
                     .font(.system(size: 9.5))
                     .foregroundStyle(.tertiary)
             }
@@ -282,6 +282,19 @@ struct DeviceDetailView: View {
             }
             .buttonStyle(.glass)
             .controlSize(.large)
+
+            if device.bluetooth != .connected {
+                Button {
+                    model.beginBluetoothSetup(deviceID: device.id)
+                } label: {
+                    Label("Bluetooth Setup", systemImage: "keyboard.badge.ellipsis")
+                        .font(.system(size: 12.5, weight: .medium))
+                }
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                .tint(AppTheme.violet)
+                .help("Pair this Mac as a Bluetooth keyboard and mouse")
+            }
 
             Button {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
